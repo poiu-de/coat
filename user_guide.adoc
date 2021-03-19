@@ -1,0 +1,57 @@
+User Guide
+==========
+//Marco Herrn <marco@mherrn.de>
+//2020-12-12
+:compat-mode!:
+:toc: left
+:toclevels: 4
+:y: ✔
+:n:
+:c: icon:file-text-o[role="blue"]
+:homepage: https://github.com/poiu-de/coat
+:download-page: https://github.com/poiu-de/coat/releases
+:javadoc-url: https://somewhere.else
+:license-link: LICENSE.txt
+:coat-version: 0.0.1
+
+[link=https://github.com/hupfdule/0ilt]
+image::https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png[Fork me on GitHub,float="right"]
+++++
+<iframe src="https://ghbtns.com/github-btn.html?user=hupfdule&repo=coat&type=star&count=false" frameborder="0" scrolling="0" width="170px" height="20px" style="float:right"></iframe>
+++++
+
+User Guide for Coat (**C**onfig **o**f **A**nnotated **T**ypes)
+
+Easy and typesafe config objects. 
+
+image::coat-icon.svg[Coat - **C**onfig **o**f **A**nnotated **T**ypes, width=100]
+
+
+Introduction
+------------
+
+…
+
+
+////
+TODO
+- basic usage (specify accessor method and type) (fill via map, juP, file (via juP))
+              (result is 1 concrete class derived from AbstractConfig + 1 enum with all property definitions)
+              (at the moment must depend on coat-runtime)
+              (verification via AbstractConfig#validate())
+- annotations (interface, method)
+- default naming scheme for generated class
+- what can be annotated? (interface, abstract class(?), abstract methods) (all abstract methods _must_ be annotated)
+- supported types (via converters)
+- (future) support for custom types (via custom converters)
+- inherit config interface from other interface
+- (future) specify combining subtypes by separating via dot (maybe configurable via annotation?)
+- customize generated classes via annotation attributes (name of generated class)
+- (future) generate annotated default config (optional values commented out) (javadoc used as comments)
+////
+
+
+License
+-------
+
+Coat is licensed unter the terms of the link:{license-link}[Apache license 2.0].

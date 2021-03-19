@@ -1,0 +1,181 @@
+Coat
+====
+Marco Herrn <marco@mherrn.de>
+2020-12-12
+:compat-mode!:
+:toc:
+:homepage: https://github.com/poiu-de/coat
+:download-page: https://github.com/poiu-de/coat/releases
+:javadoc-url: https://javadoc.io/doc/de.poiu.coat/coat/
+:license-link: https://github.com/poiu-de/coat/blob/master/LICENSE.txt
+:user_guide: https://poiu-de.github.io/coat/user_guide.html
+:log4j2-jul-bridge: https://logging.apache.org/log4j/2.x/log4j-jul/index.html
+:slf4j-jul-bridge: https://www.slf4j.org/legacy.html#jul-to-slf4j
+:source-highlighter: prettify
+:coat-version: 0.0.1
+
+[.float-group]
+--
+image:coat-icon.svg[Coat,role="right", width="75"]
+Coat - Config of Annotated Types
+
+Easy and typesafe config objects.
+--
+
+
+What is Coat
+------------
+
+Coat is an annotation processor to generate classes for reading
+configuration values into typesafe objects.
+
+Short Usage
+-----------
+
+1. Define an interface representing your config object.
++
+[source,java]
+----
+import de.poiu.coat.annotation.Coat;
+
+@Coat.Config
+public interface MyConfig {
+  @Coat.Param(key = "appName")
+  public String appName();
+
+  @Coat.Param(key = "listenPort")
+  public int listenPort();
+
+  @Coat.Param(key = "desription")
+  public Optional<String> description();
+}
+----
+
+2. Let the Coat annotation processor create the concrete implementation.
+3. Use the generated class.
++
+[source,java]
+----
+final MyConfig config= new ImmutableMyConfig(new File("/path/to/config.properties"));
+
+try {
+  config.validate();
+} catch (final ConfigValidationException ex) {
+  System.err.println("Error in config file:\n" + ex.getValidationResult().toString());
+  System.exit(1);
+}
+
+final String appName= config.appName();
+final int listenPort= config.listenPort();
+config.description().ifPresent(
+  …
+);
+----
+
+
+Prerequisites
+-------------
+
+Coat has no runtime dependencies on other libraries.
+
+The annotation processor has some dependencies on other libraries (which is
+why it is recommended to use maven as it resolves those dependencies
+automatically), but non of them are needed at runtime.
+
+// FIXME: Should we change this requirement?
+Coat can be used with Java 11 or higher.
+
+
+Installation
+------------
+
+To use Coat in a maven based project use the following maven coordinates:
+
+[source,xml,subs="verbatim,attributes"]
+----
+    <!-- Contains the annotation processor. Not needed at runtime. -->
+    <dependency>
+      <groupId>de.poiu.coat</groupId>
+      <artifactId>coat-processor</artifactId>
+      <version>{coat-version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Contains the converters and base classes. Needed at runtime. -->
+    <dependency>
+      <groupId>de.poiu.coat</groupId>
+      <artifactId>coat-runtime</artifactId>
+      <version>{coat-version}</version>
+    </dependency>
+----
+
+Otherwise download the jar-file of Coat from the {download-page}[Download
+page] and put it into the classpath of your application.
+
+
+//Usage
+//-----
+//
+//For a more thorough description of the possibilities of Coat read the
+//{user_guide}[User Guide].
+
+
+Logging
+-------
+
+// FIXME: Do we need logging?
+
+There are a few cases this library issues some logging statements (actually
+only when reading from `java.util.Properties` object that contains
+non-String entries, which should never be the case anyway). Those few
+logging statements don't justify a dependency on a logging framework or
+facade. Therefore we just use java.util.logging for that purpose.
+
+When using Coat in an application that uses another logging framework
+please use those logging frameworks ability to bridge java.util.logging to
+their actual implementation.
+
+For log4j2 this can be done by including the `log4j2-jul` and `log4j2-api` jar
+(and some implemention, e.g. `log4j2-core`) and setting the system property
+`java.util.logging.manager` to `org.apache.logging.log4j.jul.LogManager`.
+See {log4j2-jul-bridge} for more information.
+
+For slf4j this can be done by including the `jul-to-slf4j` jar (and some
+implementation, e.g. `logback`) and programmatically calling
+
+[source,java]
+----
+SLF4JBridgeHandler.removeHandlersForRootLogger();
+SLF4JBridgeHandler.install();
+----
+
+or setting the handler in the `logging.properties`:
+
+[source,xml]
+----
+handlers = org.slf4j.bridge.SLF4JBridgeHandler
+----
+
+See {slf4j-jul-bridge} for more information.
+
+
+// There are no known bugs at the moment
+//Known Bugs and Deficiencies
+//---------------------------
+
+////
+TODO:
+- Keine Collection-Typen (String[] würde gehen, aber der Unterschied null /
+  empty array ist nicht spezifiziert)
+- Keine Unterstützung von Generics. Geht sich auch, aber muss gesondert
+  behandelt werden.
+- Not a bug, but pay attention to optional params with default value. They
+  will never be absent.
+////
+
+
+
+License
+-------
+
+Coat is licensed under the terms of the link:{license-link}[Apache license 2.0].
