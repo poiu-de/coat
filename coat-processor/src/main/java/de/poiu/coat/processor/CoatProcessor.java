@@ -359,10 +359,6 @@ public class CoatProcessor extends AbstractProcessor {
       sb.append("String");
     } else if (!typeName.contains(".")) {
       sb.append(upperFirstChar(typeName));
-//    } else {
-//      // FIXME: We should support custom types here, like for Date, LocalDateTime, Duration, etc.
-//      // FIXME: We need to add the key name to the exception message.
-//      throw new RuntimeException("Unsupported type: "+typeName);
     }
 
     if (hasDefaultValue) {

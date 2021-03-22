@@ -24,9 +24,6 @@ import org.immutables.value.Value;
 
 
 
-/**
- *
- */
 @Value.Style(stagedBuilder = true)
 @Value.Immutable
 abstract class ConfigParamSpec {
