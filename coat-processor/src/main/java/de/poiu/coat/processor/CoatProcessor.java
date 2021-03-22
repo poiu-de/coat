@@ -447,7 +447,7 @@ public class CoatProcessor extends AbstractProcessor {
    *
    * @return The {@code @Generated} annotation for the target source version or {@code null} if it could not be identified
    */
-  public Class<?> identifyGeneratedAnnotation() {
+  private Class<?> identifyGeneratedAnnotation() {
     try {
       final SourceVersion sourceVersion= super.processingEnv.getSourceVersion();
       return sourceVersion.compareTo(SourceVersion.RELEASE_8) > 0
