@@ -20,6 +20,7 @@ import de.poiu.coat.validation.ValidationFailure;
 import de.poiu.coat.validation.ValidationResult;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -84,7 +85,7 @@ public class CoatConfigTest {
   // TODO: Test all protected methods
 
   @Test
-  public void testValidate() throws Exception {
+  public void testValidate_missingKey() throws Exception {
     // - preparation
 
     final ConfigParam p1= new ParamImpl("key1", String.class, null, true);
@@ -113,7 +114,40 @@ public class CoatConfigTest {
     assertThat(result.getValidationFailures()).containsExactlyInAnyOrder(
       new ValidationFailure("Mandatory value for \"key2\" is missing.")
     );
+  }
 
+
+  @Test
+  public void testValidate_parseError() throws Exception {
+    // - preparation
+
+    final ConfigParam p1= new ParamImpl("key1", int.class,    null, true);
+    final ConfigParam p2= new ParamImpl("key2", int.class,    null, true);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+
+    final CoatConfig c= new ConfigImpl(
+      Map.of("key1", "55",
+             "key2", "dummy")
+      ,
+      new ConfigParam[]{
+        p1,
+        p2,
+        p3,
+      });
+
+    // - test
+
+    final Throwable thrown= catchThrowable(() -> c.validate());
+
+    // - verification
+
+    assertThat(thrown).isInstanceOf(ConfigValidationException.class);
+    final ConfigValidationException ex= (ConfigValidationException) thrown;
+    final ValidationResult result= ex.getValidationResult();
+    assertThat(result.hasFailures()).isTrue();
+    assertThat(result.getValidationFailures()).containsExactlyInAnyOrder(
+      new ValidationFailure("Config value for \"key2\" cannot be convert to type \"int\": dummy")
+    );
   }
 
 

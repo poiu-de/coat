@@ -45,7 +45,9 @@ import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -180,15 +182,23 @@ public abstract class CoatConfig {
       }
     }
 
-//    for (final ConfigParam param : this.params) {
-//      final String stringValue= this.getString(param);
-//      try {
-//        this.convertValue(stringValue, param);
-//      } catch (TypeConversionException ex) {
-//        final ValidationFailure f= new ValidationFailure("Value \"" + stringValue + "\" for \"" + param.key() + "\" is invalid for type \"" + param.type().getName() + "\".");
-//        result.addValidationFailure(f);
-//      }
-//    }
+    for (final ConfigParam param : this.params) {
+      final String stringValue= this.getString(param);
+      if (stringValue == null) {
+        continue;
+      }
+
+      try {
+        if (this.isPrimitive(param)) {
+          this.convertPrimitive(stringValue, param);
+        } else {
+          this.convertValue(stringValue, param);
+        }
+      } catch (TypeConversionException ex) {
+        final ValidationFailure f= new ValidationFailure("Config value for \"" + param.key() + "\" cannot be convert to type \"" + param.type().getName() + "\": " + stringValue);
+        result.addValidationFailure(f);
+      }
+    }
 
     if (result.hasFailures()) {
       throw new ConfigValidationException(result);
@@ -291,52 +301,10 @@ public abstract class CoatConfig {
   }
 
 
-  /**
-   *
-   * @param configParam
-   * @return
-   * @deprecated A parameter that is optional _and_ has a default value does not make sense.
-   *             The optional will _never_ be null as it will at least contain the default value.
-   */
-  @Deprecated
-  protected Optional<String> getOptionalStringOrDefault(final ConfigParam configParam) {
-    return Optional.of(this.props.getOrDefault(configParam.key(), configParam.defaultValue()));
-  }
-
-
   protected int getInt(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
     return Integer.parseInt(stringValue);
   }
-
-//
-//  /**
-//   *
-//   * @param <T>
-//   * @param configParam
-//   * @param defaultValue
-//   * @return
-//   * @deprecated Warum den defaultValue mitgeben? Der ist doch im ConfigParam enthalten.
-//   */
-//  @Deprecated
-//  public <T> T getOrDefault(final ConfigParam configParam) {
-//    final String stringValue= this.getStringOrDefault(configParam, defaultValue);
-//    try {
-//      return this.convertValue(stringValue, configParam);
-//    } catch (TypeConversionException e) {
-//      throw new RuntimeException("Error converting value", e);
-//    }
-//  }
-
-
-//  protected int getIntOrDefault(final ConfigParam configParam, final String defaultValue) {
-//    final String stringValue= this.props.get(configParam.key());
-//    if (stringValue != null && !stringValue.trim().isEmpty()) {
-//      return Integer.parseInt(stringValue);
-//    } else {
-//      return Integer.parseInt(defaultValue);
-//    }
-//  }
 
 
   protected int getIntOrDefault(final ConfigParam configParam) {
@@ -378,6 +346,96 @@ public abstract class CoatConfig {
   }
 
 
+  protected long getLong(final ConfigParam configParam) {
+    final String stringValue= this.props.get(configParam.key());
+    return Long.parseLong(stringValue);
+  }
+
+
+  protected long getLongOrDefault(final ConfigParam configParam) {
+    final String stringValue= this.props.get(configParam.key());
+    if (stringValue != null && !stringValue.trim().isEmpty()) {
+      return Long.parseLong(stringValue);
+    } else {
+      return Long.parseLong(configParam.defaultValue());
+    }
+  }
+
+
+  protected OptionalLong getOptionalLong(final ConfigParam configParam) {
+    final String stringValue= this.props.get(configParam.key());
+    if (stringValue != null && !stringValue.trim().isEmpty()) {
+      final long value= Long.parseLong(stringValue);
+      return OptionalLong.of(value);
+    } else {
+      return OptionalLong.empty();
+    }
+  }
+
+
+  /**
+   *
+   * @param configParam
+   * @return
+   * @deprecated A parameter that is optional _and_ has a default value does not make sense.
+   *             The optional will _never_ be null as it will at least contain the default value.
+   */
+  @Deprecated
+  protected OptionalLong getOptionalLongOrDefault(final ConfigParam configParam) {
+    final String stringValue= this.props.get(configParam.key());
+    if (stringValue != null && !stringValue.trim().isEmpty()) {
+      return OptionalLong.of(Long.parseLong(stringValue));
+    } else {
+      return OptionalLong.of(Long.parseLong(configParam.defaultValue()));
+    }
+  }
+
+
+  protected double getDouble(final ConfigParam configParam) {
+    final String stringValue= this.props.get(configParam.key());
+    return Double.parseDouble(stringValue);
+  }
+
+
+  protected double getDoubleOrDefault(final ConfigParam configParam) {
+    final String stringValue= this.props.get(configParam.key());
+    if (stringValue != null && !stringValue.trim().isEmpty()) {
+      return Double.parseDouble(stringValue);
+    } else {
+      return Double.parseDouble(configParam.defaultValue());
+    }
+  }
+
+
+  protected OptionalDouble getOptionalDouble(final ConfigParam configParam) {
+    final String stringValue= this.props.get(configParam.key());
+    if (stringValue != null && !stringValue.trim().isEmpty()) {
+      final double value= Double.parseDouble(stringValue);
+      return OptionalDouble.of(value);
+    } else {
+      return OptionalDouble.empty();
+    }
+  }
+
+
+  /**
+   *
+   * @param configParam
+   * @return
+   * @deprecated A parameter that is optional _and_ has a default value does not make sense.
+   *             The optional will _never_ be null as it will at least contain the default value.
+   */
+  @Deprecated
+  protected OptionalDouble getOptionalDoubleOrDefault(final ConfigParam configParam) {
+    final String stringValue= this.props.get(configParam.key());
+    if (stringValue != null && !stringValue.trim().isEmpty()) {
+      return OptionalDouble.of(Double.parseDouble(stringValue));
+    } else {
+      return OptionalDouble.of(Double.parseDouble(configParam.defaultValue()));
+    }
+  }
+
+
   protected boolean getBoolean(final ConfigParam configParam) {
     final String value= this.props.get(configParam.key());
     if (value != null &&
@@ -409,21 +467,6 @@ public abstract class CoatConfig {
     }
   }
 
-//  protected boolean getBooleanOrDefault(final ConfigParam configParam, final String defaultValue) {
-//    final String value= this.props.getOrDefault(configParam.key(), defaultValue);
-//    if (value != null &&
-//      (value.trim().equals(1)
-//      || value.trim().equalsIgnoreCase("true")
-//      || value.trim().equalsIgnoreCase("yes"))) {
-//      return true;
-//    } else {
-//      // FIXME: Also define a set of valid "false" values?
-//      //        like: 0, "", null, no, false
-//      //        and throw ParsingException if anything other is contained
-//      return false;
-//    }
-//  }
-
 
   private <T> T convertValue(final String stringValue, final ConfigParam configParam) throws TypeConversionException {
     final Converter<?> converter= converters.get(configParam.type());
@@ -432,6 +475,36 @@ public abstract class CoatConfig {
     }
 
     return (T) converter.convert(stringValue);
+  }
+
+
+  private void convertPrimitive(final String stringValue, final ConfigParam param) throws TypeConversionException {
+    if (param.type().equals(int.class)) {
+      try {
+        Integer.parseInt(stringValue);
+      } catch (NumberFormatException ex) {
+        throw new TypeConversionException("Error converting value to int", ex);
+      }
+    } else if (param.type().equals(long.class)) {
+      try {
+        Long.parseLong(stringValue);
+      } catch (NumberFormatException ex) {
+        throw new TypeConversionException("Error converting value to long", ex);
+      }
+    } else if (param.type().equals(double.class)) {
+      try {
+        Double.parseDouble(stringValue);
+      } catch (NumberFormatException ex) {
+        throw new TypeConversionException("Error converting value to double", ex);
+      }
+    } else if (param.type().equals(boolean.class)) {
+      // boolean values are always valid at the moment
+    }
+  }
+
+
+  private boolean isPrimitive(ConfigParam param) {
+    return !param.type().getName().contains(".");
   }
 
 
