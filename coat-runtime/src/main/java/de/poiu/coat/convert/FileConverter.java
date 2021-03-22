@@ -19,7 +19,7 @@ import java.io.File;
 
 
 /**
- * Converts a String into a <code>File</code> object.
+ * Converts an input String into a {@link File}.
  * <p>
  * No checks will be done on the existance, readability, etc. of the file.
  *

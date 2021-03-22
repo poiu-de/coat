@@ -25,8 +25,11 @@ package de.poiu.coat.annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
+/**
+ * Container annotation for different concrete annotations supported by Coat.
+ * 
+ */
 public @interface Coat {
-
 
   /**
    * All config interfaces that should be processed by Coat <i>must</i> be annotated with <code>@Coat.Config</code>.
@@ -52,7 +55,9 @@ public @interface Coat {
   /**
    * Each accessor method in a <code>@Coat.Config</code> annotated interface <i>must</i> be annotated with <code>@Coat.Param</code>.
    * <p>
-   * TODO
+   * The option {@link #key()} specifies the config key as it is used in the config file.
+   * <p>
+   * The option {@link #defaultValue()} may be specified to provide a default value in case no value is assigned to this parameter in the config file.
    *
    */
   @Target(ElementType.METHOD)

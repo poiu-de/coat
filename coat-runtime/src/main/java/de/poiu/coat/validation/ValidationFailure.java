@@ -19,7 +19,10 @@ import java.util.Objects;
 
 
 /**
- *
+ * ValidationFailure encapsulates a validation failure for a single config value.
+ * <p>
+ * The information about the failure is a human readable String that can be accessed via
+ * {@link #toString()}.
  */
 public class ValidationFailure {
 

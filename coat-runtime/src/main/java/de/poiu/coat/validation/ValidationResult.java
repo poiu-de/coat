@@ -20,28 +20,58 @@ import java.util.Set;
 
 
 /**
+ * The result of calling {@link de.poiu.coat.CoatConfig#validate()} in case validation fails.
+ * <p>
+ * The thrown exception will always contain an instance of this class.
+ * <p>
+ * A ValidationResult comprises a set of {@link ValidationFailure}s with a human readable
+ * representation of the actual failures.
  *
  */
 public class ValidationResult {
 
+  /** The validation failures */
   private final Set<ValidationFailure> validationFailures= new LinkedHashSet<>();
 
 
+  /**
+   * Adds a validation failure to this validation result.
+   *
+   * @param f the failure to add
+   */
   public void addValidationFailure(final ValidationFailure f) {
     this.validationFailures.add(f);
   }
 
 
+  /**
+   * Whether any validation failures occurred.
+   *
+   * @return whether any validation failures occurred
+   */
   public boolean hasFailures() {
     return !this.validationFailures.isEmpty();
   }
 
 
+  /**
+   * Returns the validation failures.
+   *
+   * @return the validation failures
+   */
   public Set<ValidationFailure> getValidationFailures() {
     return new LinkedHashSet<>(validationFailures);
   }
 
 
+  /**
+   * Prints a human readable presentation of this ValidationResult.
+   * <p>
+   * If validation failures occurred, these will be printed out in nicely formatted fashion,
+   * one failure per line.
+   *
+   * @return a human readable presentation of this ValidationResult
+   */
   @Override
   public String toString() {
     if (this.validationFailures.isEmpty()) {
@@ -55,7 +85,4 @@ public class ValidationResult {
       return sb.toString();
     }
   }
-
-
-
 }

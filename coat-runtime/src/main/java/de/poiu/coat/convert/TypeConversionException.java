@@ -17,7 +17,8 @@ package de.poiu.coat.convert;
 
 
 /**
- *
+ * An exception thrown by a {@link Converter} if the given input String cannot be converted
+ * into the corresponding type.
  */
 public class TypeConversionException extends Exception {
 

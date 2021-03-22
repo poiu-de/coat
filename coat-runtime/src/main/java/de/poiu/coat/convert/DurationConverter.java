@@ -21,7 +21,24 @@ import java.time.temporal.ChronoUnit;
 
 
 /**
+ * Converts an input String into a {@link Duration}.
+ * <p>
+ * The input string must be a number followed by an optional unit of measure.
+ * <p>
+ * The following units measures are supported:
+ * <dl>
+ *   <dt>ns</dt> <dd>Nanoseconds</dd>
+ *   <dt>ms</dt> <dd>Milliseconds</dd>
+ *   <dt>s</dt>  <dd>Seconds</dd>
+ *   <dt>m</dt>  <dd>Minutes</dd>
+ *   <dt>h</dt>  <dd>Hours</dd>
+ *   <dt>d</dt>  <dd>Days</dd>
+ * </dl>
  *
+ * For example {@code "25m"} would return a Duration of 25 Minutes.
+ *
+ * If no unit of measure is specified, the returned Duration will be in Milliseconds.
+ * 
  */
 public class DurationConverter implements Converter<Duration> {
   public Duration convert(final String s) throws TypeConversionException {

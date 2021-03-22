@@ -20,6 +20,9 @@ import java.nio.file.Path;
 
 
 /**
+ * Converts an input String into a {@link Path}.
+ * <p>
+ * No checks will be done on the existance, readability, etc. of the file.
  *
  */
 public class PathConverter implements Converter<Path> {

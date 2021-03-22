@@ -17,9 +17,12 @@ package de.poiu.coat.convert;
 
 
 /**
- * Converts a String into a String.
- *
+ * Converts an input String into a String.
+ * <p>
  * The only actual conversion is returning <code>null</code> for a non-null, but blank String.
+ * <p>
+ * This converter will never throw a {@code TypeConversionException} as converting a String into a
+ * String will always succeed.
  *
  */
 public class StringConverter implements Converter<String> {

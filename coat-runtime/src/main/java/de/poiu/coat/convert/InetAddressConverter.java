@@ -20,8 +20,9 @@ import java.net.UnknownHostException;
 
 
 /**
- * Converts a String into a <code>InetAddress</code> object.
- *
+ * Converts an input String into a {@link InetAddress}.
+ * <p>
+ * The same rules for the input string apply as for {@link InetAddress#getByName(java.lang.String)}.
  */
 public class InetAddressConverter implements Converter<InetAddress> {
 

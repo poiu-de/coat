@@ -20,6 +20,10 @@ import java.time.format.DateTimeParseException;
 
 
 /**
+ * Converts an input String to to a {@link LocalDate}.
+ * <p>
+ * The same rules for the input string apply as for {@link LocalDate#parse(java.lang.CharSequence)}.
+ * Therefore it must be given in ISO format such as 2020-12-31.
  *
  */
 public class LocalDateConverter implements Converter<LocalDate> {

@@ -17,7 +17,16 @@ package de.poiu.coat.validation;
 
 
 /**
+ * An exception that is thrown if a parsed CoatConfig cannot be validated.
+ * <p>
+ * Possible error cases are
+ * <ul>
+ *   <li>missing mandatory config values</li>
+ *   <li>config values that cannot be converted to their specified type</li>
+ * </ul>
  *
+ * This exception will always have an instance of {@link ValidationResult} that can be accessed via
+ * {@link #getValidationResult()} to get more details of the actual validation failures.
  */
 public class ConfigValidationException extends Exception {
 

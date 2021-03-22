@@ -20,6 +20,9 @@ import java.security.NoSuchAlgorithmException;
 
 
 /**
+ * Converts an input String to to a {@link MessageDigest}.
+ * <p>
+ * The same rules for the input string apply as for {@link MessageDigest#getInstance(java.lang.String)}.
  *
  */
 public class MessageDigestConverter implements Converter<MessageDigest> {

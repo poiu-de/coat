@@ -25,7 +25,7 @@ public interface Converter<T> {
   /**
    * Convert the given String <code>s</code> into type <code>T</code>.
    *
-   * If <code>s</code> is <code>null</code> or an empty, this method should usually return null.
+   * If <code>s</code> is <code>null</code> or an empty String, this method should usually return <code>null</code>.
    * <p>
    * If the input cannot be converted, a <code>TypeConversionException</code> must be thrown.
    *

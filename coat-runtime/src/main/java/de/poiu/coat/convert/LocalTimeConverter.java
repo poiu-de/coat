@@ -20,6 +20,10 @@ import java.time.format.DateTimeParseException;
 
 
 /**
+ * Converts an input String to to a {@link LocalTime}.
+ * <p>
+ * The same rules for the input string apply as for {@link LocalTime#parse(java.lang.CharSequence)}.
+ * Therefore it must be given in ISO-8601 format such as 18:00:30.
  *
  */
 public class LocalTimeConverter implements Converter<LocalTime> {

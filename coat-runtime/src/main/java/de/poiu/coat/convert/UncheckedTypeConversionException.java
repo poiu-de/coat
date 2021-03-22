@@ -19,6 +19,10 @@ import java.util.Objects;
 
 
 /**
+ * An exception thrown by a {@link Converter} if the given input String cannot be converted
+ * into the corresponding type.
+ * <p>
+ * This is an uncecked exception than can be used to wrap instances of {@link TypeConversionException}.
  *
  */
 public class UncheckedTypeConversionException extends RuntimeException {

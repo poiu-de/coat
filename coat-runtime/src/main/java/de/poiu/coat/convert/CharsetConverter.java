@@ -19,6 +19,9 @@ import java.nio.charset.Charset;
 
 
 /**
+ * Converts an input String to a {@link Charset}.
+ * <p>
+ * The same rules for the input string apply as for {@link Charset#forName(java.lang.String)}.
  *
  */
 public class CharsetConverter implements Converter<Charset> {

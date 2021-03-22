@@ -57,6 +57,10 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.type.TypeKind.DECLARED;
 
 
+/**
+ * The actual annotation processor of Coat.
+ *
+ */
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedAnnotationTypes(
   "de.poiu.coat.annotation.Coat.Config"
@@ -304,6 +308,7 @@ public class CoatProcessor extends AbstractProcessor {
       return typeName;
     }
   }
+
 
   private void addAccessorMethod(final TypeSpec.Builder typeSpecBuilder, final Element annotatedMethod, final ClassName fqEnumName) {
 
