@@ -15,13 +15,16 @@
  */
 package de.poiu.coat.example;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 
 public class ExampleApp {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     final Map<String, String> props= new HashMap<>();
     props.put("mandatoryString",     "someValue");
     props.put("optionalInt",         "42");
@@ -47,6 +50,14 @@ public class ExampleApp {
       System.out.println(c.optionalInt());
       System.out.println(c.charsetWithDefault());
       System.out.println(c.optionalInetAddress());
+    }
+
+    {
+      final File propertiesFile= File.createTempFile("coat", ".properties");
+      try(final FileWriter fw= new FileWriter(propertiesFile);) {
+        TheOtherConfig.writeExampleConfig(fw);
+        System.out.println("Example config written to: " + propertiesFile.getAbsolutePath());
+      }
     }
   }
 }

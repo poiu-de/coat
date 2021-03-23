@@ -27,8 +27,10 @@ import com.squareup.javapoet.TypeSpec;
 import de.poiu.coat.CoatConfig;
 import de.poiu.coat.ConfigParam;
 import de.poiu.coat.annotation.Coat;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.Writer;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
@@ -56,6 +58,7 @@ import static java.util.stream.Collectors.toList;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
+import static javax.lang.model.element.Modifier.STATIC;
 import static javax.lang.model.type.TypeKind.DECLARED;
 
 
@@ -235,6 +238,8 @@ public class CoatProcessor extends AbstractProcessor {
     for (final Element annotatedMethod : annotatedMethods) {
       this.addAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
     }
+    
+    this.addWriteExampleConfigMethod(typeSpecBuilder, annotatedMethods);
 
     JavaFile.builder(fqClassName.packageName(), typeSpecBuilder.build())
       .build()
@@ -301,6 +306,30 @@ public class CoatProcessor extends AbstractProcessor {
     }
 
     typeSpecBuilder.addEnumConstant(constName, enumConstBuilder.build());
+  }
+
+
+  private void addWriteExampleConfigMethod(final TypeSpec.Builder typeSpecBuilder, final List<Element> annotatedMethod) {
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("writeExampleConfig")
+        .addModifiers(PUBLIC, STATIC)
+        .addParameter(TypeName.get(Writer.class), "writer", FINAL)
+        .addStatement("writeExampleConfig(new $T(writer))", BufferedWriter.class)
+        .addException(IOException.class)
+        .build());
+
+    final String exampleContent= this.createExampleContent(annotatedMethod);
+
+    final MethodSpec.Builder methodBuilder= MethodSpec.methodBuilder("writeExampleConfig");
+    methodBuilder
+      .addModifiers(PUBLIC, STATIC)
+      .addParameter(TypeName.get(BufferedWriter.class), "writer", FINAL)
+      .addStatement("writer.append($S)", exampleContent)
+      .addStatement("writer.flush()")
+      .addException(IOException.class)
+      ;
+
+    typeSpecBuilder.addMethod(methodBuilder.build());
   }
 
 
@@ -468,6 +497,10 @@ public class CoatProcessor extends AbstractProcessor {
 
 
   protected static String stripBlockTagsFromJavadoc(final String javadoc) {
+    if (javadoc == null) {
+      return "";
+    }
+
     final StringBuilder sb= new StringBuilder();
 
     javadoc.lines()
@@ -475,6 +508,33 @@ public class CoatProcessor extends AbstractProcessor {
       .map(s -> s + '\n')
       .forEachOrdered(sb::append)
       ;
+
+    return sb.toString();
+  }
+
+
+  private String createExampleContent(final List<Element> annotatedMethods) {
+    final StringBuilder sb= new StringBuilder();
+
+    for (final Element annotatedMethod : annotatedMethods) {
+      final ConfigParamSpec configParamSpec= ConfigParamSpec.from(annotatedMethod);
+
+      // add javadoc as comment
+      final String javadoc = super.processingEnv.getElementUtils().getDocComment(annotatedMethod);
+      this.stripBlockTagsFromJavadoc(javadoc)
+        .lines()
+        .map(s -> "## " + s + "\n")
+        .forEachOrdered(sb::append);
+
+      // add a config key
+      if (!configParamSpec.mandatory() || (configParamSpec.defaultValue() != null && !configParamSpec.defaultValue().trim().isEmpty())) {
+        // commented out if optional or has default value
+        sb.append("# ");
+      }
+      sb.append(configParamSpec.key()).append(" = ");
+      sb.append(configParamSpec.defaultValue() != null ? configParamSpec.defaultValue() : "");
+      sb.append("\n\n");
+    }
 
     return sb.toString();
   }
