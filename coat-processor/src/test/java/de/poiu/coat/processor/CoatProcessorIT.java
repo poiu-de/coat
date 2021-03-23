@@ -669,6 +669,35 @@ public class CoatProcessorIT {
   }
 
 
+  @Test
+  public void testStripBlockTagsFromJavadoc() {
+    final String javadoc = ""
+      + " bla bla dumdidum\n"
+      + " lalala oo jaja {@code somecode}\n"
+      + " {@link Class#method()} blubb\n"
+      + "\n"
+      + " sometext\n"
+      + "<p>\n"
+      + " moretext\n"
+      + "\n"
+      + " @see OtherClass\n"
+      + " @param p1\n"
+      + " @param p2 with some description\n"
+      + " @return an intersting value\n"
+      + " @throws RuntimeException if something goes wrong";
+
+    assertThat(CoatProcessor.stripBlockTagsFromJavadoc(javadoc))
+      .isEqualTo(""
+      + " bla bla dumdidum\n"
+      + " lalala oo jaja {@code somecode}\n"
+      + " {@link Class#method()} blubb\n"
+      + "\n"
+      + " sometext\n"
+      + "<p>\n"
+      + " moretext\n"
+      + "\n"
+      + "");
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   // Helper classes an methods

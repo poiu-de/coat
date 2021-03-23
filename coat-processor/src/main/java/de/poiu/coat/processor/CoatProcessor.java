@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Processor;
@@ -50,6 +51,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic.Kind;
 
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
@@ -67,6 +69,8 @@ import static javax.lang.model.type.TypeKind.DECLARED;
 )
 @AutoService(Processor.class)
 public class CoatProcessor extends AbstractProcessor {
+
+  private static final Pattern PATTERN_JAVADOC_BLOCK_TAG = Pattern.compile("^\\s*@.*");
 
 
   @Override
@@ -280,15 +284,23 @@ public class CoatProcessor extends AbstractProcessor {
 
     final String constName= this.toConstName(configParamSpec.methodeName());
 
-    typeSpecBuilder.addEnumConstant(constName,
+    TypeSpec.Builder enumConstBuilder =
       TypeSpec.anonymousClassBuilder("$S, $L.class, $S, $L",
                                      configParamSpec.key(),
                                      toBaseType(configParamSpec.typeName()),
                                      configParamSpec.defaultValue() != null && !configParamSpec.defaultValue().trim().isEmpty()
-                                       ? configParamSpec.defaultValue()
-                                       : null,
-                                     configParamSpec.mandatory())
-        .build());
+                                                                       ? configParamSpec.defaultValue()
+                                                                       : null,
+                                     configParamSpec.mandatory());
+
+
+
+    final String javadoc= super.processingEnv.getElementUtils().getDocComment(annotatedMethod);
+    if (javadoc != null) {
+      enumConstBuilder.addJavadoc(stripBlockTagsFromJavadoc(javadoc));
+    }
+
+    typeSpecBuilder.addEnumConstant(constName, enumConstBuilder.build());
   }
 
 
@@ -452,5 +464,18 @@ public class CoatProcessor extends AbstractProcessor {
     } catch (ClassNotFoundException ex) {
       return null;
     }
+  }
+
+
+  protected static String stripBlockTagsFromJavadoc(final String javadoc) {
+    final StringBuilder sb= new StringBuilder();
+
+    javadoc.lines()
+      .takeWhile(not(PATTERN_JAVADOC_BLOCK_TAG.asMatchPredicate()))
+      .map(s -> s + '\n')
+      .forEachOrdered(sb::append)
+      ;
+
+    return sb.toString();
   }
 }
