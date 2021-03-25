@@ -52,6 +52,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic.Kind;
+import javax.tools.FileObject;
 
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
@@ -105,6 +106,9 @@ public class CoatProcessor extends AbstractProcessor {
 
       final ClassName fqGeneratedClassName= this.deriveGeneratedClassName(annotatedInterface);
       this.generateClassCode(fqGeneratedClassName, fqGeneratedEnumName, annotatedInterface, processingEnv.getFiler());
+
+      final String exampleFileName= annotatedInterface.getSimpleName().toString() + ".properties";
+      this.generateExampleFile(exampleFileName, annotatedInterface, processingEnv.getFiler());
     } catch (IOException ex) {
       processingEnv.getMessager().printMessage(Kind.ERROR,
                                                String.format("Error generating code for %s.", annotatedInterface));
@@ -238,7 +242,7 @@ public class CoatProcessor extends AbstractProcessor {
     for (final Element annotatedMethod : annotatedMethods) {
       this.addAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
     }
-    
+
     this.addWriteExampleConfigMethod(typeSpecBuilder, annotatedMethods);
 
     JavaFile.builder(fqClassName.packageName(), typeSpecBuilder.build())
@@ -537,5 +541,20 @@ public class CoatProcessor extends AbstractProcessor {
     }
 
     return sb.toString();
+  }
+
+
+  private void generateExampleFile(final String exampleFileName, final TypeElement annotatedInterface, final Filer filer) throws IOException {
+    final List<Element> annotatedMethods= annotatedInterface.getEnclosedElements().stream()
+      .filter(e -> e.getKind() == ElementKind.METHOD)
+      .filter(e -> e.getAnnotation(Coat.Param.class) != null)
+      .collect(toList());
+
+    annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
+
+    final FileObject resource = filer.createResource(javax.tools.StandardLocation.CLASS_OUTPUT, "examples", exampleFileName, annotatedInterface);
+    try (final Writer w= resource.openWriter();) {
+      w.write(this.createExampleContent(annotatedMethods));
+    }
   }
 }
