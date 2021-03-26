@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
 
 /**
  * Container annotation for different concrete annotations supported by Coat.
- * 
+ *
  */
 public @interface Coat {
 
@@ -64,6 +64,13 @@ public @interface Coat {
   public @interface Param {
     public String  key()           ;
     public String  defaultValue()  default  "";
+  }
+
+
+  @Target(ElementType.METHOD)
+  public @interface Embedded {
+    public String  key()           ;
+    public String  keySeparator()  default  ".";
   }
 
 }

@@ -20,6 +20,7 @@ import com.google.testing.compile.CompilationSubject;
 import com.google.testing.compile.JavaFileObjects;
 import de.poiu.coat.CoatConfig;
 import de.poiu.coat.validation.ConfigValidationException;
+import de.poiu.coat.validation.ImmutableValidationFailure;
 import de.poiu.coat.validation.ValidationFailure;
 import de.poiu.coat.validation.ValidationResult;
 import java.io.IOException;
@@ -34,9 +35,11 @@ import java.util.OptionalInt;
 import java.util.stream.Stream;
 import javax.tools.JavaFileObject;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.google.testing.compile.Compiler.javac;
+import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
@@ -48,6 +51,13 @@ import static org.assertj.core.api.Assertions.catchThrowable;
  *
  */
 public class CoatProcessorIT {
+
+  private ByteClassLoader byteClassLoader;
+
+  @BeforeEach
+  public void setUp() {
+    this.byteClassLoader= new ByteClassLoader(this.getClass().getClassLoader());
+  }
 
 
   /**
@@ -220,7 +230,11 @@ public class CoatProcessorIT {
 
     this.assertResult(instance, "mandatoryString", null);
 
-    this.assertValidationErrors(instance, "Mandatory value for \"mandatoryString\" is missing.");
+    this.assertValidationErrors(instance,
+                                ImmutableValidationFailure.builder()
+                                  .failureType(MISSING_MANDATORY_VALUE)
+                                  .key("mandatoryString")
+                                  .build());
   }
 
 
@@ -551,7 +565,7 @@ public class CoatProcessorIT {
 
 
   /**
-   * Test the implementation of a Coat config interface that inherits from another Coar config interface.
+   * Test the implementation of a Coat config interface that inherits from another Coat config interface.
    */
   @Test
   public void testInheritedConfig() throws Exception {
@@ -669,9 +683,216 @@ public class CoatProcessorIT {
   }
 
 
+  /**
+   * Test the implementation of a Coat config interface that embeds another Coat config interface.
+   */
+  @Test
+  public void testEmbeddedConfig() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\", defaultValue = \"embedded default\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\", defaultValue = \"some default\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public EmbeddedConfig embedded();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.MainConfig",
+                                "com.example.MainConfigParam",
+                                "com.example.ImmutableMainConfig",
+                                "com.example.EmbeddedConfig",
+                                "com.example.EmbeddedConfigParam",
+                                "com.example.ImmutableEmbeddedConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+
+    this.assertMethods(generatedEmbeddedClass, "embeddedParam");
+    this.assertMethods(generatedConfigClass, "someParam", "embedded");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      // no values are explicitly set
+      "someParam",              "some value",
+      "embedded.embeddedParam", "embedded value",
+      "irrelevant key",         "irrelevant value"
+    ));
+
+    this.assertResult(instance, "someParam", "some value");
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "embedded value"));
+    this.assertResult(instance, "embedded", expectedEmbedded);
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test the implementation of a Coat config interface that embeds another Coat config interface
+   * which itself embeds yet another Coat config interface.
+   */
+  @Test
+  public void testDeeplyEmbeddedConfig() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.DeeplyEmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface DeeplyEmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"deeplyEmbeddedParam\")" +
+            "\n" + "  public String deeplyEmbeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"deeplyEmbedded\", keySeparator= \".\")" +
+            "\n" + "  public DeeplyEmbeddedConfig deeplyEmbedded();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public EmbeddedConfig embedded();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.MainConfig",
+                                "com.example.MainConfigParam",
+                                "com.example.ImmutableMainConfig",
+                                "com.example.EmbeddedConfig",
+                                "com.example.EmbeddedConfigParam",
+                                "com.example.DeeplyEmbeddedConfig",
+                                "com.example.DeeplyEmbeddedConfigParam",
+                                "com.example.ImmutableEmbeddedConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedDeeplyEmbeddedClass= this.loadClass("com.example.ImmutableDeeplyEmbeddedConfig", compilation);
+
+    this.assertMethods(generatedConfigClass, "someParam", "embedded");
+    this.assertMethods(generatedEmbeddedClass, "embeddedParam", "deeplyEmbedded");
+    this.assertMethods(generatedDeeplyEmbeddedClass, "deeplyEmbeddedParam");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+
+    // test good path
+    {
+      final Object instance = this.createInstance(generatedConfigClass, mapOf(
+        // no values are explicitly set
+        "someParam",                                   "some value",
+        "embedded.embeddedParam",                      "embedded value",
+        "embedded.deeplyEmbedded.deeplyEmbeddedParam", "deeply embedded value",
+        "irrelevant key",                              "irrelevant value"
+      ));
+
+      this.assertResult(instance, "someParam", "some value");
+      final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of(
+        "embeddedParam", "embedded value",
+        "deeplyEmbedded.deeplyEmbeddedParam", "deeply embedded value"
+      ));
+
+      this.assertResult(instance, "embedded", expectedEmbedded);
+
+      this.assertNoValidationErrors(instance);
+    }
+
+    // test missing embedded values
+    {
+      final Object instance = this.createInstance(generatedConfigClass, mapOf(
+        // no values are explicitly set
+        "someParam",              "some value",
+        // the embedded value is missing
+        "irrelevant key",         "irrelevant value"
+      ));
+
+      this.assertResult(instance, "someParam", "some value");
+      final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of());
+      this.assertResult(instance, "embedded", expectedEmbedded);
+
+      this.assertValidationErrors(instance,
+                                  ImmutableValidationFailure.builder()
+                                    .failureType(MISSING_MANDATORY_VALUE)
+                                    .key("embedded.embeddedParam")
+                                    .build(),
+                                  ImmutableValidationFailure.builder()
+                                    .failureType(MISSING_MANDATORY_VALUE)
+                                    .key("embedded.deeplyEmbedded.deeplyEmbeddedParam")
+                                    .build()
+      );
+    }
+  }
+
+
 
   ////////////////////////////////////////////////////////////////////////////////
-  // Helper classes an methods
+  // Helper classes and methods
   //
 
   /**
@@ -716,7 +937,7 @@ public class CoatProcessorIT {
    * @throws IOException if reading the class failed
    */
   private Class<?> loadClass(final String fqClassName, final Compilation compilation) throws ClassNotFoundException, IOException {
-    final ByteClassLoader byteClassLoader= new ByteClassLoader(this.getClass().getClassLoader());
+
 
     for (final JavaFileObject jfo : compilation.generatedFiles()) {
       try (final InputStream stream= jfo.openInputStream();) {
@@ -784,6 +1005,11 @@ public class CoatProcessorIT {
    */
   private void assertResult(final Object instance, final String methodName, final Object expectedResult) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     final Object actualResult = instance.getClass().getMethod(methodName).invoke(instance);
+    System.out.println("--------------- exp --------------");
+    System.out.println(expectedResult);
+    System.out.println("--------------- act --------------");
+    System.out.println(actualResult);
+    System.out.println("--------------- end --------------");
     if (expectedResult != null) {
       assertThat(actualResult).isEqualTo(expectedResult);
     } else {
@@ -794,7 +1020,8 @@ public class CoatProcessorIT {
 
   /**
    * Assert that the <code>generatedConfigClass</code> contains all methods of the given
-   * <code>methodNames</code> plus the two delegate methods "toString()" and "validate()".
+   * <code>methodNames</code> plus the two delegate methods "toString()" and "validate()"
+   * and the generated methods "equals()" and "hashCode()".
    * @param generatedConfigClass the class to check
    * @param methodNames the names of the methods to assert
    */
@@ -802,6 +1029,8 @@ public class CoatProcessorIT {
     assertThat(
       Stream.of(generatedConfigClass.getDeclaredMethods())
         .map(Method::getName))
+      .filteredOn(n -> !n.equals("equals"))
+      .filteredOn(n -> !n.equals("hashCode"))
       .containsExactlyInAnyOrder(
         methodNames
       );
@@ -813,12 +1042,13 @@ public class CoatProcessorIT {
    * @param instance the instance to call <code>validate()</code> on
    * @param validationFailureMessages the expected validation failure messages
    */
-  private void assertValidationErrors(final Object instance, final String... validationFailureMessages) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException {
+  private void assertValidationErrors(final Object instance, final ValidationFailure... validationFailureMessages) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException {
     final Throwable thrown = catchThrowable(() ->
       instance.getClass().getMethod("validate").invoke(instance)
     );
 
     assertThat(thrown)
+      .as("assert ValidationErrors")
       .isInstanceOf(InvocationTargetException.class)
       .hasCauseExactlyInstanceOf(ConfigValidationException.class)
       ;
@@ -827,9 +1057,8 @@ public class CoatProcessorIT {
     final ValidationResult result= validationException.getValidationResult();
 
     assertThat(result.hasFailures()).isTrue();
-    assertThat(result.getValidationFailures().stream()
-      .map(ValidationFailure::toString)
-    ).containsExactlyInAnyOrder(validationFailureMessages);
+    assertThat(result.validationFailures())
+      .containsExactlyInAnyOrder(validationFailureMessages);
   }
 
 

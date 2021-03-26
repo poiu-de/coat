@@ -15,6 +15,9 @@
  */
 package de.poiu.coat.example;
 
+import de.poiu.coat.example.embedded.ImmutableMainConfig;
+import de.poiu.coat.example.manual.ImmutableDummyConfig;
+import de.poiu.coat.validation.ConfigValidationException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +50,49 @@ public class ExampleApp {
       System.out.println(c.optionalInt());
       System.out.println(c.charsetWithDefault());
       System.out.println(c.optionalInetAddress());
+    }
+
+    {
+      System.out.println("\n-------\n");
+      final Map<String, String> p= new HashMap<>();
+      p.put("mqtt.host",     "localhost");
+      p.put("lofoName",         "lofo_burps");
+      final ImmutableDummyConfig c= new ImmutableDummyConfig(p);
+      System.out.println(c.lofoName());
+      System.out.println(c.mqtt());
+      System.out.println("->");
+      System.out.println(c);
+
+      try {
+        c.validate();
+      } catch (ConfigValidationException ex) {
+        ex.printStackTrace();
+      }
+    }
+
+    {
+      System.out.println("\n**************************\n");
+      final Map<String, String> p= new HashMap<>();
+      p.put("someParam",                                   "some value");
+      p.put("embedded.embeddedParam",                      "embedded value");
+      p.put("embedded.deeplyEmbedded.deeplyEmbeddedParam", "deeply embedded value");
+      p.put("irrelevant key",                              "irrelevant value");
+      p.put("einfachso.deeplyEmbeddedParam",               "ei guck!");
+      final ImmutableMainConfig c= new ImmutableMainConfig(p);
+
+      System.out.println("\nCCC "+ c);
+      System.out.println("");
+      try {
+        c.validate();
+      } catch (ConfigValidationException ex) {
+        ex.printStackTrace();
+      }
+      System.out.println("\n" + c.someParam());
+      System.out.println("\n" + c.einfachso().deeplyEmbeddedParam());
+      System.out.println(c.embedded().embeddedParam());
+      System.out.println(c.embedded().deeplyEmbedded().deeplyEmbeddedParam());
+      System.out.println("________");
+      System.out.println(c);
     }
   }
 }

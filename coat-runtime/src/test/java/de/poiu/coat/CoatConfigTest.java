@@ -16,13 +16,15 @@
 package de.poiu.coat;
 
 import de.poiu.coat.validation.ConfigValidationException;
+import de.poiu.coat.validation.ImmutableValidationFailure;
 import de.poiu.coat.validation.ValidationFailure;
 import de.poiu.coat.validation.ValidationResult;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
+import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -43,13 +45,15 @@ public class CoatConfigTest {
     private final Class<?> type;
     private final String defaultValue;
     private final boolean mandatory;
+    private final boolean embedded;
 
 
-    public ParamImpl(String key, Class<?> type, String defaultValue, boolean mandatory) {
+    public ParamImpl(String key, Class<?> type, String defaultValue, boolean mandatory, boolean embedded) {
       this.key = key;
       this.type = type;
       this.defaultValue = defaultValue;
       this.mandatory = mandatory;
+      this.embedded = embedded;
     }
 
 
@@ -75,6 +79,12 @@ public class CoatConfigTest {
     public boolean mandatory() {
       return this.mandatory;
     }
+
+
+    @Override
+    public boolean embedded() {
+      return this.embedded;
+    }
   }
 
 
@@ -88,9 +98,9 @@ public class CoatConfigTest {
   public void testValidate_missingKey() throws Exception {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, true);
-    final ConfigParam p2= new ParamImpl("key2", String.class, null, true);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, true, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, null, true, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, false, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1")
@@ -111,8 +121,11 @@ public class CoatConfigTest {
     final ConfigValidationException ex= (ConfigValidationException) thrown;
     final ValidationResult result= ex.getValidationResult();
     assertThat(result.hasFailures()).isTrue();
-    assertThat(result.getValidationFailures()).containsExactlyInAnyOrder(
-      new ValidationFailure("Mandatory value for \"key2\" is missing.")
+    assertThat(result.validationFailures()).containsExactlyInAnyOrder(
+      ImmutableValidationFailure.builder()
+        .failureType(MISSING_MANDATORY_VALUE)
+        .key("key2")
+        .build()
     );
   }
 
@@ -121,9 +134,9 @@ public class CoatConfigTest {
   public void testValidate_parseError() throws Exception {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", int.class,    null, true);
-    final ConfigParam p2= new ParamImpl("key2", int.class,    null, true);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", int.class,    null, true, false);
+    final ConfigParam p2= new ParamImpl("key2", int.class,    null, true, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, false, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "55",
@@ -145,8 +158,13 @@ public class CoatConfigTest {
     final ConfigValidationException ex= (ConfigValidationException) thrown;
     final ValidationResult result= ex.getValidationResult();
     assertThat(result.hasFailures()).isTrue();
-    assertThat(result.getValidationFailures()).containsExactlyInAnyOrder(
-      new ValidationFailure("Config value for \"key2\" cannot be convert to type \"int\": dummy")
+    assertThat(result.validationFailures()).containsExactlyInAnyOrder(
+      ImmutableValidationFailure.builder()
+        .failureType(UNPARSABLE_VALUE)
+        .key("key2")
+        .type("int")
+        .value("dummy")
+        .build()
     );
   }
 
@@ -155,9 +173,9 @@ public class CoatConfigTest {
   public void testGet_String() {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, false);
-    final ConfigParam p2= new ParamImpl("key2", String.class, null, false);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, false, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, null, false, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, false, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1", "key2", "val2")
@@ -179,9 +197,9 @@ public class CoatConfigTest {
   public void testGet_ConfigParam() {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, false);
-    final ConfigParam p2= new ParamImpl("key2", String.class, null, false);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, false, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, null, false, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, false, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1", "key2", "val2")
@@ -203,9 +221,9 @@ public class CoatConfigTest {
   public void testGetOptional() {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, false);
-    final ConfigParam p2= new ParamImpl("key2", String.class, null, false);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, false, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, null, false, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, false, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1", "key2", "val2")
@@ -227,9 +245,9 @@ public class CoatConfigTest {
   public void testGetOrDefault() {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, false);
-    final ConfigParam p2= new ParamImpl("key2", String.class, "default2", false);
-    final ConfigParam p3= new ParamImpl("key3", String.class, "default3", false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, false, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, "default2", false, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, "default3", false, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1", "key2", "val2")

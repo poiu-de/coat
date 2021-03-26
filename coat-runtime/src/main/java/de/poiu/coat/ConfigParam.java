@@ -28,4 +28,6 @@ public interface ConfigParam {
   public String  defaultValue();
 
   public boolean mandatory();
+
+  public boolean embedded();
 }

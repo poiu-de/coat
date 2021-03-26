@@ -28,6 +28,36 @@ import org.immutables.value.Value;
 @Value.Immutable
 abstract class ConfigParamSpec {
 
+  private static class Either {
+    private final Coat.Param coatParam;
+    private final Coat.Embedded coatEmbedded;
+
+    private Either(final Coat.Param coatParam, final Coat.Embedded coatEmbedded) {
+      if ((coatParam == null && coatEmbedded == null)
+        || (coatParam != null && coatEmbedded != null)){
+        throw new IllegalArgumentException("Exactly one of coatParam or coatEmbedded must be non-null");
+      }
+      this.coatParam= coatParam;
+      this.coatEmbedded= coatEmbedded;
+    }
+
+    public static Either of(final Coat.Param param) {
+      return new Either(param, null);
+    }
+    public static Either of(final Coat.Embedded embedded) {
+      return new Either(null, embedded);
+    }
+
+    public Coat.Param param() {
+      return this.coatParam;
+    }
+
+    public Coat.Embedded embedded() {
+      return this.coatEmbedded;
+    }
+  }
+
+
   public abstract ExecutableElement   annotatedMethod();
 
   public abstract String              methodeName();
@@ -40,18 +70,21 @@ abstract class ConfigParamSpec {
 
   public abstract boolean             mandatory();
 
+  public abstract boolean             embedded();
+
 
   public static ConfigParamSpec from(final Element annotatedMethod) {
     final ExecutableElement executableAnnotatedMethod = (ExecutableElement) annotatedMethod;
-    final Coat.Param        coatParamAnnotation       = assertAnnotation(executableAnnotatedMethod);
+    final Either            coatAnnotation            = assertAnnotation(executableAnnotatedMethod);
 
     final TypeMirror returnTypeMirror = executableAnnotatedMethod.getReturnType();
 
     final String methodName   = executableAnnotatedMethod.getSimpleName().toString();
-    final String key          = coatParamAnnotation.key();
-    final String defaultValue = coatParamAnnotation.defaultValue();
+    final String key          = getKeyFrom(coatAnnotation);
+    final String defaultValue = getDefaultValueFrom(coatAnnotation);
     final String typeName     = returnTypeMirror.toString(); // FIXME: Should be TypeMirror?
     final boolean isMandatory = !isOptional(typeName) && defaultValue != null;
+    final boolean isEmbedded  = coatAnnotation.coatEmbedded != null;
 
     return ImmutableConfigParamSpec.builder()
       .annotatedMethod(executableAnnotatedMethod)
@@ -60,24 +93,49 @@ abstract class ConfigParamSpec {
       .typeName(typeName)
       .defaultValue(defaultValue)
       .mandatory(isMandatory)
+      .embedded(isEmbedded)
       .build();
   }
 
 
-  private static Coat.Param assertAnnotation(final ExecutableElement annotatedMethod) {
-    final Coat.Param[] annotationsByType = annotatedMethod.getAnnotationsByType(Coat.Param.class);
+  private static Either assertAnnotation(final ExecutableElement annotatedMethod) {
+    final Coat.Param[] paramAnnotations = annotatedMethod.getAnnotationsByType(Coat.Param.class);
+    final Coat.Embedded[] embeddedAnnotations = annotatedMethod.getAnnotationsByType(Coat.Embedded.class);
 
-    if (annotationsByType.length == 0) {
-      throw new RuntimeException("Needs to be annotated with @Coat.Param: " + annotatedMethod);
-    } else if (annotationsByType.length > 1) {
+    if (paramAnnotations.length == 0 && embeddedAnnotations.length == 0) {
+      throw new RuntimeException("Needs to be annotated with either @Coat.Param or @Coat.Embedded: " + annotatedMethod);
+    } else if (paramAnnotations.length > 1) {
       throw new RuntimeException("Only 1 @Coat.Param annotation allowed: " + annotatedMethod);
+    } else if (embeddedAnnotations.length > 1) {
+      throw new RuntimeException("Only 1 @Coat.Embedded annotation allowed: " + annotatedMethod);
+    } else if (paramAnnotations.length > 0 && embeddedAnnotations.length > 0) {
+      throw new RuntimeException("Only one of @Coat.Param or @Coat.Embedded annotation allowed: " + annotatedMethod);
     }
 
-    return annotationsByType[0];
+    return new Either(
+      paramAnnotations.length > 0 ? paramAnnotations[0] : null,
+      embeddedAnnotations.length > 0 ? embeddedAnnotations[0] : null);
   }
 
 
   private static boolean isOptional(final String type) {
     return type.startsWith("java.util.Optional");
+  }
+
+
+  private static String getKeyFrom(final Either either) {
+    if (either.coatParam != null) {
+      return either.coatParam.key();
+    } else {
+      return either.coatEmbedded.key();
+    }
+  }
+
+  private static String getDefaultValueFrom(final Either either) {
+    if (either.coatParam != null) {
+      return either.coatParam.defaultValue();
+    } else {
+      return "";
+    }
   }
 }
