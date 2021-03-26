@@ -15,7 +15,8 @@
  */
 package de.poiu.coat.validation;
 
-import java.util.Objects;
+import java.util.Optional;
+import org.immutables.value.Value;
 
 
 /**
@@ -24,45 +25,39 @@ import java.util.Objects;
  * The information about the failure is a human readable String that can be accessed via
  * {@link #toString()}.
  */
-public class ValidationFailure {
+@Value.Immutable
+@Value.Style(stagedBuilder = true)
+public abstract class ValidationFailure {
 
-  private final String details;
+  public static enum Type {
+    MISSING_MANDATORY_VALUE ("Mandatory value for \"${key}\" is missing."),
+    UNPARSABLE_VALUE        ("Config value for \"${key}\" cannot be convert to type \"${type}\": \"${value}\""),
+    ;
 
+    private final String formatString;
 
-  public ValidationFailure(final String details) {
-    this.details= details;
+    private Type(final String formatString) {
+      this.formatString= formatString;
+    }
   }
+
+  public abstract Type             failureType();
+  public abstract String           key();
+  public abstract Optional<String> type();
+  public abstract Optional<String> value();
 
 
   @Override
   public String toString() {
-    return this.details;
+    return this.formattedMessage();
   }
 
 
-  @Override
-  public int hashCode() {
-    int hash = 3;
-    hash = 53 * hash + Objects.hashCode(this.details);
-    return hash;
-  }
-
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final ValidationFailure other = (ValidationFailure) obj;
-    if (!Objects.equals(this.details, other.details)) {
-      return false;
-    }
-    return true;
+  public String formattedMessage() {
+    return this.failureType().formatString
+      .replace("${key}",   this.key())
+      .replace("${value}", this.value().orElse("???"))
+      .replace("${type}",  this.type().orElse("???"))
+      ;
   }
 }

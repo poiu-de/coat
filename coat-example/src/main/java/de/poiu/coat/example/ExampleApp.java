@@ -15,49 +15,57 @@
  */
 package de.poiu.coat.example;
 
-import java.io.File;
-import java.io.FileWriter;
+import de.poiu.coat.example.mqtt.DummyMqttClient;
+import de.poiu.coat.validation.ConfigValidationException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.ServerSocket;
+import java.util.Properties;
 
 
+/**
+ * A very simple example app to demonstrate the usage of Coat.
+ */
 public class ExampleApp {
 
   public static void main(String[] args) throws IOException {
-    final Map<String, String> props= new HashMap<>();
-    props.put("mandatoryString",     "someValue");
-    props.put("optionalInt",         "42");
-    props.put("optionalInetAddress", "127.0.0.1");
-    props.put("optionalAndDefault",  "some other value");
+    final Properties props= new Properties();
+    props.load(ExampleApp.class.getResourceAsStream("/app.properties"));
 
-    System.out.println("Properties: " + props);
+    final ImmutableAppConfig appConfig= new ImmutableAppConfig(props);
 
-    {
-      final ExampleConfig c= new ImmutableExampleConfig(props);
-      System.out.println(c);
-      System.out.println(c.mandatoryString());
-      System.out.println(c.optionalInt());
-      System.out.println(c.charsetWithDefault());
-      System.out.println(c.optionalInetAddress());
+    System.out.println("Configuration:\n" + appConfig.toString());
+
+    try {
+      appConfig.validate();
+    } catch (ConfigValidationException ex) {
+      System.err.println("Error in config:\n" + ex.getValidationResult().toString());
+      System.exit(1);
     }
 
-    {
-      final SomeSubConfig c= new TheOtherConfig(props);
-      System.out.println(c);
-      System.out.println(c.disabled());
-      System.out.println(c.mandatoryString());
-      System.out.println(c.optionalInt());
-      System.out.println(c.charsetWithDefault());
-      System.out.println(c.optionalInetAddress());
+    startMqttClient(appConfig.mqtt());
+
+    System.out.println("Starting server for " + appConfig.name() + " …");
+    appConfig.description().ifPresent(System.out::println);
+
+    try {
+      final ServerSocket ss= new ServerSocket(appConfig.listenPort(), 1, appConfig.listenAddres());
+      //final Socket s= ss.accept();
+      // …
+    } catch (IOException ex) {
+      ex.printStackTrace();
+      System.exit(2);
     }
 
-    {
-      final File propertiesFile= File.createTempFile("coat", ".properties");
-      try(final FileWriter fw= new FileWriter(propertiesFile);) {
-        TheOtherConfig.writeExampleConfig(fw);
-        System.out.println("Example config written to: " + propertiesFile.getAbsolutePath());
-      }
-    }
+    System.out.println("\nDemonstration finished…");
+  }
+
+
+  private static void startMqttClient(final MqttConfig mqtt) {
+    final DummyMqttClient mqttClient= new DummyMqttClient(mqtt.brokerAddress(), mqtt.port());
+    mqtt.clientId().ifPresent(mqttClient::setClientId);
+    mqtt.username().ifPresent(mqttClient::setUsername);
+    mqtt.password().ifPresent(mqttClient::setPassword);
+
+    mqttClient.connect();
   }
 }

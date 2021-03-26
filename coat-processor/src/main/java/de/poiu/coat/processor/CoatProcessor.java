@@ -19,6 +19,8 @@ import com.google.auto.service.AutoService;
 import com.google.common.base.CaseFormat;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
@@ -33,11 +35,15 @@ import java.io.IOException;
 import java.io.Writer;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Stream;
 import java.util.regex.Pattern;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
@@ -49,13 +55,16 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
+import static javax.lang.model.element.ElementKind.METHOD;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -135,6 +144,7 @@ public class CoatProcessor extends AbstractProcessor {
       return allExtendedInterfaces;
   }
 
+
   private Set<Element> getInheritedAnnotatedMethods(final TypeElement annotatedInterface) {
     final Set<Element> annotatedMethods= new LinkedHashSet<>();
 
@@ -148,6 +158,7 @@ public class CoatProcessor extends AbstractProcessor {
 
     return annotatedMethods;
   }
+
 
   private void generateEnumCode(final ClassName fqEnumName,
                                 final TypeElement annotatedInterface,
@@ -212,26 +223,11 @@ public class CoatProcessor extends AbstractProcessor {
       .addModifiers(PUBLIC)
       .superclass(ClassName.get(CoatConfig.class))
       .addSuperinterface(ClassName.get(annotatedInterface))
-      .addMethod(MethodSpec.constructorBuilder()
-        .addModifiers(PUBLIC)
-        .addParameter(File.class, "file", FINAL)
-        .addStatement("super(file, $T.values())", fqEnumName)
-        .addException(IOException.class)
-        .build())
-      .addMethod(MethodSpec.constructorBuilder()
-        .addModifiers(PUBLIC)
-        .addParameter(Properties.class, "props", FINAL)
-        .addStatement("super(props, $T.values())", fqEnumName)
-        .build())
-      .addMethod(MethodSpec.constructorBuilder()
-        .addModifiers(PUBLIC)
-        .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
-        .addStatement("super(props, $T.values())", fqEnumName)
-        .build())
       ;
 
     this.addGeneratedAnnotation(typeSpecBuilder);
 
+    // add accessor for direct parameters
     final List<Element> annotatedMethods= annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
       .filter(e -> e.getAnnotation(Coat.Param.class) != null)
@@ -243,7 +239,52 @@ public class CoatProcessor extends AbstractProcessor {
       this.addAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
     }
 
-    this.addWriteExampleConfigMethod(typeSpecBuilder, annotatedMethods);
+    // add accessor for embedded configs
+    // TODO: Check that not both, @Embedded and @Param are specified
+    // TODO: Check that embedded type is actually a @CoatConfig
+    final List<Element> embeddedAnnotatedMethods= annotatedInterface.getEnclosedElements().stream()
+      .filter(e -> e.getKind() == ElementKind.METHOD)
+      .filter(e -> e.getAnnotation(Coat.Embedded.class) != null)
+      .collect(toList());
+
+    final List<CodeBlock> initEmbeddedConfigs= new ArrayList<>();
+    for (final Element annotatedMethod : embeddedAnnotatedMethods) {
+      final CodeBlock initEmbeddedCodeBlock = this.addEmbeddedAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
+      initEmbeddedConfigs.add(initEmbeddedCodeBlock);
+    }
+
+    typeSpecBuilder.addMethod(
+      MethodSpec.constructorBuilder()
+        .addModifiers(PUBLIC)
+        .addParameter(File.class, "file", FINAL)
+        .addStatement("this(toMap(file))")
+        .addException(IOException.class)
+        .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.constructorBuilder()
+        .addModifiers(PUBLIC)
+        .addParameter(Properties.class, "props", FINAL)
+        .addStatement("this(toMap(props))")
+        .build());
+
+    final MethodSpec.Builder mainConstructorBuilder= MethodSpec.constructorBuilder()
+      .addModifiers(PUBLIC)
+      .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
+      .addStatement("super(props, $T.values())", fqEnumName);
+    for (final CodeBlock initEmbeddedConfig : initEmbeddedConfigs) {
+      mainConstructorBuilder.addCode(initEmbeddedConfig);
+    }
+    typeSpecBuilder.addMethod(mainConstructorBuilder.build());
+
+    final List<Element> allAnnotatedMethods=
+      Stream.concat(annotatedMethods.stream(), embeddedAnnotatedMethods.stream())
+        .distinct()
+        .collect(toList());
+    this.addEqualsMethod(typeSpecBuilder, allAnnotatedMethods, fqClassName);
+    this.addHashCodeMethod(typeSpecBuilder, allAnnotatedMethods);
+
+    final List<ConfigParamSpec> allAnnotatedParams= this.getAnnotatedParamsRecursively(annotatedInterface);
+    this.addWriteExampleConfigMethod(typeSpecBuilder, allAnnotatedParams);
 
     JavaFile.builder(fqClassName.packageName(), typeSpecBuilder.build())
       .build()
@@ -298,10 +339,9 @@ public class CoatProcessor extends AbstractProcessor {
                                      configParamSpec.key(),
                                      toBaseType(configParamSpec.typeName()),
                                      configParamSpec.defaultValue() != null && !configParamSpec.defaultValue().trim().isEmpty()
-                                                                       ? configParamSpec.defaultValue()
-                                                                       : null,
+                                       ? configParamSpec.defaultValue()
+                                       : null,
                                      configParamSpec.mandatory());
-
 
 
     final String javadoc= super.processingEnv.getElementUtils().getDocComment(annotatedMethod);
@@ -313,7 +353,7 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private void addWriteExampleConfigMethod(final TypeSpec.Builder typeSpecBuilder, final List<Element> annotatedMethod) {
+  private void addWriteExampleConfigMethod(final TypeSpec.Builder typeSpecBuilder, final List<ConfigParamSpec> configParamSpecs) {
     typeSpecBuilder.addMethod(
       MethodSpec.methodBuilder("writeExampleConfig")
         .addModifiers(PUBLIC, STATIC)
@@ -322,7 +362,7 @@ public class CoatProcessor extends AbstractProcessor {
         .addException(IOException.class)
         .build());
 
-    final String exampleContent= this.createExampleContent(annotatedMethod);
+    final String exampleContent= this.createExampleContent(configParamSpecs);
 
     final MethodSpec.Builder methodBuilder= MethodSpec.methodBuilder("writeExampleConfig");
     methodBuilder
@@ -385,6 +425,75 @@ public class CoatProcessor extends AbstractProcessor {
     }
 
     typeSpecBuilder.addMethod(methodSpecBuilder.build());
+  }
+
+
+  private CodeBlock addEmbeddedAccessorMethod(final TypeSpec.Builder typeSpecBuilder, final Element annotatedMethod, final ClassName fqEnumName) {
+
+    final EmbeddedParamSpec embeddedParamSpec= EmbeddedParamSpec.from(annotatedMethod);
+
+    boolean isOptional= false;
+    DeclaredType generatedType= (DeclaredType) embeddedParamSpec.annotatedMethod().getReturnType();
+    if (generatedType.asElement().toString().equals("java.util.Optional")) {
+      // FIXME: Handle the (strange) case when less or more than 1 type argument exist
+      generatedType = (DeclaredType) generatedType.getTypeArguments().get(0);
+      isOptional= true;
+    }
+    final ClassName generatedTypeName= this.deriveGeneratedClassName(
+      (TypeElement) processingEnv.getTypeUtils().asElement(generatedType));
+
+    typeSpecBuilder.addField(FieldSpec.builder(generatedTypeName, embeddedParamSpec.key(), PRIVATE, FINAL)
+      .build()
+    );
+
+    // The code  to initialize this field. Needs to be added to the typeSpecs constructors
+    final CodeBlock.Builder initCodeBlockBuilder = CodeBlock.builder();
+    initCodeBlockBuilder.add("\n");
+    if (isOptional) {
+      initCodeBlockBuilder.beginControlFlow(
+        "if (hasPrefix(props, $S))",
+        embeddedParamSpec.key() + embeddedParamSpec.keySeparator()
+      );
+    }
+    initCodeBlockBuilder
+      .addStatement("this.$N= new $T(\n"
+        + "filterByAndStripPrefix(props, $S))",
+                    embeddedParamSpec.key(),
+                    generatedTypeName,
+                    embeddedParamSpec.key() + embeddedParamSpec.keySeparator());
+    if (isOptional) {
+      initCodeBlockBuilder
+        .nextControlFlow("else")
+        .addStatement("this.$N= null", embeddedParamSpec.key())
+        .endControlFlow();
+    }
+    initCodeBlockBuilder.addStatement(
+      "super.registerEmbeddedConfig($S, this.$N, $L)",
+      embeddedParamSpec.key() + embeddedParamSpec.keySeparator(),
+      embeddedParamSpec.key(),
+      isOptional);
+
+
+    final MethodSpec.Builder methodSpecBuilder= MethodSpec.overriding((ExecutableElement) annotatedMethod);
+
+    if (isOptional) {
+      methodSpecBuilder.addStatement("return $T.ofNullable(this.$L)",
+                                     Optional.class,
+                                     embeddedParamSpec.key()
+                                     );
+    } else {
+        methodSpecBuilder.addStatement("return this.$L",
+                      embeddedParamSpec.key());
+    }
+
+    final String javadoc= super.processingEnv.getElementUtils().getDocComment(annotatedMethod);
+    if (javadoc != null) {
+      methodSpecBuilder.addJavadoc(javadoc);
+    }
+
+    typeSpecBuilder.addMethod(methodSpecBuilder.build());
+
+    return initCodeBlockBuilder.build();
   }
 
 
@@ -500,6 +609,60 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
+  private void addEqualsMethod(final TypeSpec.Builder typeSpecBuilder, final List<Element> annotatedMethods, final ClassName className) {
+    final MethodSpec.Builder methodSpecBuilder= MethodSpec.methodBuilder("equals")
+      .addAnnotation(Override.class)
+      .addModifiers(PUBLIC)
+      .addParameter(Object.class, "obj", FINAL)
+      .returns(boolean.class)
+      .addCode("" +
+        "if (this == obj) {\n" +
+        "  return true;\n" +
+        "}\n" +
+        "\n" +
+        "if (obj == null) {\n" +
+        "  return false;\n" +
+        "}\n" +
+        "\n" +
+        "if (this.getClass() != obj.getClass()) {\n" +
+        "  return false;\n" +
+        "}\n\n")
+      .addStatement("final $T other = ($T) obj", className, className)
+      .addCode("\n")
+      ;
+
+      for (final Element annotatedMethod : annotatedMethods) {
+        final Name methodName= annotatedMethod.getSimpleName();
+        methodSpecBuilder.beginControlFlow("if (!$T.equals(this.$L(), other.$L()))", Objects.class, methodName, methodName)
+          .addStatement("return false")
+          .endControlFlow()
+          .addCode("\n");
+      }
+
+      methodSpecBuilder.addStatement("return true");
+
+      typeSpecBuilder
+        .addMethod(methodSpecBuilder.build())
+        .build();
+  }
+
+
+  private void addHashCodeMethod(final TypeSpec.Builder typeSpecBuilder, final List<Element> annotatedMethods) {
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("hashCode")
+        .addAnnotation(Override.class)
+        .addModifiers(PUBLIC)
+        .returns(int.class)
+        .addStatement(CodeBlock.of(
+          annotatedMethods.stream()
+            .map(Element::getSimpleName)
+            .map(n -> n + "()")
+          .collect(joining(",\n", "return java.util.Objects.hash(\n", ")"))
+        ))
+      .build()
+    );
+  }
+
   protected static String stripBlockTagsFromJavadoc(final String javadoc) {
     if (javadoc == null) {
       return "";
@@ -517,14 +680,12 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private String createExampleContent(final List<Element> annotatedMethods) {
+  private String createExampleContent(final List<ConfigParamSpec> configParamSpecs) {
     final StringBuilder sb= new StringBuilder();
 
-    for (final Element annotatedMethod : annotatedMethods) {
-      final ConfigParamSpec configParamSpec= ConfigParamSpec.from(annotatedMethod);
-
+    for (final ConfigParamSpec configParamSpec : configParamSpecs) {
       // add javadoc as comment
-      final String javadoc = super.processingEnv.getElementUtils().getDocComment(annotatedMethod);
+      final String javadoc = super.processingEnv.getElementUtils().getDocComment(configParamSpec.annotatedMethod());
       this.stripBlockTagsFromJavadoc(javadoc)
         .lines()
         .map(s -> "## " + s + "\n")
@@ -545,16 +706,44 @@ public class CoatProcessor extends AbstractProcessor {
 
 
   private void generateExampleFile(final String exampleFileName, final TypeElement annotatedInterface, final Filer filer) throws IOException {
-    final List<Element> annotatedMethods= annotatedInterface.getEnclosedElements().stream()
-      .filter(e -> e.getKind() == ElementKind.METHOD)
-      .filter(e -> e.getAnnotation(Coat.Param.class) != null)
-      .collect(toList());
-
-    annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
+    final List<ConfigParamSpec> configParamSpecs= this.getAnnotatedParamsRecursively(annotatedInterface);
 
     final FileObject resource = filer.createResource(javax.tools.StandardLocation.CLASS_OUTPUT, "examples", exampleFileName, annotatedInterface);
     try (final Writer w= resource.openWriter();) {
-      w.write(this.createExampleContent(annotatedMethods));
+      w.write(this.createExampleContent(configParamSpecs));
     }
+  }
+
+
+  private List<ConfigParamSpec> getAnnotatedParamsRecursively(final TypeElement annotatedInterface) {
+    final List<ConfigParamSpec> result= new ArrayList<>();
+
+    // collect all accessor methods of this interface
+    annotatedInterface.getEnclosedElements().stream()
+      .filter(e -> e.getKind() == METHOD)
+      .filter(e -> e.getAnnotation(Coat.Param.class) != null)
+      .map(ConfigParamSpec::from)
+      .forEachOrdered(result::add);
+
+    // collect the accessor methods of all embedded configs
+    final List<EmbeddedParamSpec> embeddingAccessors = annotatedInterface.getEnclosedElements().stream()
+      .filter(e -> e.getKind() == METHOD)
+      .filter(e -> e.getAnnotation(Coat.Embedded.class) != null)
+      .map(EmbeddedParamSpec::from)
+      .collect(toList());
+
+
+    for (final EmbeddedParamSpec eps : embeddingAccessors) {
+      final TypeElement embeddedConfig= (TypeElement) processingEnv.getTypeUtils().asElement(eps.annotatedMethod().getReturnType());
+
+      final List<ConfigParamSpec> embeddedAccessors= getAnnotatedParamsRecursively(embeddedConfig);
+      for (final ConfigParamSpec cps : embeddedAccessors) {
+        final ConfigParamSpec embeddedCps= ImmutableConfigParamSpec.copyOf(cps)
+          .withKey(eps.key() + eps.keySeparator() + cps.key());
+        result.add(embeddedCps);
+      }
+    }
+
+    return result;
   }
 }

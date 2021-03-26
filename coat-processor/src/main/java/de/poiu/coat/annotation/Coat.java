@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
 
 /**
  * Container annotation for different concrete annotations supported by Coat.
- * 
+ *
  */
 public @interface Coat {
 
@@ -64,6 +64,24 @@ public @interface Coat {
   public @interface Param {
     public String  key()           ;
     public String  defaultValue()  default  "";
+  }
+
+
+  /**
+   * An accessor method in a <code>@Coat.Config</code> annotated interface may be annotated with <code>@Coat.Embedded</code>
+   * instead of <code>@Coat.Param</code> to include an instance of another <code>@Coat.Config</code> annotated interface.
+   * This allows encapsulation and better reuse of config values than simple interface inheritance.
+   * <p>
+   * The option {@link #key()} specifies the config key as it is used in the config file.
+   * <p>
+   * The option {@link #keySeparator()} specifies the separator between the key of this embedded config and the actual keys
+   * inside the embedded config. It defaults to a single dot.
+   * <p>
+   */
+  @Target(ElementType.METHOD)
+  public @interface Embedded {
+    public String  key()           ;
+    public String  keySeparator()  default  ".";
   }
 
 }

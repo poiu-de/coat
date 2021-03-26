@@ -29,6 +29,8 @@ import de.poiu.coat.convert.StringConverter;
 import de.poiu.coat.convert.TypeConversionException;
 import de.poiu.coat.convert.UncheckedTypeConversionException;
 import de.poiu.coat.validation.ConfigValidationException;
+import de.poiu.coat.validation.ImmutableValidationFailure;
+import de.poiu.coat.validation.ImmutableValidationResult;
 import de.poiu.coat.validation.ValidationFailure;
 import de.poiu.coat.validation.ValidationResult;
 import java.io.File;
@@ -42,8 +44,11 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
@@ -52,6 +57,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
+import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
+import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.logging.Level.WARNING;
 
@@ -90,6 +97,8 @@ public abstract class CoatConfig {
 
   private final ConfigParam[] params;
 
+  private final List<EmbeddedConfig> embeddedConfigs= new ArrayList<>();
+
 
   //////////////////////////////////////////////////////////////////////////////
   //
@@ -104,16 +113,7 @@ public abstract class CoatConfig {
    * @throws IOException if reading the given file failed
    */
   protected CoatConfig(final File file, final ConfigParam[] params) throws IOException {
-    final Properties jup= new Properties();
-    jup.load(new FileReader(file, UTF_8));
-    for (final Map.Entry<Object, Object> entry : jup.entrySet()) {
-      if (entry.getKey() instanceof String && entry.getValue() instanceof String ) {
-        this.props.put((String) entry.getKey(), (String) entry.getValue());
-      } else {
-        LOGGER.log(WARNING, "Ignoring non-string entry: {0} = {1}", new Object[]{entry.getKey(), entry.getValue()});
-      }
-    }
-    this.params= params;
+    this(toMap(file), params);
 
     // FIXME: By using java.util.Properties, the properties are unsorted. We would have to either
     //        use apron or parse them here again (which would be too much of a hassle)
@@ -132,14 +132,7 @@ public abstract class CoatConfig {
    * @param params the defined config keys for this CoatConfig
    */
   protected CoatConfig(final Properties jup, final ConfigParam[] params) {
-    for (final Map.Entry<Object, Object> entry : jup.entrySet()) {
-      if (entry.getKey() instanceof String && entry.getValue() instanceof String ) {
-        this.props.put((String) entry.getKey(), (String) entry.getValue());
-      } else {
-        LOGGER.log(WARNING, "Ignoring non-string entry: {0} = {1}", new Object[]{entry.getKey(), entry.getValue()});
-      }
-    }
-    this.params= params;
+    this(toMap(jup), params);
   }
 
 
@@ -171,17 +164,23 @@ public abstract class CoatConfig {
    * @throws ConfigValidationException if validation fails
    */
   public void validate() throws ConfigValidationException {
-    final ValidationResult result= new ValidationResult();
+    final ImmutableValidationResult.Builder resultBuilder= ImmutableValidationResult.builder();
 
+    // verify missing mandatory parameters
     for (final ConfigParam param : this.params) {
       if (param.mandatory()
         && param.defaultValue() == null
         && this.getString(param) == null) {
-        final ValidationFailure f= new ValidationFailure("Mandatory value for \"" + param.key() + "\" is missing.");
-        result.addValidationFailure(f);
+        resultBuilder.addValidationFailure(
+          ImmutableValidationFailure.builder()
+            .failureType(MISSING_MANDATORY_VALUE)
+            .key(param.key())
+            .build()
+        );
       }
     }
 
+    // verify validity of specified parameters
     for (final ConfigParam param : this.params) {
       final String stringValue= this.getString(param);
       if (stringValue == null) {
@@ -195,10 +194,36 @@ public abstract class CoatConfig {
           this.convertValue(stringValue, param);
         }
       } catch (TypeConversionException ex) {
-        final ValidationFailure f= new ValidationFailure("Config value for \"" + param.key() + "\" cannot be convert to type \"" + param.type().getName() + "\": " + stringValue);
-        result.addValidationFailure(f);
+        resultBuilder.addValidationFailure(
+          ImmutableValidationFailure.builder()
+            .failureType(UNPARSABLE_VALUE)
+            .key(param.key())
+            .type(param.type().getName())
+            .value(stringValue)
+            .build()
+        );
       }
     }
+
+    // verify validity of embedded configs
+    this.embeddedConfigs.stream()
+      .filter(Objects::nonNull)
+      .forEachOrdered(e -> {
+        try {
+          if (e.embeddedConfig().isPresent()) {
+            e.embeddedConfig().get().validate();
+          }
+        } catch (ConfigValidationException ex) {
+          for (final ValidationFailure f : ex.getValidationResult().validationFailures()) {
+            resultBuilder.addValidationFailure(
+              ImmutableValidationFailure.copyOf(f)
+                .withKey(e.prefix() + f.key())
+            );
+          }
+        }
+      });
+
+    final ValidationResult result= resultBuilder.build();
 
     if (result.hasFailures()) {
       throw new ConfigValidationException(result);
@@ -518,19 +543,35 @@ public abstract class CoatConfig {
       final String keyString   = this.params[i].key();
       final String typeString  = "[" + (this.params[i].mandatory() ? "" : "?") + this.params[i].type().getName() + "]";
       final String value       = this.props.get(params[i].key());
-      final String valueString = value != null ? value : params[i].defaultValue() + " (default)";
+      final String valueString = value != null ? value : params[i].defaultValue();
+      final String defaultMarker = this.params[i].mandatory() && value == null ? " (default)" : "";
       paramStrings[i][0] = keyString;
       maxKeyLength       = Math.max(maxKeyLength, keyString.length());
       paramStrings[i][1] = typeString;
       maxTypeLength      = Math.max(maxTypeLength, typeString.length());
-      paramStrings[i][2] = valueString;
+      paramStrings[i][2] = valueString + defaultMarker;
     }
 
-    final StringBuilder sb= new StringBuilder(this.getClass().getName());
-    sb.append(" {\n");
+    //final StringBuilder sb= new StringBuilder(this.getClass().getName());
+    final StringBuilder sb= new StringBuilder();
+
+    sb.append("{\n");
     for (int i= 0; i< paramStrings.length; i++) {
       sb.append(String.format("  %-"+maxKeyLength+"s %-"+maxTypeLength+"s: %s\n", paramStrings[i]));
     }
+
+    // Include the embedded configs (and indent them a bit)
+    for (final EmbeddedConfig e : this.embeddedConfigs) {
+      sb.append("  ").append(e.isOptional() ? "?": "").append(e.prefix());
+      if (e.embeddedConfig().isPresent()) {
+        e.embeddedConfig().get().toString().lines()
+          .map(l -> "  " + l + "\n")
+          .collect(() -> sb, StringBuilder::append, StringBuilder::append);
+      } else {
+        sb.append(": null\n");
+      }
+    }
+
     sb.append("}");
 
     return sb.toString();
@@ -540,5 +581,65 @@ public abstract class CoatConfig {
 
   public static void registerConverter(final Class<?> type, final Converter<?> converter) {
     converters.put(type, converter);
+  }
+
+
+  protected static Map<String, String> filterByAndStripPrefix(final Map<String, String> map, final String prefix) {
+    final Map<String, String> filtered= new HashMap<>();
+
+    for (final Map.Entry<String, String> e : map.entrySet()) {
+      final String key = e.getKey();
+      final String val = e.getValue();
+
+      if (key.startsWith(prefix)) {
+        final String strippedKey= key.substring(prefix.length());
+        filtered.put(strippedKey, val);
+      }
+    }
+
+    return filtered;
+  }
+
+
+  protected boolean hasPrefix(final Map<String, String> props, final String prefix) {
+    for (final String key : props.keySet()) {
+      if (key.startsWith(prefix)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+
+  protected static Map<String, String> toMap(final Properties jup) {
+    final Map<String, String> map= new HashMap<>(jup.size());
+
+    for (final Map.Entry<Object, Object> entry : jup.entrySet()) {
+      if (entry.getKey() instanceof String && entry.getValue() instanceof String ) {
+        map.put((String) entry.getKey(), (String) entry.getValue());
+      } else {
+        LOGGER.log(WARNING, "Ignoring non-string entry: {0} = {1}", new Object[]{entry.getKey(), entry.getValue()});
+      }
+    }
+
+    return map;
+  }
+
+
+  protected static Map<String, String> toMap(final File file) throws IOException {
+    final Properties jup= new Properties();
+    jup.load(new FileReader(file, UTF_8));
+    return toMap(jup);
+  }
+
+
+  protected void registerEmbeddedConfig(final String keyPrefix, final CoatConfig embeddedConfig, final boolean optional) {
+    this.embeddedConfigs.add(ImmutableEmbeddedConfig.builder()
+      .prefix(keyPrefix)
+      .embeddedConfig(embeddedConfig)
+      .isOptional(optional)
+      .build()
+    );
   }
 }

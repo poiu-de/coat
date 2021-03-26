@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.example;
+package de.poiu.coat;
 
-import de.poiu.coat.annotation.Coat;
 import java.util.Optional;
+import org.immutables.value.Value;
 
 
 /**
- *
+ * Data holder for encapsulating information about embedded CoatConfig objects.
  */
-@Coat.Config(className = "TheOtherConfig")
-public interface SomeSubConfig extends ExampleConfig {
-  @Coat.Param(key = "disabled")
-  public Optional<Boolean> disabled();
+@Value.Immutable
+@Value.Style(optionalAcceptNullable = true)
+abstract class EmbeddedConfig {
+  public abstract String               prefix();
+  public abstract boolean              isOptional();
+  public abstract Optional<CoatConfig> embeddedConfig();
 }

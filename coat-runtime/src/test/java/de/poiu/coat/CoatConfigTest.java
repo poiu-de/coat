@@ -16,13 +16,15 @@
 package de.poiu.coat;
 
 import de.poiu.coat.validation.ConfigValidationException;
+import de.poiu.coat.validation.ImmutableValidationFailure;
 import de.poiu.coat.validation.ValidationFailure;
 import de.poiu.coat.validation.ValidationResult;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
+import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -111,8 +113,11 @@ public class CoatConfigTest {
     final ConfigValidationException ex= (ConfigValidationException) thrown;
     final ValidationResult result= ex.getValidationResult();
     assertThat(result.hasFailures()).isTrue();
-    assertThat(result.getValidationFailures()).containsExactlyInAnyOrder(
-      new ValidationFailure("Mandatory value for \"key2\" is missing.")
+    assertThat(result.validationFailures()).containsExactlyInAnyOrder(
+      ImmutableValidationFailure.builder()
+        .failureType(MISSING_MANDATORY_VALUE)
+        .key("key2")
+        .build()
     );
   }
 
@@ -145,8 +150,13 @@ public class CoatConfigTest {
     final ConfigValidationException ex= (ConfigValidationException) thrown;
     final ValidationResult result= ex.getValidationResult();
     assertThat(result.hasFailures()).isTrue();
-    assertThat(result.getValidationFailures()).containsExactlyInAnyOrder(
-      new ValidationFailure("Config value for \"key2\" cannot be convert to type \"int\": dummy")
+    assertThat(result.validationFailures()).containsExactlyInAnyOrder(
+      ImmutableValidationFailure.builder()
+        .failureType(UNPARSABLE_VALUE)
+        .key("key2")
+        .type("int")
+        .value("dummy")
+        .build()
     );
   }
 

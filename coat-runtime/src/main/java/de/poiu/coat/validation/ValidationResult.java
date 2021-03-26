@@ -15,8 +15,8 @@
  */
 package de.poiu.coat.validation;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.List;
+import org.immutables.value.Value;
 
 
 /**
@@ -28,20 +28,16 @@ import java.util.Set;
  * representation of the actual failures.
  *
  */
-public class ValidationResult {
+@Value.Immutable
+@Value.Style(
+  depluralize = true,
+  jdkOnly = true
+)
+public abstract class ValidationResult {
 
   /** The validation failures */
-  private final Set<ValidationFailure> validationFailures= new LinkedHashSet<>();
+  public abstract List<ValidationFailure> validationFailures();
 
-
-  /**
-   * Adds a validation failure to this validation result.
-   *
-   * @param f the failure to add
-   */
-  public void addValidationFailure(final ValidationFailure f) {
-    this.validationFailures.add(f);
-  }
 
 
   /**
@@ -50,17 +46,7 @@ public class ValidationResult {
    * @return whether any validation failures occurred
    */
   public boolean hasFailures() {
-    return !this.validationFailures.isEmpty();
-  }
-
-
-  /**
-   * Returns the validation failures.
-   *
-   * @return the validation failures
-   */
-  public Set<ValidationFailure> getValidationFailures() {
-    return new LinkedHashSet<>(validationFailures);
+    return !this.validationFailures().isEmpty();
   }
 
 
@@ -74,11 +60,11 @@ public class ValidationResult {
    */
   @Override
   public String toString() {
-    if (this.validationFailures.isEmpty()) {
+    if (this.validationFailures().isEmpty()) {
       return "Validation Success";
     } else {
       final StringBuilder sb= new StringBuilder("Validation Failed\n");
-      for (final ValidationFailure f : this.validationFailures) {
+      for (final ValidationFailure f : this.validationFailures()) {
         sb.append("  - ").append(f).append("\n");
       }
       sb.delete(sb.length()-1, sb.length());
