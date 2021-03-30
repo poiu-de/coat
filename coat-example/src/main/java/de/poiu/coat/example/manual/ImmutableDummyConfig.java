@@ -37,7 +37,7 @@ public class ImmutableDummyConfig extends CoatConfig implements LofoConfig {
 
     this.mqtt= new de.poiu.coat.example.sub.ImmutableMqttConfig(
       filterByAndStripPrefix(props, "mqtt."));
-    super.registerEmbeddedConfig("mqtt.", this.mqtt);
+    super.registerEmbeddedConfig("mqtt.", this.mqtt, false);
   }
 
   @Override

@@ -96,6 +96,7 @@ public abstract class CoatConfig {
   private final ConfigParam[] params;
 
   private final Map<String, CoatConfig> embeddedConfigs= new LinkedHashMap<>();
+  private final Map<String, CoatConfig> optionalEmbeddedConfigs= new LinkedHashMap<>();
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -567,6 +568,20 @@ public abstract class CoatConfig {
         .collect(() -> sb, StringBuilder::append, StringBuilder::append);
     }
 
+    // Include the /optional/ embedded configs (and indent them a bit)
+    for (final Map.Entry<String, CoatConfig> entry : this.optionalEmbeddedConfigs.entrySet()) {
+      final String prefix = entry.getKey();
+      sb.append("  ?").append(prefix);
+      final CoatConfig embeddedConfig = entry.getValue();
+      if (embeddedConfig != null) {
+        embeddedConfig.toString().lines()
+          .map(l -> "  " + l + "\n")
+          .collect(() -> sb, StringBuilder::append, StringBuilder::append);
+      } else {
+        sb.append(": null\n");
+      }
+    }
+
     sb.append("}");
 
     return sb.toString();
@@ -629,7 +644,11 @@ public abstract class CoatConfig {
   }
 
 
-  protected void registerEmbeddedConfig(final String keyPrefix, final CoatConfig embeddedConfig) {
-    this.embeddedConfigs.put(keyPrefix, embeddedConfig);
+  protected void registerEmbeddedConfig(final String keyPrefix, final CoatConfig embeddedConfig, final boolean optional) {
+    if (optional) {
+      this.optionalEmbeddedConfigs.put(keyPrefix, embeddedConfig);
+    } else {
+      this.embeddedConfigs.put(keyPrefix, embeddedConfig);
+    }
   }
 }

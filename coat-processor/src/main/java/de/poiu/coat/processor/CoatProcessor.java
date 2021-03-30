@@ -430,9 +430,10 @@ public class CoatProcessor extends AbstractProcessor {
         .endControlFlow();
     }
     initCodeBlockBuilder.addStatement(
-      "super.registerEmbeddedConfig($S, this.$N)",
+      "super.registerEmbeddedConfig($S, this.$N, $L)",
       embeddedParamSpec.key() + embeddedParamSpec.keySeparator(),
-      embeddedParamSpec.key());
+      embeddedParamSpec.key(),
+      isOptional);
 
 
     final MethodSpec.Builder methodSpecBuilder= MethodSpec.overriding((ExecutableElement) annotatedMethod);
