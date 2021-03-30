@@ -596,6 +596,17 @@ public abstract class CoatConfig {
   }
 
 
+  protected boolean hasPrefix(final Map<String, String> props, final String prefix) {
+    for (final String key : props.keySet()) {
+      if (key.startsWith(prefix)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+
   protected static Map<String, String> toMap(final Properties jup) {
     final Map<String, String> map= new HashMap<>(jup.size());
 

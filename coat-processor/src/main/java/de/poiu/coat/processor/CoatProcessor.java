@@ -406,17 +406,34 @@ public class CoatProcessor extends AbstractProcessor {
     );
 
     // The code  to initialize this field. Needs to be added to the typeSpecs constructors
-    final CodeBlock initCodeBlock = CodeBlock.builder()
-        // FIXME: Only create an object if its values are actully given in the Map<String, String>
-        //        Problem: do this if at least the prefix is existant? It may still be missing the
-        //        actually needed config values.
-        .addStatement("this.$N= new $T(\n"
-          + "filterByAndStripPrefix(props, $S))",
-                       embeddedParamSpec.key(),
-                       generatedTypeName,
-                       embeddedParamSpec.key() + embeddedParamSpec.keySeparator())
-      .addStatement("super.registerEmbeddedConfig($S, this.$N)", embeddedParamSpec.key() + embeddedParamSpec.keySeparator(), embeddedParamSpec.key())
-      .build();
+    final CodeBlock.Builder initCodeBlockBuilder = CodeBlock.builder();
+    // FIXME: Only create an object if its values are actully given in the Map<String, String>
+    //        Problem: do this if at least the prefix is existant? It may still be missing the
+    //        actually needed config values.
+    initCodeBlockBuilder.add("\n");
+    if (isOptional) {
+      initCodeBlockBuilder.beginControlFlow(
+        "if (hasPrefix(props, $S))",
+        embeddedParamSpec.key() + embeddedParamSpec.keySeparator()
+      );
+    }
+    initCodeBlockBuilder
+      .addStatement("this.$N= new $T(\n"
+        + "filterByAndStripPrefix(props, $S))",
+                    embeddedParamSpec.key(),
+                    generatedTypeName,
+                    embeddedParamSpec.key() + embeddedParamSpec.keySeparator());
+    if (isOptional) {
+      initCodeBlockBuilder
+        .nextControlFlow("else")
+        .addStatement("this.$N= null", embeddedParamSpec.key())
+        .endControlFlow();
+    }
+    initCodeBlockBuilder.addStatement(
+      "super.registerEmbeddedConfig($S, this.$N)",
+      embeddedParamSpec.key() + embeddedParamSpec.keySeparator(),
+      embeddedParamSpec.key());
+
 
     final MethodSpec.Builder methodSpecBuilder= MethodSpec.overriding((ExecutableElement) annotatedMethod);
 
@@ -437,7 +454,7 @@ public class CoatProcessor extends AbstractProcessor {
 
     typeSpecBuilder.addMethod(methodSpecBuilder.build());
 
-    return initCodeBlock;
+    return initCodeBlockBuilder.build();
   }
 
 

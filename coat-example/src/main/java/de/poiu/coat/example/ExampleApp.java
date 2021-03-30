@@ -94,5 +94,25 @@ public class ExampleApp {
       System.out.println("________");
       System.out.println(c);
     }
+
+
+
+    {
+      System.out.println("\n***** optional embedded *********************\n");
+      final Map<String, String> p= new HashMap<>();
+      p.put("someParam",                                   "some value");
+      p.put("embedded.embeddedParam",                      "embedded value");
+      p.put("embedded.deeplyEmbedded.deeplyEmbeddedParam", "deeply embedded value");
+      p.put("irrelevant key",                              "irrelevant value");
+      final ImmutableMainConfig c= new ImmutableMainConfig(p);
+
+      System.out.println("\nCCC "+ c);
+      System.out.println("");
+      try {
+        c.validate();
+      } catch (ConfigValidationException ex) {
+        ex.printStackTrace();
+      }
+    }
   }
 }
