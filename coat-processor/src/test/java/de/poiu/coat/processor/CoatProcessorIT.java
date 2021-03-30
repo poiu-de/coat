@@ -633,6 +633,83 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test the implementation of a Coat config interface that inherits from another Coat config interface.
+   */
+  @Test
+  public void testInheritedConfig_ValidationFailures() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.BaseConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface BaseConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"inheritedParam\")" +
+            "\n" + "  public String inheritedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.SubConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface SubConfig extends BaseConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"additionalParam\")" +
+            "\n" + "  public String additionalParam();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.BaseConfig",
+                                "com.example.BaseConfigParam",
+                                "com.example.ImmutableBaseConfig",
+                                "com.example.SubConfig",
+                                "com.example.SubConfigParam",
+                                "com.example.ImmutableSubConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableSubConfig", compilation);
+
+    this.assertMethods(generatedConfigClass, "inheritedParam", "additionalParam");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      // no values are explicitly set
+      "irrelevant key", "irrelevant value"
+    ));
+
+    this.assertResult(instance, "inheritedParam", null);
+    this.assertResult(instance, "additionalParam", null);
+
+    this.assertValidationErrors(instance,
+                                ImmutableValidationFailure.builder()
+                                  .failureType(MISSING_MANDATORY_VALUE)
+                                  .key("inheritedParam")
+                                  .build(),
+                                ImmutableValidationFailure.builder()
+                                  .failureType(MISSING_MANDATORY_VALUE)
+                                  .key("additionalParam")
+                                  .build()
+    );
+  }
+
+
+  /**
    * Test the generation of a config with a custom name
    */
   @Test

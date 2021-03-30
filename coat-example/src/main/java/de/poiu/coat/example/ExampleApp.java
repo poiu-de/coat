@@ -88,7 +88,7 @@ public class ExampleApp {
         ex.printStackTrace();
       }
       System.out.println("\n" + c.someParam());
-      System.out.println("\n" + c.einfachso().deeplyEmbeddedParam());
+      System.out.println("\n" + c.einfachso().get().deeplyEmbeddedParam());
       System.out.println(c.embedded().embeddedParam());
       System.out.println(c.embedded().deeplyEmbedded().deeplyEmbeddedParam());
       System.out.println("________");

@@ -38,6 +38,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -390,28 +391,44 @@ public class CoatProcessor extends AbstractProcessor {
 
     final EmbeddedParamSpec embeddedParamSpec= EmbeddedParamSpec.from(annotatedMethod);
 
-    final ClassName generatedType= this.deriveGeneratedClassName(
-      (TypeElement) processingEnv.getTypeUtils().asElement(
-        embeddedParamSpec.annotatedMethod().getReturnType()));
+    boolean isOptional= false;
+    DeclaredType generatedType= (DeclaredType) embeddedParamSpec.annotatedMethod().getReturnType();
+    if (generatedType.asElement().toString().equals("java.util.Optional")) {
+      // FIXME: Handle the (strange) case when less or more than 1 type argument exist
+      generatedType = (DeclaredType) generatedType.getTypeArguments().get(0);
+      isOptional= true;
+    }
+    final ClassName generatedTypeName= this.deriveGeneratedClassName(
+      (TypeElement) processingEnv.getTypeUtils().asElement(generatedType));
 
-    typeSpecBuilder.addField(
-      FieldSpec.builder(generatedType, embeddedParamSpec.key(), PRIVATE, FINAL)
+    typeSpecBuilder.addField(FieldSpec.builder(generatedTypeName, embeddedParamSpec.key(), PRIVATE, FINAL)
       .build()
     );
 
     // The code  to initialize this field. Needs to be added to the typeSpecs constructors
     final CodeBlock initCodeBlock = CodeBlock.builder()
+        // FIXME: Only create an object if its values are actully given in the Map<String, String>
+        //        Problem: do this if at least the prefix is existant? It may still be missing the
+        //        actually needed config values.
         .addStatement("this.$N= new $T(\n"
           + "filterByAndStripPrefix(props, $S))",
                        embeddedParamSpec.key(),
-                       generatedType,
+                       generatedTypeName,
                        embeddedParamSpec.key() + embeddedParamSpec.keySeparator())
       .addStatement("super.registerEmbeddedConfig($S, this.$N)", embeddedParamSpec.key() + embeddedParamSpec.keySeparator(), embeddedParamSpec.key())
       .build();
 
-    final MethodSpec.Builder methodSpecBuilder= MethodSpec.overriding((ExecutableElement) annotatedMethod)
-        .addStatement("return this.$L",
+    final MethodSpec.Builder methodSpecBuilder= MethodSpec.overriding((ExecutableElement) annotatedMethod);
+
+    if (isOptional) {
+      methodSpecBuilder.addStatement("return $T.ofNullable(this.$L)",
+                                     Optional.class,
+                                     embeddedParamSpec.key()
+                                     );
+    } else {
+        methodSpecBuilder.addStatement("return this.$L",
                       embeddedParamSpec.key());
+    }
 
     final String javadoc= super.processingEnv.getElementUtils().getDocComment(annotatedMethod);
     if (javadoc != null) {

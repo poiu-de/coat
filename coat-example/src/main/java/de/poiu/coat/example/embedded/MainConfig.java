@@ -6,6 +6,7 @@
 package de.poiu.coat.example.embedded;
 
 import de.poiu.coat.annotation.Coat;
+import java.util.Optional;
 
 
 /**
@@ -22,5 +23,5 @@ public interface MainConfig {
   public EmbeddedConfig embedded();
 
   @Coat.Embedded(key = "einfachso")
-  public DeeplyEmbeddedConfig einfachso();
+  public Optional<DeeplyEmbeddedConfig> einfachso();
 }

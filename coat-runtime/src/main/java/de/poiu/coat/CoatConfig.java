@@ -142,7 +142,6 @@ public abstract class CoatConfig {
    * @param params the defined config keys for this CoatConfig
    */
   protected CoatConfig(final Map<String, String> props, final ConfigParam[] params) {
-    System.out.println("HIHI " + this.getClass().getSimpleName() + "\n" + java.util.Arrays.toString(params) + "\n" + props);
     this.props.putAll(props);
     this.params= params;
   }
@@ -541,12 +540,13 @@ public abstract class CoatConfig {
       final String keyString   = this.params[i].key();
       final String typeString  = "[" + (this.params[i].mandatory() ? "" : "?") + this.params[i].type().getName() + "]";
       final String value       = this.props.get(params[i].key());
-      final String valueString = value != null ? value : params[i].defaultValue() + " (default)";
+      final String valueString = value != null ? value : params[i].defaultValue();
+      final String defaultMarker = this.params[i].mandatory() && value == null ? " (default)" : "";
       paramStrings[i][0] = keyString;
       maxKeyLength       = Math.max(maxKeyLength, keyString.length());
       paramStrings[i][1] = typeString;
       maxTypeLength      = Math.max(maxTypeLength, typeString.length());
-      paramStrings[i][2] = valueString;
+      paramStrings[i][2] = valueString + defaultMarker;
     }
 
     //final StringBuilder sb= new StringBuilder(this.getClass().getName());
