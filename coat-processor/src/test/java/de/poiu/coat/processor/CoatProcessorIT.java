@@ -1086,6 +1086,123 @@ public class CoatProcessorIT {
 
 
 
+  /**
+   * Test the generated equals() and hashCode() methods with embedded configs.
+   */
+  @Test
+  public void tesEqualsAndHashCode() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.DeeplyEmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface DeeplyEmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"deeplyEmbeddedParam\")" +
+            "\n" + "  public String deeplyEmbeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"deeplyEmbedded\", keySeparator= \".\")" +
+            "\n" + "  public DeeplyEmbeddedConfig deeplyEmbedded();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public EmbeddedConfig embedded();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.MainConfig",
+                                "com.example.MainConfigParam",
+                                "com.example.ImmutableMainConfig",
+                                "com.example.EmbeddedConfig",
+                                "com.example.EmbeddedConfigParam",
+                                "com.example.DeeplyEmbeddedConfig",
+                                "com.example.DeeplyEmbeddedConfigParam",
+                                "com.example.ImmutableEmbeddedConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedDeeplyEmbeddedClass= this.loadClass("com.example.ImmutableDeeplyEmbeddedConfig", compilation);
+
+    this.assertMethods(generatedConfigClass, "someParam", "embedded");
+    this.assertMethods(generatedEmbeddedClass, "embeddedParam", "deeplyEmbedded");
+    this.assertMethods(generatedDeeplyEmbeddedClass, "deeplyEmbeddedParam");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+
+    // test equal objects
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      // no values are explicitly set
+      "someParam",                                   "some value",
+      "embedded.embeddedParam",                      "embedded value",
+      "embedded.deeplyEmbedded.deeplyEmbeddedParam", "deeply embedded value",
+      "irrelevant key",                              "irrelevant value"
+    ));
+
+    this.assertResult(instance, "someParam", "some value");
+
+    final Object equalObject = this.createInstance(generatedConfigClass, mapOf(
+      // no values are explicitly set
+      "someParam",                                   "some value",
+      "embedded.embeddedParam",                      "embedded value",
+      "embedded.deeplyEmbedded.deeplyEmbeddedParam", "deeply embedded value",
+      "irrelevant key",                              "IRRELEVANT VALUE TO BE IGNORED"
+    ));
+
+    assertThat(instance).isEqualTo(equalObject);
+    assertThat(instance.hashCode()).isEqualTo(equalObject.hashCode());
+
+    final Object unequalObject = this.createInstance(generatedConfigClass, mapOf(
+      // no values are explicitly set
+      "someParam",                                   "some value",
+      "embedded.embeddedParam",                      "embedded value",
+      "embedded.deeplyEmbedded.deeplyEmbeddedParam", "DIFFERING deeply embedded value",
+      "irrelevant key",                              "irrelevant value"
+    ));
+
+    assertThat(instance).isNotEqualTo(unequalObject);
+    assertThat(instance.hashCode()).isNotEqualTo(unequalObject.hashCode());
+  }
+
+
   @Test
   public void testStripBlockTagsFromJavadoc() {
     final String javadoc = ""
