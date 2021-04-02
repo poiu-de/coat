@@ -2,3 +2,4 @@ target/
 nbproject/
 nbactions.xml
 nb-configuration.xml
+site/resources/

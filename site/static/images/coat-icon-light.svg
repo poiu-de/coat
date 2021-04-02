@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   id="svgroot"
+   viewBox="-2 -8 78.47071 27.875"
+   version="1.0"
+   sodipodi:docname="coat-icon-light.svg"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
+   width="78.470711"
+   height="27.875">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1272"
+     inkscape:window-height="891"
+     id="namedview75"
+     showgrid="false"
+     inkscape:zoom="7.8666668"
+     inkscape:cx="36.997646"
+     inkscape:cy="8.0579091"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="coat"
+     fit-margin-top="2"
+     fit-margin-left="2"
+     fit-margin-right="2"
+     fit-margin-bottom="2" />
+  <metadata
+     id="metadata20">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs18" />
+  <g
+     id="coat"
+     transform="translate(0.43317465,-3.125)">
+    <path
+       style="fill:#e4e7cb;stroke:#000000;stroke-width:0.2;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1"
+       d="M 1.3707419,-0.34831 H 18.465425 l 1.239519,10.874255 H 15.544116 L 15.99308,20 H 3.9038203 L 4.5330255,10.281067 H 0.3533054 Z"
+       id="path4811"
+       inkscape:connector-curvature="0" />
+    <polygon
+       style="fill:none;stroke:#880b0b;stroke-width:2"
+       transform="matrix(0.59965402,0,0,1,4,0)"
+       points="0,20 20,20 18,0 2,0 "
+       id="outer-line" />
+    <path
+       id="path22"
+       d="M 9.0692916,0.65279918 7.5438676,2.4627449 9.8650116,6.2339652 V 19.123633"
+       style="fill:none;stroke:#880b0b;stroke-width:1.0084728px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       inkscape:connector-curvature="0" />
+    <path
+       id="path22-3"
+       d="M 10.655489,0.63511403 12.180913,2.44506 9.859768,6.2162808 V 19.105951"
+       style="fill:none;stroke:#880b0b;stroke-width:1.0084728px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       inkscape:connector-curvature="0" />
+    <path
+       id="path39"
+       d="M 5.5139104,-0.34831 H 1.3707419 L 0.28494161,10.528814 H 4.0349414"
+       style="fill:none;stroke:#880b0b;stroke-width:1.29999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       inkscape:connector-curvature="0" />
+    <path
+       id="path39-6"
+       d="m 14.475975,-0.35117327 h 4.143168 L 19.704944,10.525945 h -3.75"
+       style="fill:none;stroke:#880b0b;stroke-width:1.29999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#880b0b;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:0"
+       d="M 7.7086864,-0.4841102 8.614407,-2.375 h 1.159957"
+       id="path7714"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#880b0b;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:0"
+       d="M 11.840041,-0.4841102 10.934321,-2.375 H 9.774364"
+       id="path7714-3"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:21.33333397px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#e4e7cb;fill-opacity:1;stroke:none;"
+       x="25.141699"
+       y="20.502586"
+       id="text3948"><tspan
+         sodipodi:role="line"
+         id="tspan3946"
+         x="25.141699"
+         y="20.502586">Coat</tspan></text>
+  </g>
+</svg>
