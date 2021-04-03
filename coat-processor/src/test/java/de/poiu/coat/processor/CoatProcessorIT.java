@@ -1087,10 +1087,88 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test that a missing optional embedded config is considered missing even if it contains default values
+   */
+  @Test
+  public void testMissingOptionalEmbeddedConfigWithDefaultValues() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\", defaultValue = \"42\")" +
+            "\n" + "  public int embeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.util.Optional;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\", defaultValue = \"some default\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\")" +
+            "\n" + "  public Optional<EmbeddedConfig> embedded();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.MainConfig",
+                                "com.example.MainConfigParam",
+                                "com.example.ImmutableMainConfig",
+                                "com.example.EmbeddedConfig",
+                                "com.example.EmbeddedConfigParam",
+                                "com.example.ImmutableEmbeddedConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+
+    this.assertMethods(generatedEmbeddedClass, "embeddedParam");
+    this.assertMethods(generatedConfigClass, "someParam", "embedded");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    // test missing optional
+    {
+      final Object instance = this.createInstance(generatedConfigClass, mapOf(
+        // no values are explicitly set
+        "someParam",              "some value",
+        "irrelevant key",         "irrelevant value"
+      ));
+
+      this.assertResult(instance, "someParam", "some value");
+      this.assertResult(instance, "embedded", Optional.empty());
+
+      this.assertNoValidationErrors(instance);
+    }
+  }
+
+
+  /**
    * Test the generated equals() and hashCode() methods with embedded configs.
    */
   @Test
-  public void tesEqualsAndHashCode() throws Exception {
+  public void testEqualsAndHashCode() throws Exception {
 
     // - preparation && execution
 
