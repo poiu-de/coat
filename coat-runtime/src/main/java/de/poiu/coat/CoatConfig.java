@@ -544,7 +544,7 @@ public abstract class CoatConfig {
       final String typeString  = "[" + (this.params[i].mandatory() ? "" : "?") + this.params[i].type().getName() + "]";
       final String value       = this.props.get(params[i].key());
       final String valueString = value != null ? value : params[i].defaultValue();
-      final String defaultMarker = this.params[i].mandatory() && value == null ? " (default)" : "";
+      final String defaultMarker = this.params[i].mandatory() && params[i].defaultValue() != null && value == null? " (default)" : "";
       paramStrings[i][0] = keyString;
       maxKeyLength       = Math.max(maxKeyLength, keyString.length());
       paramStrings[i][1] = typeString;
