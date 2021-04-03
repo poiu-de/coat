@@ -17,7 +17,7 @@ To use Coat in a maven based project use the following maven coordinates:
     <dependency>
       <groupId>de.poiu.coat</groupId>
       <artifactId>coat-processor</artifactId>
-      <version>0.0.1</version>
+      <version>{{< param last_stable_coat_version >}}</version>
       <scope>provided</scope>
     </dependency>
 
@@ -25,7 +25,6 @@ To use Coat in a maven based project use the following maven coordinates:
     <dependency>
       <groupId>de.poiu.coat</groupId>
       <artifactId>coat-runtime</artifactId>
-      <version>0.0.1</version>
+      <version>{{< param last_stable_coat_version >}}</version>
     </dependency>
 ```
-
