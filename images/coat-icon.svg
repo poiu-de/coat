@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   height="27.875"
+   width="78.470711"
+   version="1.0"
+   viewBox="-2 -8 78.47071 27.875"
+   id="svgroot">
+  <metadata
+     id="metadata20">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs18" />
+  <g
+     transform="translate(0.43317465,-3.125)"
+     id="coat">
+    <polygon
+       id="outer-line"
+       points="0,20 20,20 18,0 2,0 "
+       transform="matrix(0.59965402,0,0,1,4,0)"
+       style="fill:none;stroke:#880b0b;stroke-width:2" />
+    <path
+       style="fill:none;stroke:#880b0b;stroke-width:1.0084728px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 9.0692916,0.65279918 7.5438676,2.4627449 9.8650116,6.2339652 V 19.123633"
+       id="path22" />
+    <path
+       style="fill:none;stroke:#880b0b;stroke-width:1.0084728px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 10.655489,0.63511403 12.180913,2.44506 9.859768,6.2162808 V 19.105951"
+       id="path22-3" />
+    <path
+       style="fill:none;stroke:#880b0b;stroke-width:1.29999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 5.5139104,-0.34831 H 1.3707419 L 0.28494161,10.528814 H 4.0349414"
+       id="path39" />
+    <path
+       style="fill:none;stroke:#880b0b;stroke-width:1.29999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 14.475975,-0.35117327 h 4.143168 L 19.704944,10.525945 h -3.75"
+       id="path39-6" />
+    <path
+       id="path7714"
+       d="M 7.7086864,-0.4841102 8.614407,-2.375 h 1.159957"
+       style="fill:none;stroke:#880b0b;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:0" />
+    <path
+       id="path7714-3"
+       d="M 11.840041,-0.4841102 10.934321,-2.375 H 9.774364"
+       style="fill:none;stroke:#880b0b;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:0" />
+    <text
+       id="text3948"
+       y="20.502586"
+       x="25.141699"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:21.33333397px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+       xml:space="preserve"><tspan
+         y="20.502586"
+         x="25.141699"
+         id="tspan3946">Coat</tspan></text>
+  </g>
+</svg>
