@@ -8,11 +8,11 @@ Marco Herrn <marco@mherrn.de>
 :download-page: https://github.com/poiu-de/coat/releases
 :javadoc-url: https://javadoc.io/doc/de.poiu.coat/coat/
 :license-link: https://github.com/poiu-de/coat/blob/master/LICENSE.txt
-:user_guide: https://poiu-de.github.io/coat/user_guide.html
+:user_guide: https://poiu-de.github.io/coat/docs/user_guide/
 :log4j2-jul-bridge: https://logging.apache.org/log4j/2.x/log4j-jul/index.html
 :slf4j-jul-bridge: https://www.slf4j.org/legacy.html#jul-to-slf4j
 :source-highlighter: prettify
-:coat-version: 0.0.1
+:coat-version: 0.0.2
 
 [.float-group]
 --
