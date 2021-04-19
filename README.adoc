@@ -113,11 +113,11 @@ Otherwise download the jar-file of Coat from the {download-page}[Download
 page] and put it into the classpath of your application.
 
 
-//Usage
-//-----
-//
-//For a more thorough description of the possibilities of Coat read the
-//{user_guide}[User Guide].
+Usage
+-----
+
+For a more thorough description of the possibilities of Coat read the
+{user_guide}[User Guide].
 
 
 Logging
