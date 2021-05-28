@@ -73,6 +73,7 @@ import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
 import static javax.lang.model.type.TypeKind.DECLARED;
+import static javax.lang.model.type.TypeKind.VOID;
 
 
 /**
@@ -207,6 +208,7 @@ public class CoatProcessor extends AbstractProcessor {
       throw new RuntimeException("At least one annotated method is necessary for " + annotatedInterface.toString());
     }
 
+    this.assertReturnType(annotatedMethods);
     this.reduceDuplicateAccessors(annotatedMethods);
     this.assertUniqueKeys(annotatedMethods);
 
@@ -246,6 +248,7 @@ public class CoatProcessor extends AbstractProcessor {
 
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
 
+    this.assertReturnType(annotatedMethods);
     this.reduceDuplicateAccessors(annotatedMethods);
     this.assertUniqueKeys(annotatedMethods);
 
@@ -763,6 +766,39 @@ public class CoatProcessor extends AbstractProcessor {
     }
 
     return result;
+  }
+
+
+  private void assertReturnType(final List<ConfigParamSpec> annotatedMethods) throws CoatProcessorException {
+    final List<ConfigParamSpec> missingReturnTypes= new ArrayList<>();
+
+    // filter out all accessors without return type
+    annotatedMethods.stream()
+      .filter(this::hasVoidReturnType)
+      .forEachOrdered(missingReturnTypes::add);
+
+    if (!missingReturnTypes.isEmpty()) {
+      final StringBuilder sb= new StringBuilder("Accessors without return type:\n");
+      missingReturnTypes.forEach(accessor -> {
+        sb.append("  ").append(accessor.annotatedMethod()).append(":\n");
+          sb.append("    ")
+            .append(toHumanReadableString(accessor))
+            .append("\n\n");
+      });
+
+      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
+      throw new CoatProcessorException(sb.toString());
+    }
+  }
+
+
+  private boolean hasVoidReturnType(final ConfigParamSpec accessor) {
+    return this.hasVoidReturnType(accessor.annotatedMethod());
+  }
+
+
+  private boolean hasVoidReturnType(final ExecutableElement elm) {
+    return elm.getReturnType().getKind() == VOID;
   }
 
 

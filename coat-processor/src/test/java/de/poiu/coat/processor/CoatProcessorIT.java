@@ -610,6 +610,45 @@ public class CoatProcessorIT {
   }
 
 
+
+  /**
+   * Test that the same key for multiple accessors fails.
+   */
+  @Test
+  public void testAccessorWithoutReturnType() throws Exception {
+    // - preparation && execution && verification
+
+    assertThatThrownBy(() -> {
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.Optional;" +
+            "\n" + "import java.util.OptionalInt;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"missingReturnType\")" +
+            "\n" + "  public void missingReturnType();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"optionalInt\")" +
+            "\n" + "  public OptionalInt optionalInt();" +
+            "\n" + "}" +
+            ""));
+      })
+      .getCause()
+      .isInstanceOf(CoatProcessorException.class)
+      .hasMessageStartingWith("Accessors without return type:\n")
+      .hasMessageContaining("\n  missingReturnType():\n")
+      ;
+  }
+
+
   /**
    * Test the implementation of a Coat config interface that inherits from another Coat config interface.
    */
