@@ -59,6 +59,11 @@
       <version>30.1-jre</version>
       <!--<scope>provided</scope>-->
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.collections</groupId>
+      <artifactId>eclipse-collections</artifactId>
+      <version>10.4.0</version>
+    </dependency>
 
     <!-- necessary to support the @Generated annotation with Java 8 -->
     <dependency>

@@ -37,6 +37,8 @@ import javax.tools.JavaFileObject;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static com.google.testing.compile.Compiler.javac;
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
@@ -45,6 +47,8 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 
@@ -707,6 +711,174 @@ public class CoatProcessorIT {
                                   .key("additionalParam")
                                   .build()
     );
+  }
+
+
+  /**
+   * Test the implementation of a Coat config interface that inherits from two other Coat config interfaces
+   * that share the same accessor method.
+   */
+  @Test
+  public void testInheritedConfig_DuplicateAccessorMethod() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.BaseConfig1",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface BaseConfig1 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"inheritedParam\", defaultValue = \"inherited default\")" +
+            "\n" + "  public String inheritedParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"shared accessor\")" +
+            "\n" + "  public String sharedAccessor();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.BaseConfig2",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface BaseConfig2 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"otherParam\", defaultValue = \"other default\")" +
+            "\n" + "  public int otherParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"shared accessor\")" +
+            "\n" + "  public String sharedAccessor();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.SubConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface SubConfig extends BaseConfig1, BaseConfig2 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"additionalParam\", defaultValue = \"additional default\")" +
+            "\n" + "  public String additionalParam();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.BaseConfig1",
+                                "com.example.BaseConfig2",
+                                "com.example.BaseConfig1Param",
+                                "com.example.BaseConfig2Param",
+                                "com.example.ImmutableBaseConfig1",
+                                "com.example.ImmutableBaseConfig2",
+                                "com.example.SubConfig",
+                                "com.example.SubConfigParam",
+                                "com.example.ImmutableSubConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableSubConfig", compilation);
+
+    this.assertMethods(generatedConfigClass, "inheritedParam", "additionalParam", "sharedAccessor", "otherParam");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      // no values are explicitly set
+      "irrelevant key", "irrelevant value"
+    ));
+
+    this.assertResult(instance, "inheritedParam", "inherited default");
+    this.assertResult(instance, "additionalParam", "additional default");
+    this.assertResult(instance, "sharedAccessor", "shared accessor");
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test the failure of the processing of a Coat config interface that inherits from two other Coat config interfaces
+   * that have a conflicting accessor method (same name, but different signature).
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {
+    // other return type
+    "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"shared accessor\")" +
+    "\n" + "  public int sharedAccessor();",
+    // different default value
+    "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"different default\")" +
+    "\n" + "  public String sharedAccessor();",
+    // different key
+    "\n" + "  @Coat.Param(key = \"differentKey\", defaultValue = \"shared accessor\")" +
+    "\n" + "  public String sharedAccessor();",
+    // different mandatority
+    "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"shared accessor\")" +
+    "\n" + "  public Optional<String> sharedAccessor();",
+  })
+ public void testInheritedConfig_ConflictingAccessorMethod(final String conflictingAccessor) throws Exception {
+    // - preparation && execution && verification
+
+    assertThatThrownBy(() -> {
+        javac()
+          .withProcessors(new CoatProcessor())
+          .compile(JavaFileObjects.forSourceString("com.example.BaseConfig1",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface BaseConfig1 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"inheritedParam\", defaultValue = \"inherited default\")" +
+            "\n" + "  public String inheritedParam();" +
+            "\n" + "" +
+            conflictingAccessor +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.BaseConfig2",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface BaseConfig2 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"otherParam\", defaultValue = \"other default\")" +
+            "\n" + "  public int otherParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"shared accessor\")" +
+            "\n" + "  public String sharedAccessor();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.SubConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface SubConfig extends BaseConfig1, BaseConfig2 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"additionalParam\", defaultValue = \"additional default\")" +
+            "\n" + "  public String additionalParam();" +
+            "\n" + "}" +
+            ""));
+      })
+      .getCause()
+      .isInstanceOf(CoatProcessorException.class)
+      .hasMessageStartingWith("Conflicting accessor methods:\n")
+      ;
   }
 
 

@@ -60,10 +60,12 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
+import org.eclipse.collections.impl.multimap.list.FastListMultimap;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toCollection;
 import static javax.lang.model.element.ElementKind.METHOD;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
@@ -194,7 +196,7 @@ public class CoatProcessor extends AbstractProcessor {
       .filter(e -> e.getKind() == ElementKind.METHOD)
       .filter(e -> e.getAnnotation(Coat.Param.class) != null)
       .map(ConfigParamSpec::from)
-      .collect(toList());
+      .collect(toCollection(ArrayList::new));
 
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
 
@@ -203,6 +205,8 @@ public class CoatProcessor extends AbstractProcessor {
                                              String.format("No annotated methods in %s.", annotatedInterface));
       throw new RuntimeException("At least one annotated method is necessary for " + annotatedInterface.toString());
     }
+
+    this.reduceDuplicateAccessors(annotatedMethods);
 
     for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
       this.addEnumConstant(typeSpecBuilder, annotatedMethod);
@@ -239,6 +243,8 @@ public class CoatProcessor extends AbstractProcessor {
       .forEachOrdered(annotatedMethods::add);
 
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
+
+    this.reduceDuplicateAccessors(annotatedMethods);
 
     for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
       this.addAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
@@ -754,5 +760,74 @@ public class CoatProcessor extends AbstractProcessor {
     }
 
     return result;
+  }
+
+
+  private void reduceDuplicateAccessors(final List<ConfigParamSpec> annotatedMethods) throws CoatProcessorException {
+    final FastListMultimap<String, ConfigParamSpec> duplicateAccessors  = FastListMultimap.newMultimap();
+    final FastListMultimap<String, ConfigParamSpec> conflictingAccessors= FastListMultimap.newMultimap();
+
+    // gather all duplicate and conflicting accessors
+    for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
+      for (final ConfigParamSpec otherMethod : annotatedMethods) {
+        // don't compare an accessor with itself
+        if (annotatedMethod == otherMethod) {
+          continue;
+        }
+
+        // accessors with different names don't conflict
+        if (!annotatedMethod.methodeName().equals(otherMethod.methodeName())) {
+          continue;
+        }
+
+        // Equally named ccessors with the same return type, key, default value, mandatoriness
+        // are duplicates. One of them can be removed.
+        // If at least one of these attribute differs, the accessor conflict with each other.
+        if (annotatedMethod.key()         .equals(otherMethod.key())
+         && annotatedMethod.typeName()    .equals(otherMethod.typeName())
+         && annotatedMethod.defaultValue().equals(otherMethod.defaultValue())
+         && annotatedMethod.mandatory()        == otherMethod.mandatory()) {
+          if (!duplicateAccessors.containsValue(annotatedMethod)) {
+            duplicateAccessors.put(annotatedMethod.methodeName(), annotatedMethod);
+          }
+          if (!duplicateAccessors.containsValue(otherMethod)) {
+            duplicateAccessors.put(annotatedMethod.methodeName(), otherMethod);
+          }
+        } else {
+          if (!conflictingAccessors.containsValue(annotatedMethod)) {
+            conflictingAccessors.put(annotatedMethod.methodeName(), annotatedMethod);
+          }
+          if (!conflictingAccessors.containsValue(otherMethod)) {
+            conflictingAccessors.put(annotatedMethod.methodeName(), otherMethod);
+          }
+        }
+      }
+    }
+
+    // reduce duplicate accessors to only the first occurrence
+    duplicateAccessors.forEachKey(accessor -> {
+      duplicateAccessors.get(accessor)
+        .forEachWithIndex((duplicate, idx) -> {
+          if (idx > 0) {
+            annotatedMethods.remove(duplicate);
+          }
+        });
+    });
+
+    // error out on conflicting accessors
+    if (!conflictingAccessors.isEmpty()) {
+      final StringBuilder sb= new StringBuilder("Conflicting accessor methods:\n");
+      conflictingAccessors.forEachKeyMultiValues((accessor, conflicting) -> {
+        sb.append("  ").append(accessor).append(":\n");
+        conflicting.forEach(a -> {
+          sb.append("    ")
+            .append(a)
+            .append("\n");
+        });
+      });
+
+      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
+      throw new CoatProcessorException(sb.toString());
+    }
   }
 }
