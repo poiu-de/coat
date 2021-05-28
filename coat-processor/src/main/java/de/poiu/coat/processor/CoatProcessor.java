@@ -36,6 +36,7 @@ import java.io.Writer;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -207,6 +208,7 @@ public class CoatProcessor extends AbstractProcessor {
     }
 
     this.reduceDuplicateAccessors(annotatedMethods);
+    this.assertUniqueKeys(annotatedMethods);
 
     for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
       this.addEnumConstant(typeSpecBuilder, annotatedMethod);
@@ -245,6 +247,7 @@ public class CoatProcessor extends AbstractProcessor {
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
 
     this.reduceDuplicateAccessors(annotatedMethods);
+    this.assertUniqueKeys(annotatedMethods);
 
     for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
       this.addAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
@@ -820,6 +823,40 @@ public class CoatProcessor extends AbstractProcessor {
       conflictingAccessors.forEachKeyMultiValues((accessor, conflicting) -> {
         sb.append("  ").append(accessor).append("():\n");
         conflicting.forEach(a -> {
+          sb.append("    ")
+            .append(toHumanReadableString(a))
+            .append("\n\n");
+        });
+      });
+
+      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
+      throw new CoatProcessorException(sb.toString());
+    }
+  }
+
+
+  private void assertUniqueKeys(final List<ConfigParamSpec> annotatedMethods) throws CoatProcessorException {
+    final Map<String, List<ConfigParamSpec>> existingKeys   = new HashMap<>();
+    final Map<String, List<ConfigParamSpec>> duplicateKeys  = new HashMap<>();
+
+    // collect all keys and their corresponding accessor methods
+    for (final ConfigParamSpec accessor : annotatedMethods) {
+      if (!existingKeys.containsKey(accessor.key())) {
+        existingKeys.put(accessor.key(), new ArrayList<>());
+      }
+      existingKeys.get(accessor.key()).add(accessor);
+    }
+
+    // filter out all keys with more than 1 accessor method
+    existingKeys.entrySet().stream()
+      .filter(e -> e.getValue().size() > 1)
+      .forEach(e -> duplicateKeys.put(e.getKey(), e.getValue()));
+
+    if (!duplicateKeys.isEmpty()) {
+      final StringBuilder sb= new StringBuilder("Duplicate keys:\n");
+      duplicateKeys.forEach((accessor, duplicates) -> {
+        sb.append("  ").append(accessor).append(":\n");
+        duplicates.forEach(a -> {
           sb.append("    ")
             .append(toHumanReadableString(a))
             .append("\n\n");

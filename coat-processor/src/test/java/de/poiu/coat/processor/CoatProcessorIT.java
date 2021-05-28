@@ -570,6 +570,47 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test that the same key for multiple accessors fails.
+   */
+  @Test
+  public void testDuplicateKey() throws Exception {
+    // - preparation && execution && verification
+
+    assertThatThrownBy(() -> {
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.Optional;" +
+            "\n" + "import java.util.OptionalInt;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"duplicateKey\")" +
+            "\n" + "  public String mandatoryString();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"optionalInt\")" +
+            "\n" + "  public OptionalInt optionalInt();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"duplicateKey\", defaultValue = \"UTF-8\")" +
+            "\n" + "  public Charset charsetWithDefault();" +
+            "\n" + "}" +
+            ""));
+      })
+      .getCause()
+      .isInstanceOf(CoatProcessorException.class)
+      .hasMessageStartingWith("Duplicate keys:\n")
+      .hasMessageContaining("\n  duplicateKey:\n")
+      ;
+  }
+
+
+  /**
    * Test the implementation of a Coat config interface that inherits from another Coat config interface.
    */
   @Test
@@ -711,6 +752,72 @@ public class CoatProcessorIT {
                                   .key("additionalParam")
                                   .build()
     );
+  }
+
+
+
+
+  /**
+   * Test that the same key for multiple accessors fails.
+   */
+  @Test
+  public void testInheritedConfig_DuplicateKey() throws Exception {
+    // - preparation && execution && verification
+
+    assertThatThrownBy(() -> {
+        javac()
+          .withProcessors(new CoatProcessor())
+          .compile(JavaFileObjects.forSourceString("com.example.BaseConfig1",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface BaseConfig1 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"duplicateKey\", defaultValue = \"inherited default\")" +
+            "\n" + "  public String inheritedParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someAccessor\", defaultValue = \"some accessor\")" +
+            "\n" + "  public String someAccessor();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.BaseConfig2",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface BaseConfig2 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"duplicateKey\", defaultValue = \"other default\")" +
+            "\n" + "  public int otherParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"otherAccessor\", defaultValue = \"other accessor\")" +
+            "\n" + "  public int otherAccessor();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.SubConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface SubConfig extends BaseConfig1, BaseConfig2 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"additionalParam\", defaultValue = \"additional default\")" +
+            "\n" + "  public String additionalParam();" +
+            "\n" + "}" +
+            ""));
+      })
+      .getCause()
+      .isInstanceOf(CoatProcessorException.class)
+      .hasMessageStartingWith("Duplicate keys:\n")
+      .hasMessageContaining("\n  duplicateKey:\n")
+      ;
   }
 
 
