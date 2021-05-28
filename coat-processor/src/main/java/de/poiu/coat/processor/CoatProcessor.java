@@ -818,16 +818,35 @@ public class CoatProcessor extends AbstractProcessor {
     if (!conflictingAccessors.isEmpty()) {
       final StringBuilder sb= new StringBuilder("Conflicting accessor methods:\n");
       conflictingAccessors.forEachKeyMultiValues((accessor, conflicting) -> {
-        sb.append("  ").append(accessor).append(":\n");
+        sb.append("  ").append(accessor).append("():\n");
         conflicting.forEach(a -> {
           sb.append("    ")
-            .append(a)
-            .append("\n");
+            .append(toHumanReadableString(a))
+            .append("\n\n");
         });
       });
 
       processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
       throw new CoatProcessorException(sb.toString());
     }
+  }
+
+
+  private String toHumanReadableString(final ConfigParamSpec configParamSpec) {
+    final StringBuilder sb= new StringBuilder();
+
+    sb.append("@Coat.Param(");
+    sb.append("key = \"").append(configParamSpec.key()).append("\"");
+    if (configParamSpec.defaultValue() != null && !configParamSpec.defaultValue().isBlank()) {
+      sb.append(", defaultValue = \"").append(configParamSpec.defaultValue()).append("\"");
+    }
+    sb.append(")\n    ");
+    sb.append(configParamSpec.annotatedMethod().getEnclosingElement());
+    sb.append("#");
+    sb.append(configParamSpec.annotatedMethod());
+    sb.append(" : ");
+    sb.append(configParamSpec.annotatedMethod().getReturnType());
+
+    return sb.toString();
   }
 }
