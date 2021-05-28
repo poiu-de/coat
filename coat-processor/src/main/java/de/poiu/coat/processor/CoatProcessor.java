@@ -145,14 +145,15 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private Set<Element> getInheritedAnnotatedMethods(final TypeElement annotatedInterface) {
-    final Set<Element> annotatedMethods= new LinkedHashSet<>();
+  private Set<ConfigParamSpec> getInheritedAnnotatedMethods(final TypeElement annotatedInterface) {
+    final Set<ConfigParamSpec> annotatedMethods= new LinkedHashSet<>();
 
     this.getInheritedInterfaces(annotatedInterface).stream()
       .map(Element::getEnclosedElements)
       .flatMap(l -> l.stream())
       .filter(e -> (e.getKind() == ElementKind.METHOD))
       .filter(e -> e.getAnnotation(Coat.Param.class) != null)
+      .map(ConfigParamSpec::from)
       .forEachOrdered(annotatedMethods::add);
       ;
 
@@ -189,9 +190,10 @@ public class CoatProcessor extends AbstractProcessor {
     this.addFieldAndAccessor(typeSpecBuilder, String.class,     "defaultValue");
     this.addFieldAndAccessor(typeSpecBuilder, TypeName.BOOLEAN, "mandatory");
 
-    final List<Element> annotatedMethods= annotatedInterface.getEnclosedElements().stream()
+    final List<ConfigParamSpec> annotatedMethods= annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
       .filter(e -> e.getAnnotation(Coat.Param.class) != null)
+      .map(ConfigParamSpec::from)
       .collect(toList());
 
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
@@ -202,7 +204,7 @@ public class CoatProcessor extends AbstractProcessor {
       throw new RuntimeException("At least one annotated method is necessary for " + annotatedInterface.toString());
     }
 
-    for (final Element annotatedMethod : annotatedMethods) {
+    for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
       this.addEnumConstant(typeSpecBuilder, annotatedMethod);
     }
 
@@ -227,28 +229,32 @@ public class CoatProcessor extends AbstractProcessor {
 
     this.addGeneratedAnnotation(typeSpecBuilder);
 
+    final List<ConfigParamSpec> annotatedMethods= new ArrayList<>();
+
     // add accessor for direct parameters
-    final List<Element> annotatedMethods= annotatedInterface.getEnclosedElements().stream()
+    annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
       .filter(e -> e.getAnnotation(Coat.Param.class) != null)
-      .collect(toList());
+      .map(ConfigParamSpec::from)
+      .forEachOrdered(annotatedMethods::add);
 
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
 
-    for (final Element annotatedMethod : annotatedMethods) {
+    for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
       this.addAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
     }
 
     // add accessor for embedded configs
     // TODO: Check that not both, @Embedded and @Param are specified
     // TODO: Check that embedded type is actually a @CoatConfig
-    final List<Element> embeddedAnnotatedMethods= annotatedInterface.getEnclosedElements().stream()
+    final List<EmbeddedParamSpec> embeddedAnnotatedMethods= annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
       .filter(e -> e.getAnnotation(Coat.Embedded.class) != null)
+      .map(EmbeddedParamSpec::from)
       .collect(toList());
 
     final List<CodeBlock> initEmbeddedConfigs= new ArrayList<>();
-    for (final Element annotatedMethod : embeddedAnnotatedMethods) {
+    for (final EmbeddedParamSpec annotatedMethod : embeddedAnnotatedMethods) {
       final CodeBlock initEmbeddedCodeBlock = this.addEmbeddedAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
       initEmbeddedConfigs.add(initEmbeddedCodeBlock);
     }
@@ -277,9 +283,14 @@ public class CoatProcessor extends AbstractProcessor {
     typeSpecBuilder.addMethod(mainConstructorBuilder.build());
 
     final List<Element> allAnnotatedMethods=
-      Stream.concat(annotatedMethods.stream(), embeddedAnnotatedMethods.stream())
-        .distinct()
-        .collect(toList());
+      Stream.concat(
+        annotatedMethods.stream()
+          .map(ConfigParamSpec::annotatedMethod),
+        embeddedAnnotatedMethods.stream()
+          .map(EmbeddedParamSpec::annotatedMethod)
+      )
+      .distinct()
+      .collect(toList());
     this.addEqualsMethod(typeSpecBuilder, allAnnotatedMethods, fqClassName);
     this.addHashCodeMethod(typeSpecBuilder, allAnnotatedMethods);
 
@@ -329,8 +340,8 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private void addEnumConstant(final TypeSpec.Builder typeSpecBuilder, final Element annotatedMethod) {
-    final ConfigParamSpec configParamSpec= ConfigParamSpec.from(annotatedMethod);
+  private void addEnumConstant(final TypeSpec.Builder typeSpecBuilder, final ConfigParamSpec configParamSpec) {
+    final ExecutableElement annotatedMethod = configParamSpec.annotatedMethod();
 
     final String constName= this.toConstName(configParamSpec.methodeName());
 
@@ -395,9 +406,8 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private void addAccessorMethod(final TypeSpec.Builder typeSpecBuilder, final Element annotatedMethod, final ClassName fqEnumName) {
-
-    final ConfigParamSpec configParamSpec= ConfigParamSpec.from(annotatedMethod);
+  private void addAccessorMethod(final TypeSpec.Builder typeSpecBuilder, final ConfigParamSpec configParamSpec, final ClassName fqEnumName) {
+    final ExecutableElement annotatedMethod= configParamSpec.annotatedMethod();
 
     final String constName= this.toConstName(configParamSpec.methodeName());
     final ClassName constClass= ClassName.get(fqEnumName.packageName(), fqEnumName.simpleName(), constName);
@@ -428,9 +438,8 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private CodeBlock addEmbeddedAccessorMethod(final TypeSpec.Builder typeSpecBuilder, final Element annotatedMethod, final ClassName fqEnumName) {
-
-    final EmbeddedParamSpec embeddedParamSpec= EmbeddedParamSpec.from(annotatedMethod);
+  private CodeBlock addEmbeddedAccessorMethod(final TypeSpec.Builder typeSpecBuilder, final EmbeddedParamSpec embeddedParamSpec, final ClassName fqEnumName) {
+    final ExecutableElement annotatedMethod= embeddedParamSpec.annotatedMethod();
 
     boolean isOptional= false;
     DeclaredType generatedType= (DeclaredType) embeddedParamSpec.annotatedMethod().getReturnType();
@@ -474,7 +483,7 @@ public class CoatProcessor extends AbstractProcessor {
       isOptional);
 
 
-    final MethodSpec.Builder methodSpecBuilder= MethodSpec.overriding((ExecutableElement) annotatedMethod);
+    final MethodSpec.Builder methodSpecBuilder= MethodSpec.overriding(annotatedMethod);
 
     if (isOptional) {
       methodSpecBuilder.addStatement("return $T.ofNullable(this.$L)",
