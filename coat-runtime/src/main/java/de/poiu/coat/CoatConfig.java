@@ -55,12 +55,11 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
 import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
+import static java.lang.System.Logger.Level.WARNING;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.logging.Level.WARNING;
 
 
 /**
@@ -71,7 +70,7 @@ import static java.util.logging.Level.WARNING;
  */
 public abstract class CoatConfig {
 
-  private static final Logger LOGGER= Logger.getLogger(CoatConfig.class.getName());
+  private static System.Logger LOGGER= System.getLogger(CoatConfig.class.getName());
 
   private static final Map<Class<?>, Converter<?>> converters= new ConcurrentHashMap<>();
 

@@ -123,41 +123,25 @@ For a more thorough description of the possibilities of Coat read the
 Logging
 -------
 
-// FIXME: Do we need logging?
-
 There are a few cases this library issues some logging statements (actually
-only when reading from `java.util.Properties` object that contains
-non-String entries, which should never be the case anyway). Those few
-logging statements don't justify a dependency on a logging framework or
-facade. Therefore we just use java.util.logging for that purpose.
+only when reading from a `java.util.Properties` object that contains
+non-String entries, which should never be the case anyway).
 
-When using Coat in an application that uses another logging framework
-please use those logging frameworks ability to bridge java.util.logging to
-their actual implementation.
+Coat uses the `java.lang.System.Logger` for that purpose, which is
+available since Java 9.
 
-For log4j2 this can be done by including the `log4j2-jul` and `log4j2-api` jar
-(and some implemention, e.g. `log4j2-core`) and setting the system property
-`java.util.logging.manager` to `org.apache.logging.log4j.jul.LogManager`.
-See {log4j2-jul-bridge} for more information.
+The System.Logger is supported in log4j2 since version 2.13.2. To use it
+include the `log4j-jpl` jar.
 
-For slf4j this can be done by including the `jul-to-slf4j` jar (and some
-implementation, e.g. `logback`) and programmatically calling
+The System.Logger is https://jira.qos.ch/browse/SLF4J-442[not yet
+supported] in slf4j/logback. For writing an adapter the
+https://github.com/qos-ch/slf4j/pull/232[PR of Nicolai Parlog] can be
+used as reference. Also a (rudimentary) example of writing such an adapter
+is described on
+https://www.logicbig.com/tutorials/core-java-tutorial/java-9-changes/platform-logging.html[LogicBig].
 
-[source,java]
-----
-SLF4JBridgeHandler.removeHandlersForRootLogger();
-SLF4JBridgeHandler.install();
-----
-
-or setting the handler in the `logging.properties`:
-
-[source,xml]
-----
-handlers = org.slf4j.bridge.SLF4JBridgeHandler
-----
-
-See {slf4j-jul-bridge} for more information.
-
+If no adapter is found at runtime the System.Logger defaults to using
+java.util.logging.
 
 // There are no known bugs at the moment
 //Known Bugs and Deficiencies
