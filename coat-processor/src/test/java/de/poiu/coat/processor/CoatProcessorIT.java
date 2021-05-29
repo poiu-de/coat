@@ -610,7 +610,6 @@ public class CoatProcessorIT {
   }
 
 
-
   /**
    * Test that the same key for multiple accessors fails.
    */
@@ -645,6 +644,44 @@ public class CoatProcessorIT {
       .isInstanceOf(CoatProcessorException.class)
       .hasMessageStartingWith("Accessors without return type:\n")
       .hasMessageContaining("\n  missingReturnType():\n")
+      ;
+  }
+
+
+  /**
+   * Test that the same key for multiple accessors fails.
+   */
+  @Test
+  public void testAccessorWithParameter() throws Exception {
+    // - preparation && execution && verification
+
+    assertThatThrownBy(() -> {
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.Optional;" +
+            "\n" + "import java.util.OptionalInt;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"unexpectedParameter\")" +
+            "\n" + "  public String unexpectedParameter(int i);" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"optionalInt\")" +
+            "\n" + "  public OptionalInt optionalInt();" +
+            "\n" + "}" +
+            ""));
+      })
+      .getCause()
+      .isInstanceOf(CoatProcessorException.class)
+      .hasMessageStartingWith("Accessors with parameters:\n")
+      .hasMessageContaining("\n  unexpectedParameter(int):\n")
       ;
   }
 

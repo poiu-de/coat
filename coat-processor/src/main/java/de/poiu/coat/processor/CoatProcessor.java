@@ -209,6 +209,7 @@ public class CoatProcessor extends AbstractProcessor {
     }
 
     this.assertReturnType(annotatedMethods);
+    this.assertNoParameters(annotatedMethods);
     this.reduceDuplicateAccessors(annotatedMethods);
     this.assertUniqueKeys(annotatedMethods);
 
@@ -249,6 +250,7 @@ public class CoatProcessor extends AbstractProcessor {
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
 
     this.assertReturnType(annotatedMethods);
+    this.assertNoParameters(annotatedMethods);
     this.reduceDuplicateAccessors(annotatedMethods);
     this.assertUniqueKeys(annotatedMethods);
 
@@ -799,6 +801,39 @@ public class CoatProcessor extends AbstractProcessor {
 
   private boolean hasVoidReturnType(final ExecutableElement elm) {
     return elm.getReturnType().getKind() == VOID;
+  }
+
+
+  private void assertNoParameters(final List<ConfigParamSpec> annotatedMethods) throws CoatProcessorException {
+    final List<ConfigParamSpec> withParameters= new ArrayList<>();
+
+    // filter out all accessors without return type
+    annotatedMethods.stream()
+      .filter(this::hasParameters)
+      .forEachOrdered(withParameters::add);
+
+    if (!withParameters.isEmpty()) {
+      final StringBuilder sb= new StringBuilder("Accessors with parameters:\n");
+      withParameters.forEach(accessor -> {
+        sb.append("  ").append(accessor.annotatedMethod()).append(":\n");
+          sb.append("    ")
+            .append(toHumanReadableString(accessor))
+            .append("\n\n");
+      });
+
+      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
+      throw new CoatProcessorException(sb.toString());
+    }
+  }
+
+
+  private boolean hasParameters(final ConfigParamSpec accessor) {
+    return this.hasParameters(accessor.annotatedMethod());
+  }
+
+
+  private boolean hasParameters(final ExecutableElement elm) {
+    return !elm.getParameters().isEmpty();
   }
 
 
