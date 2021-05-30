@@ -15,6 +15,7 @@
  */
 package de.poiu.coat;
 
+import de.poiu.coat.convert.BooleanConverter;
 import de.poiu.coat.convert.CharsetConverter;
 import de.poiu.coat.convert.Converter;
 import de.poiu.coat.convert.DurationConverter;
@@ -75,6 +76,7 @@ public abstract class CoatConfig {
   private static final Map<Class<?>, Converter<?>> converters= new ConcurrentHashMap<>();
 
   static {
+    converters.put(Boolean.class,       new BooleanConverter());
     converters.put(String.class,        new StringConverter());
     converters.put(Duration.class,      new DurationConverter());
     converters.put(LocalDate.class,     new LocalDateConverter());
@@ -327,16 +329,16 @@ public abstract class CoatConfig {
 
   protected int getInt(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
-    return Integer.parseInt(stringValue);
+    return this.parseInt(stringValue);
   }
 
 
   protected int getIntOrDefault(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
-      return Integer.parseInt(stringValue);
+      return this.parseInt(stringValue);
     } else {
-      return Integer.parseInt(configParam.defaultValue());
+      return this.parseInt(configParam.defaultValue());
     }
   }
 
@@ -344,7 +346,7 @@ public abstract class CoatConfig {
   protected OptionalInt getOptionalInt(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
-      final int value= Integer.parseInt(stringValue);
+      final int value= this.parseInt(stringValue);
       return OptionalInt.of(value);
     } else {
       return OptionalInt.empty();
@@ -363,25 +365,25 @@ public abstract class CoatConfig {
   protected OptionalInt getOptionalIntOrDefault(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
-      return OptionalInt.of(Integer.parseInt(stringValue));
+      return OptionalInt.of(this.parseInt(stringValue));
     } else {
-      return OptionalInt.of(Integer.parseInt(configParam.defaultValue()));
+      return OptionalInt.of(this.parseInt(configParam.defaultValue()));
     }
   }
 
 
   protected long getLong(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
-    return Long.parseLong(stringValue);
+    return this.parseLong(stringValue);
   }
 
 
   protected long getLongOrDefault(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
-      return Long.parseLong(stringValue);
+      return this.parseLong(stringValue);
     } else {
-      return Long.parseLong(configParam.defaultValue());
+      return this.parseLong(configParam.defaultValue());
     }
   }
 
@@ -389,7 +391,7 @@ public abstract class CoatConfig {
   protected OptionalLong getOptionalLong(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
-      final long value= Long.parseLong(stringValue);
+      final long value= this.parseLong(stringValue);
       return OptionalLong.of(value);
     } else {
       return OptionalLong.empty();
@@ -408,9 +410,9 @@ public abstract class CoatConfig {
   protected OptionalLong getOptionalLongOrDefault(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
-      return OptionalLong.of(Long.parseLong(stringValue));
+      return OptionalLong.of(this.parseLong(stringValue));
     } else {
-      return OptionalLong.of(Long.parseLong(configParam.defaultValue()));
+      return OptionalLong.of(this.parseLong(configParam.defaultValue()));
     }
   }
 
@@ -505,13 +507,13 @@ public abstract class CoatConfig {
   private void convertPrimitive(final String stringValue, final ConfigParam param) throws TypeConversionException {
     if (param.type().equals(int.class)) {
       try {
-        Integer.parseInt(stringValue);
+        this.parseInt(stringValue);
       } catch (NumberFormatException ex) {
         throw new TypeConversionException("Error converting value to int", ex);
       }
     } else if (param.type().equals(long.class)) {
       try {
-        Long.parseLong(stringValue);
+        this.parseLong(stringValue);
       } catch (NumberFormatException ex) {
         throw new TypeConversionException("Error converting value to long", ex);
       }
@@ -640,5 +642,39 @@ public abstract class CoatConfig {
       .isOptional(optional)
       .build()
     );
+  }
+
+
+  private int parseInt(final String stringValue) {
+    if (stringValue.startsWith("0x")) {
+      // hex value
+      return Integer.parseInt(stringValue.substring(2), 16);
+    } else if (stringValue.startsWith("0b")) {
+      // bin value
+      return Integer.parseInt(stringValue.substring(2), 2);
+    } else if (stringValue.startsWith("0")) {
+      // oct value
+      return Integer.parseInt(stringValue.substring(1), 8);
+    } else {
+      // dec value
+      return Integer.parseInt(stringValue);
+    }
+  }
+
+
+  private long parseLong(final String stringValue) {
+    if (stringValue.startsWith("0x")) {
+      // hex value
+      return Long.parseLong(stringValue.substring(2), 16);
+    } else if (stringValue.startsWith("0b")) {
+      // bin value
+      return Long.parseLong(stringValue.substring(2), 2);
+    } else if (stringValue.startsWith("0")) {
+      // oct value
+      return Long.parseLong(stringValue.substring(1), 8);
+    } else {
+      // dec value
+      return Long.parseLong(stringValue);
+    }
   }
 }

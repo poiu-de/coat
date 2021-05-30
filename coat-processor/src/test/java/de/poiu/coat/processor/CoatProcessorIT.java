@@ -31,7 +31,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.stream.Stream;
 import javax.tools.JavaFileObject;
 import org.apache.commons.io.IOUtils;
@@ -47,7 +49,6 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -128,6 +129,143 @@ public class CoatProcessorIT {
     this.assertResult(instance, "mandatoryString", "some value");
     this.assertResult(instance, "optionalInt", OptionalInt.of(25));
     this.assertResult(instance, "charsetWithDefault", UTF_8);
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * A full test of a simple Coat config object.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testAllBasicTypes() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.util.Optional;" +
+            "\n" + "import java.util.OptionalInt;" +
+            "\n" + "import java.util.OptionalLong;" +
+            "\n" + "import java.util.OptionalDouble;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"mandatoryInt\")" +
+            "\n" + "  public int mandatoryInt();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"optionalInt\")" +
+            "\n" + "  public OptionalInt optionalInt();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"defaultInt\", defaultValue = \"21\")" +
+            "\n" + "  public int defaultInt();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"mandatoryLong\")" +
+            "\n" + "  public long mandatoryLong();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"optionalLong\")" +
+            "\n" + "  public OptionalLong optionalLong();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"defaultLong\", defaultValue = \"22\")" +
+            "\n" + "  public long defaultLong();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"mandatoryDouble\")" +
+            "\n" + "  public double mandatoryDouble();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"optionalDouble\")" +
+            "\n" + "  public OptionalDouble optionalDouble();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"defaultDouble\", defaultValue = \"23\")" +
+            "\n" + "  public double defaultDouble();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"mandatoryBoolean\")" +
+            "\n" + "  public boolean mandatoryBoolean();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"optionalBoolean\")" +
+            "\n" + "  public Optional<Boolean> optionalBoolean();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"defaultBoolean\", defaultValue = \"true\")" +
+            "\n" + "  public boolean defaultBoolean();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"mandatoryString\")" +
+            "\n" + "  public String mandatoryString();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"optionalString\")" +
+            "\n" + "  public Optional<String> optionalString();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"defaultString\", defaultValue = \"default\")" +
+            "\n" + "  public String defaultString();" +
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "mandatoryInt",
+                       "optionalInt",
+                       "defaultInt",
+                       "mandatoryLong",
+                       "optionalLong",
+                       "defaultLong",
+                       "mandatoryDouble",
+                       "optionalDouble",
+                       "defaultDouble",
+                       "mandatoryBoolean",
+                       "optionalBoolean",
+                       "defaultBoolean",
+                       "mandatoryString",
+                       "optionalString",
+                       "defaultString");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "mandatoryInt",     "0x7fffffff",
+      "optionalInt",      "12",
+      "mandatoryLong",    "0x7fffffffffffffff",
+      "optionalLong",     "13",
+      "mandatoryDouble",  "0x1.fffffffffffffP+1023",
+      "optionalDouble",   "14",
+      "mandatoryBoolean", "true",
+      "optionalBoolean",  "true",
+      "mandatoryString",  "mandatory",
+      "optionalString",   "optional"
+      // parameters with default are not explicitly set
+    ));
+
+    this.assertResult(instance, "mandatoryInt",     Integer.MAX_VALUE);
+    this.assertResult(instance, "optionalInt",      OptionalInt.of(12));
+    this.assertResult(instance, "defaultInt",       21);
+    this.assertResult(instance, "mandatoryLong",    Long.MAX_VALUE);
+    this.assertResult(instance, "optionalLong",     OptionalLong.of(13));
+    this.assertResult(instance, "defaultLong",      22l);
+    this.assertResult(instance, "mandatoryDouble",  Double.MAX_VALUE);
+    this.assertResult(instance, "optionalDouble",   OptionalDouble.of(14));
+    this.assertResult(instance, "defaultDouble",    23d);
+    this.assertResult(instance, "mandatoryBoolean", true);
+    this.assertResult(instance, "optionalBoolean",  Optional.of(Boolean.TRUE));
+    this.assertResult(instance, "defaultBoolean",   true);
+    this.assertResult(instance, "mandatoryString",  "mandatory");
+    this.assertResult(instance, "optionalString",   Optional.of("optional"));
+    this.assertResult(instance, "defaultString",    "default");
 
     this.assertNoValidationErrors(instance);
   }
