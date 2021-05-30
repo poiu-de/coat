@@ -31,7 +31,7 @@ public abstract class ValidationFailure {
 
   public static enum Type {
     MISSING_MANDATORY_VALUE ("Mandatory value for \"${key}\" is missing."),
-    UNPARSABLE_VALUE        ("Config value for \"${key}\" cannot be convert to type \"${type}\": \"${value}\""),
+    UNPARSABLE_VALUE        ("Config value for \"${key}\" cannot be converted to type \"${type}\": \"${value}\""),
     ;
 
     private final String formatString;
