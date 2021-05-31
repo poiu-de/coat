@@ -11,7 +11,7 @@ versions of Coat.
 Be aware that this is just a "vision" of Coats future. That some feature is
 listed in this roadmap does not necessarily mean that it will definitly be
 implemented. It may even be that some feature is planned in this roadmap
-even it is technically not possible to implement.
+even if it is technically not possible to implement.
 
 Of course, contributions are welcome to support more features in the
 future. In any case, before starting to implement a feature, discuss it on

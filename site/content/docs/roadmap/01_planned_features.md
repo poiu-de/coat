@@ -5,7 +5,7 @@ title: "Planned Features"
 ### Support for arrays and collection types
 
 At the moment it is not possible to use arrays or collections with generic
-types in config classes. This is quiet some drawback and it is planned to
+types in config classes. This is quite some drawback and it is planned to
 be supported in the future.
 
 ### Generation of example config files
@@ -71,7 +71,7 @@ public interface MqttConfig {
 Custom converters can only be specified programmatically and globally at
 runtime. 
 
-it would be nice to support a declarative declaration of custom converters
+It would be nice to support a declarative declaration of custom converters
 in the `@Coat.Config` and/or `@Coat.Param` annotation. 
 
 This is a low priority goal as the actual real-world benefit is unclear.

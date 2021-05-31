@@ -10,8 +10,8 @@ Many types are already
 [supported out of the box]({{< ref "/docs/user_guide/04_supported_types.md" >}}),
 but it is possible to use custom types.
 
-The source of the configuration data doesn't matter. While it
-mainly intended to be used for the usual java `.properties` files, it can
+The source of the configuration data doesn't matter. While it is
+mainly intended to be used for the usual Java `.properties` files, it can
 be used for any data that is composed of simple String-based
 key-value-mappings.
 

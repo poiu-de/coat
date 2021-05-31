@@ -5,7 +5,7 @@ weight: 2
 
 Coat allows embedding config objects in other config objects.
 
-It is helpful in the case if parts of a configuration are reused in
+It is helpful in the case when parts of a configuration are reused in
 multiple other configurations without having to duplicate all the accessor
 methods of the embedded config class.
 

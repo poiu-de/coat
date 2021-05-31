@@ -6,8 +6,8 @@ weight: 3
 ### Create config interface
 
 Write an interface with accessor methods for each config entry your
-application supports. The accessor methods can return to concrete types you
-want your config entry to be. There is number of types that are
+application supports. The accessor methods can return the concrete types you
+want your config entry to be. There is a number of types that are
 [supported by default]({{< ref "/docs/user_guide/04_supported_types.md" >}}),
 but custom types can be registered to support additional types.
 
@@ -48,7 +48,7 @@ public interface AppConfig {
 ### Generate concrete config class
 
 When compiling the project the annotation processor will produce a
-concreate implementation of the interface in the same package and (by
+concrete implementation of the interface in the same package and (by
 default) the same name with `Immutable` prepended to it. Therefore the
 above example interface would produce a `com.example.ImmutableAppConfig`
 class. 

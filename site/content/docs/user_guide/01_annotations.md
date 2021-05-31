@@ -6,7 +6,7 @@ weight: 1
 Coat provides three annotations, a type-level annotation `@Coat.Config` and
 two method-level annotations `@Coat.Param` and `@Coat.Embedded`.
 The annotations are mandatory, but `@Coat.Param` and `@Coat.Embedded` are
-mutual exclusive..
+mutual exclusive.
 
 
 ### @Coat.Config
@@ -20,7 +20,7 @@ annotated interface.
 The name of the generated class is by the default the interface name with
 `Immutable` prepended to it. One exception is if the interface name starts with
 an underscore. In that case the generated class name is the same as the
-interface, but with the leading underscore remove. There for the interface
+interface, but with the leading underscore removed. Therefore for the interface
 `_MyConfig` the generated class would be `MyConfig`.
 
 `@Coat.Config` supports a single parameter `className` that can be specified to
@@ -60,14 +60,14 @@ config file or `8080` if no port was specified.
 
 ### @Coat.Embedded
 
-When using [nested configurations](./02_nesting configurations) the
+When using [nested configurations](./02_nesting_configurations) the
 annotation `@Coat.Embedded` must be used instead of `@Coat.Param` on the
 corresponding accessor method.
 
 When using `@Coat.Embedded` the return type of the accessor method _must_
 be a `@Coat.Config` annotated interface.
 
-The mandatory parameter `key` specified the prefix for the config
+The mandatory parameter `key` specifies the prefix for the config
 parameters of the embedded config.
 
 An optional parameter `keySeparator` can be specified to define the

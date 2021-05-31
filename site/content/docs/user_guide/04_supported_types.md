@@ -54,10 +54,10 @@ ImmutableMyConfig.registerConverter(Duration.class, new MyDurationConverter());
 ```
 
 As support for primitive types is directly implemented and not via
-Converter it is currently not possible to override the parsing of primitve
-types with a custom converter. If different parsing of such types is
+Converter it is currently not possible to override the parsing of primitive
+types with a custom Converter. If different parsing of such types is
 necessary the corresponding object type must be used and a Converter for
-that type written (e. g. a Converter(Integer)).
+that type written (e. g. a `Converter<Integer>`).
 
 ### Currently unsupported types
 

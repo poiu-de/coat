@@ -37,8 +37,8 @@ with the `maven-assembly-plugin`.
 ### Generation at runtime
 
 The generated config class provides a method
-`writeExampleConfig(java.io.Writer` that allows generating the very same
-example config at runtime. This is helpful in cases the example config
+`writeExampleConfig(java.io.Writer)` that allows generating the very same
+example config at runtime. This is helpful in cases when the example config
 should only be generated on a users demand.
 
 ### Caveats
