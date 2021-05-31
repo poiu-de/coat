@@ -8,63 +8,14 @@ At the moment it is not possible to use arrays or collections with generic
 types in config classes. This is quite some drawback and it is planned to
 be supported in the future.
 
-### Generation of example config files
 
-As the annotated interface is the specification of the whole valid configuration it would be possible and in fact desirable to let Coat generate an example config file conforming to that specification.
+### Make @Coat.Param annotations optional
 
-Optional values could be included, but commented out.
+At the moment every accessor method must be annotated with `@Coat.Param` to
+specify the corresponding key. However it should be possible to derive this
+key from the accessor methods name. In that case the `@Coat.Param`
+annotation could be omitted.
 
-The javadoc for each accessor method could be copied as the description of
-the corresponding entry in the example config file.
-
-### Nested configuration options
-
-At the moment only flat config files are supported.
-
-It would be nice to nest config values to encapsulate and reuse them.
-
-For example the following config interface
-
-```java
-@Coat.Config 
-public interface MyConfig {
-  @Coat.Param (key = "appName")
-  public String appName();
-  
-  @Coat.Param (key = "mqtt.server")
-  public String mqttServer();
-  
-  @Coat.Param (key = "mqtt.port", defaultValue = "1883")
-  public String mqttPort();
-
-  @Coat.Param (key = "mqtt.clientId")
-  public Optional<String> mqttClientId();
-}
-```
-
-could then be defined as
-
-```java
-@Coat.Config 
-public interface MyConfig {
-  @Coat.Param (key = "appName")
-  public String appName();
-  
-  @Coat.Param (key = "mqtt")
-  public MqttConfig mqttConfig();
-}
-
-public interface MqttConfig {
-  @Coat.Param (key = "server")
-  public String server();
-  
-  @Coat.Param (key = "port", defaultValue = "1883")
-  public String port();
-
-  @Coat.Param (key = "clientId")
-  public Optional<String> clientId();
-}
-```
 
 ### Declarative declaration of custom converters
 
