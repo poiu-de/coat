@@ -47,7 +47,7 @@ disableKinds = ["taxonomy", "taxonomyTerm"]
 # Everything below this are Site Params
 
 [params]
-  last_stable_coat_version = "0.0.2"
+  last_stable_coat_version = "0.0.3"
   repo = "https://github.com/onweru/compose"
 
   time_format_blog = "Monday, January 02, 2006"
