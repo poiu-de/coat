@@ -16,8 +16,10 @@
 package de.poiu.coat.processor;
 
 import de.poiu.coat.annotation.Coat;
+import de.poiu.coat.processor.casing.CasingStrategy;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import org.immutables.value.Value;
 
@@ -86,7 +88,28 @@ abstract class ConfigParamSpec {
     }
 
     // if no key was explicity specified, infer it from the methods name
-    return annotatedMethod.getSimpleName().toString();
+    return inferKey(annotatedMethod, coatParamAnnotation);
+  }
+
+
+  private static String inferKey(final ExecutableElement annotatedMethod, final Coat.Param coatParamAnnotation) {
+    final Element enclosingElement = annotatedMethod.getEnclosingElement();
+    if (enclosingElement == null) {
+      throw new RuntimeException("No enclosing element for annotatedMethod ”"+annotatedMethod.toString()+"”");
+    }
+
+    if (!(enclosingElement instanceof TypeElement)) {
+      throw new RuntimeException("Enclosing element of annotatedMethod “"+annotatedMethod.toString()+"” of unexpected type: "+enclosingElement);
+    }
+
+    final TypeElement type= (TypeElement) enclosingElement;
+    final Coat.Config coatConfigAnnotation = type.getAnnotation(Coat.Config.class);
+    if (coatConfigAnnotation == null) {
+      throw new RuntimeException("Enclosing element of annotatedMethod “"+annotatedMethod.toString()+"” does not have a @Coat.Config annotation: "+enclosingElement);
+    }
+
+    final CasingStrategy casingStrategy = coatConfigAnnotation.casing();
+    return casingStrategy.convert(annotatedMethod.getSimpleName().toString());
   }
 
 

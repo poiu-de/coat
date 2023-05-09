@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2023 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,9 +53,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 
-/**
- *
- */
 public class CoatProcessorIT {
 
   private ByteClassLoader byteClassLoader;
@@ -1931,6 +1928,200 @@ public class CoatProcessorIT {
       + "\n"
       + "");
   }
+
+
+  /**
+   * Test that the casing of inferred keys can be specified and defaults to AS_IS.
+   */
+  @Test
+  public void testCasingStrategyDefault() throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.OptionalInt;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param()" +
+            "\n" + "  public String omittedKey();" +
+            "\n" + "" +
+            "\n" + "  public OptionalInt omittedAnnotation();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"Specified_KEY\")" +
+            "\n" + "  public Charset specifiedKey();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "omittedKey",
+                       "omittedAnnotation",
+                       "specifiedKey");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "omittedKey", "some value",
+      "omittedAnnotation", "25",
+      "Specified_KEY", "UTF-8"
+    ));
+
+    this.assertResult(instance, "omittedKey", "some value");
+    this.assertResult(instance, "omittedAnnotation", OptionalInt.of(25));
+    this.assertResult(instance, "specifiedKey", UTF_8);
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that the casing of inferred keys can be specified and test AS_IS (which is also the default).
+   */
+  @Test
+  public void testCasingStrategyAsIs() throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.OptionalInt;" +
+            "\n" + "" +
+            "\n" + "import static de.poiu.coat.processor.casing.CasingStrategy.AS_IS;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(casing = AS_IS)" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param()" +
+            "\n" + "  public String omittedKey();" +
+            "\n" + "" +
+            "\n" + "  public OptionalInt omittedAnnotation();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"Specified_KEY\")" +
+            "\n" + "  public Charset specifiedKey();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "omittedKey",
+                       "omittedAnnotation",
+                       "specifiedKey");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "omittedKey", "some value",
+      "omittedAnnotation", "25",
+      "Specified_KEY", "UTF-8"
+    ));
+
+    this.assertResult(instance, "omittedKey", "some value");
+    this.assertResult(instance, "omittedAnnotation", OptionalInt.of(25));
+    this.assertResult(instance, "specifiedKey", UTF_8);
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that the casing of inferred keys can be specified and test SNAKE_CASE.
+   */
+  @Test
+  public void testCasingStrategySnakeCase() throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.OptionalInt;" +
+            "\n" + "" +
+            "\n" + "import static de.poiu.coat.processor.casing.CasingStrategy.SNAKE_CASE;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(casing = SNAKE_CASE)" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param()" +
+            "\n" + "  public String omittedKey();" +
+            "\n" + "" +
+            "\n" + "  public OptionalInt omittedAnnotation();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"Specified_KEY\")" +
+            "\n" + "  public Charset specifiedKey();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "omittedKey",
+                       "omittedAnnotation",
+                       "specifiedKey");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "omitted_key", "some value",
+      "omitted_annotation", "25",
+      "Specified_KEY", "UTF-8"
+    ));
+
+    this.assertResult(instance, "omittedKey", "some value");
+    this.assertResult(instance, "omittedAnnotation", OptionalInt.of(25));
+    this.assertResult(instance, "specifiedKey", UTF_8);
+
+    this.assertNoValidationErrors(instance);
+  }
+
 
   ////////////////////////////////////////////////////////////////////////////////
   // Helper classes and methods

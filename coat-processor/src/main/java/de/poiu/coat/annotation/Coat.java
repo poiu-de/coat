@@ -22,8 +22,11 @@ package de.poiu.coat.annotation;
  * All concrete annotations are inner classes of this one.
  *
  */
+import de.poiu.coat.processor.casing.CasingStrategy;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
+
+import static de.poiu.coat.processor.casing.CasingStrategy.AS_IS;
 
 /**
  * Container annotation for different concrete annotations supported by Coat.
@@ -48,7 +51,8 @@ public @interface Coat {
    */
   @Target(ElementType.TYPE)
   public @interface Config {
-    public String  className() default  "";
+    public String          className()  default  "";
+    public CasingStrategy  casing()     default  AS_IS;
   }
 
 

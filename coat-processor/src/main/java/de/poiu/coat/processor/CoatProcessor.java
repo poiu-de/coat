@@ -59,6 +59,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
 import org.eclipse.collections.impl.multimap.list.FastListMultimap;
@@ -755,9 +756,8 @@ public class CoatProcessor extends AbstractProcessor {
       .map(EmbeddedParamSpec::from)
       .collect(toList());
 
-
     for (final EmbeddedParamSpec eps : embeddingAccessors) {
-      final TypeElement embeddedConfig= (TypeElement) processingEnv.getTypeUtils().asElement(eps.annotatedMethod().getReturnType());
+      final TypeElement embeddedConfig= this.getEmbeddedType(eps);
 
       final List<ConfigParamSpec> embeddedAccessors= getAnnotatedParamsRecursively(embeddedConfig);
       for (final ConfigParamSpec cps : embeddedAccessors) {
@@ -768,6 +768,29 @@ public class CoatProcessor extends AbstractProcessor {
     }
 
     return result;
+  }
+
+
+  private TypeElement getEmbeddedType(final EmbeddedParamSpec eps) throws RuntimeException {
+    final TypeMirror returnType = eps.annotatedMethod().getReturnType();
+    if (returnType.getKind() != DECLARED) {
+      throw new RuntimeException("All embedded configs are expected to be of DECLARED kind. “"+eps.annotatedMethod()+"”s return type “"+returnType+"”is of kind “"+returnType.getKind());
+    }
+
+    final DeclaredType declaredReturnType= (DeclaredType) returnType;
+    final TypeMirror baseType;
+    final TypeMirror erasure = this.processingEnv.getTypeUtils().erasure(declaredReturnType);
+
+    // TODO: Check erasure for Optional and later for collection types
+    if (declaredReturnType.getTypeArguments().isEmpty()) {
+      baseType= erasure;
+    } else if (declaredReturnType.getTypeArguments().size() == 1) {
+      baseType= declaredReturnType.getTypeArguments().get(0);
+    } else {
+      throw new RuntimeException("Multiple type parameters are not supported at the moment. Found “"+declaredReturnType.getTypeArguments()+"” on “"+eps.annotatedMethod()+"”.");
+    }
+
+    return (TypeElement) processingEnv.getTypeUtils().asElement(baseType);
   }
 
 
