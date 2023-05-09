@@ -156,7 +156,7 @@ public class CoatProcessor extends AbstractProcessor {
       .map(Element::getEnclosedElements)
       .flatMap(l -> l.stream())
       .filter(e -> (e.getKind() == ElementKind.METHOD))
-      .filter(e -> e.getAnnotation(Coat.Param.class) != null)
+      .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
       .map(ConfigParamSpec::from)
       .forEachOrdered(annotatedMethods::add);
       ;
@@ -196,7 +196,7 @@ public class CoatProcessor extends AbstractProcessor {
 
     final List<ConfigParamSpec> annotatedMethods= annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
-      .filter(e -> e.getAnnotation(Coat.Param.class) != null)
+      .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
       .map(ConfigParamSpec::from)
       .collect(toCollection(ArrayList::new));
 
@@ -243,7 +243,7 @@ public class CoatProcessor extends AbstractProcessor {
     // add accessor for direct parameters
     annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
-      .filter(e -> e.getAnnotation(Coat.Param.class) != null)
+      .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
       .map(ConfigParamSpec::from)
       .forEachOrdered(annotatedMethods::add);
 
@@ -744,7 +744,7 @@ public class CoatProcessor extends AbstractProcessor {
     // collect all accessor methods of this interface
     annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == METHOD)
-      .filter(e -> e.getAnnotation(Coat.Param.class) != null)
+      .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
       .map(ConfigParamSpec::from)
       .forEachOrdered(result::add);
 

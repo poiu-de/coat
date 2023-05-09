@@ -49,7 +49,7 @@ abstract class ConfigParamSpec {
 
     final String methodName   = executableAnnotatedMethod.getSimpleName().toString();
     final String key          = getOrInferKey(executableAnnotatedMethod, coatParamAnnotation);
-    final String defaultValue = coatParamAnnotation.defaultValue();
+    final String defaultValue = coatParamAnnotation != null ? coatParamAnnotation.defaultValue() : "";
     final String typeName     = returnTypeMirror.toString(); // FIXME: Should be TypeMirror?
     final boolean isMandatory = !isOptional(typeName) && defaultValue != null;
 
@@ -68,8 +68,10 @@ abstract class ConfigParamSpec {
     final Coat.Param[] annotationsByType = annotatedMethod.getAnnotationsByType(Coat.Param.class);
 
     if (annotationsByType.length == 0) {
-      throw new RuntimeException("Needs to be annotated with @Coat.Param: " + annotatedMethod);
-    } else if (annotationsByType.length > 1) {
+      return null;
+    }
+
+    if (annotationsByType.length > 1) {
       throw new RuntimeException("Only 1 @Coat.Param annotation allowed: " + annotatedMethod);
     }
 
@@ -78,7 +80,7 @@ abstract class ConfigParamSpec {
 
 
   private static String getOrInferKey(final ExecutableElement annotatedMethod, final Coat.Param coatParamAnnotation) {
-    final String specifiedKey= coatParamAnnotation.key();
+    final String specifiedKey= coatParamAnnotation != null ? coatParamAnnotation.key() : "";
     if (!specifiedKey.isEmpty()) {
       return specifiedKey;
     }
