@@ -80,7 +80,7 @@ import static javax.lang.model.type.TypeKind.VOID;
  * The actual annotation processor of Coat.
  *
  */
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_11)
 @SupportedAnnotationTypes(
   "de.poiu.coat.annotation.Coat.Config"
 )
