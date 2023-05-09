@@ -62,7 +62,7 @@ public @interface Coat {
    */
   @Target(ElementType.METHOD)
   public @interface Param {
-    public String  key()           ;
+    public String  key()           default  "";
     public String  defaultValue()  default  "";
   }
 
@@ -80,7 +80,7 @@ public @interface Coat {
    */
   @Target(ElementType.METHOD)
   public @interface Embedded {
-    public String  key()           ;
+    public String  key()           default  "";
     public String  keySeparator()  default  ".";
   }
 

@@ -749,6 +749,71 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test that the key can be omitted now (in which case it will be assumed to be the same as the
+   * accessor name.
+   */
+  @Test
+  public void testOmittedOptionalKey() throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.OptionalInt;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param()" +
+            "\n" + "  public String omittedKey();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"specifiedKey\")" +
+            "\n" + "  public OptionalInt optionalInt();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(defaultValue = \"UTF-8\")" +
+            "\n" + "  public Charset omittedKeyButDefaultValue();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "omittedKey",
+                       "optionalInt",
+                       "omittedKeyButDefaultValue");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "omittedKey", "some value",
+      "specifiedKey", "25"
+      // no omittedKeyButDefaultValue specified → fallback to default
+    ));
+
+    this.assertResult(instance, "omittedKey", "some value");
+    this.assertResult(instance, "optionalInt", OptionalInt.of(25));
+    this.assertResult(instance, "omittedKeyButDefaultValue", UTF_8);
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
    * Test that the same key for multiple accessors fails.
    */
   @Test

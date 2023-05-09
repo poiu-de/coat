@@ -48,7 +48,7 @@ abstract class ConfigParamSpec {
     final TypeMirror returnTypeMirror = executableAnnotatedMethod.getReturnType();
 
     final String methodName   = executableAnnotatedMethod.getSimpleName().toString();
-    final String key          = coatParamAnnotation.key();
+    final String key          = getOrInferKey(executableAnnotatedMethod, coatParamAnnotation);
     final String defaultValue = coatParamAnnotation.defaultValue();
     final String typeName     = returnTypeMirror.toString(); // FIXME: Should be TypeMirror?
     final boolean isMandatory = !isOptional(typeName) && defaultValue != null;
@@ -74,6 +74,17 @@ abstract class ConfigParamSpec {
     }
 
     return annotationsByType[0];
+  }
+
+
+  private static String getOrInferKey(final ExecutableElement annotatedMethod, final Coat.Param coatParamAnnotation) {
+    final String specifiedKey= coatParamAnnotation.key();
+    if (!specifiedKey.isEmpty()) {
+      return specifiedKey;
+    }
+
+    // if no key was explicity specified, infer it from the methods name
+    return annotatedMethod.getSimpleName().toString();
   }
 
 
