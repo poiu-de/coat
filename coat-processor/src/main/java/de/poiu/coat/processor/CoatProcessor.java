@@ -268,6 +268,8 @@ public class CoatProcessor extends AbstractProcessor {
       .map(EmbeddedParamSpec::from)
       .collect(toList());
 
+    this.assertEmbeddedTypeIsAnnotated(embeddedAnnotatedMethods);
+
     final List<CodeBlock> initEmbeddedConfigs= new ArrayList<>();
     for (final EmbeddedParamSpec annotatedMethod : embeddedAnnotatedMethods) {
       final CodeBlock initEmbeddedCodeBlock = this.addEmbeddedAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
@@ -817,6 +819,31 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
+  private void assertEmbeddedTypeIsAnnotated(final List<EmbeddedParamSpec> annotatedMethods) throws CoatProcessorException {
+    final List<EmbeddedParamSpec> unannotatedEmbeddedTypes= new ArrayList<>();
+
+    // filter out all accessors without return type
+    annotatedMethods.stream()
+      .filter(this::hasEmbeddedAnnotation)
+      .filter(not(this::hasEmbeddedTypeWithoutAnnotation))
+      .forEachOrdered(unannotatedEmbeddedTypes::add);
+
+    if (!unannotatedEmbeddedTypes.isEmpty()) {
+      final StringBuilder sb= new StringBuilder("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.\n");
+      sb.append("Accessors with unannotated types:\n");
+      unannotatedEmbeddedTypes.forEach(accessor -> {
+        sb.append("  ").append(accessor.annotatedMethod()).append(":\n");
+          sb.append("    ")
+            .append(toHumanReadableString(accessor))
+            .append("\n\n");
+      });
+
+      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
+      throw new CoatProcessorException(sb.toString());
+    }
+  }
+
+
   private boolean hasVoidReturnType(final ConfigParamSpec accessor) {
     return this.hasVoidReturnType(accessor.annotatedMethod());
   }
@@ -979,5 +1006,37 @@ public class CoatProcessor extends AbstractProcessor {
     sb.append(configParamSpec.annotatedMethod().getReturnType());
 
     return sb.toString();
+  }
+
+
+  private String toHumanReadableString(final EmbeddedParamSpec configParamSpec) {
+    final StringBuilder sb= new StringBuilder();
+
+    sb.append("@Coat.Embedded(");
+    sb.append("key = \"").append(configParamSpec.key()).append("\"");
+    if (configParamSpec.keySeparator() != null && !configParamSpec.keySeparator().isBlank()) {
+      sb.append(", keySeparator = \"").append(configParamSpec.keySeparator()).append("\"");
+    }
+    sb.append(")\n    ");
+    sb.append(configParamSpec.annotatedMethod().getEnclosingElement());
+    sb.append("#");
+    sb.append(configParamSpec.annotatedMethod());
+    sb.append(" : ");
+    sb.append(configParamSpec.annotatedMethod().getReturnType());
+
+    return sb.toString();
+  }
+
+
+  private boolean hasEmbeddedAnnotation(final EmbeddedParamSpec configParamSpec) {
+    final Coat.Embedded[] embeddedAnnotations = configParamSpec.annotatedMethod().getAnnotationsByType(Coat.Embedded.class);
+    return embeddedAnnotations.length > 0;
+  }
+
+
+  private boolean hasEmbeddedTypeWithoutAnnotation(final EmbeddedParamSpec configParamSpec) {
+    final TypeElement embeddedType = this.getEmbeddedType(configParamSpec);
+    final Coat.Config[] configAnnotations = embeddedType.getAnnotationsByType(Coat.Config.class);
+    return configAnnotations.length > 0;
   }
 }
