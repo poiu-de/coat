@@ -1783,6 +1783,90 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test that the @Coat.Embedded can only be used on Types annotated with @Coat.Config
+   */
+  @Test
+  public void testEmbeddedConfigOnWrongType() throws Exception {
+
+    // - preparation && execution
+
+    assertThatThrownBy(() -> {
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\", defaultValue = \"some default\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public String embedded();" +
+            "\n" + "}" +
+            ""));
+        })
+      .getCause()
+      .isInstanceOf(CoatProcessorException.class)
+      .hasMessageStartingWith("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.")
+      .hasMessageContaining("embedded()")
+      ;
+  }
+
+
+  /**
+   * Test that the @Coat.Embedded can only be used on Types annotated with @Coat.Config
+   */
+  @Test
+  public void testEmbeddedConfigOnNonAnnotatedType() throws Exception {
+
+    // - preparation && execution
+
+    assertThatThrownBy(() -> {
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\", defaultValue = \"embedded default\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\", defaultValue = \"some default\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public EmbeddedConfig embedded();" +
+            "\n" + "}" +
+            ""));
+        })
+      .getCause()
+      .isInstanceOf(CoatProcessorException.class)
+      .hasMessageStartingWith("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.")
+      .hasMessageContaining("embedded()")
+      ;
+  }
+
+
+  /**
    * Test the generated equals() and hashCode() methods with embedded configs.
    */
   @Test
