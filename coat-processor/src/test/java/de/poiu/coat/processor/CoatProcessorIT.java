@@ -737,7 +737,7 @@ public class CoatProcessorIT {
             "\n" + "}" +
             ""));
       })
-      .getCause()
+      .cause()
       .isInstanceOf(CoatProcessorException.class)
       .hasMessageStartingWith("Duplicate keys:\n")
       .hasMessageContaining("\n  duplicateKey:\n")
@@ -903,7 +903,7 @@ public class CoatProcessorIT {
             "\n" + "}" +
             ""));
       })
-      .getCause()
+      .cause()
       .isInstanceOf(CoatProcessorException.class)
       .hasMessageStartingWith("Accessors without return type:\n")
       .hasMessageContaining("\n  missingReturnType():\n")
@@ -941,7 +941,7 @@ public class CoatProcessorIT {
             "\n" + "}" +
             ""));
       })
-      .getCause()
+      .cause()
       .isInstanceOf(CoatProcessorException.class)
       .hasMessageStartingWith("Accessors with parameters:\n")
       .hasMessageContaining("\n  unexpectedParameter(int):\n")
@@ -1152,7 +1152,7 @@ public class CoatProcessorIT {
             "\n" + "}" +
             ""));
       })
-      .getCause()
+      .cause()
       .isInstanceOf(CoatProcessorException.class)
       .hasMessageStartingWith("Duplicate keys:\n")
       .hasMessageContaining("\n  duplicateKey:\n")
@@ -1321,7 +1321,7 @@ public class CoatProcessorIT {
             "\n" + "}" +
             ""));
       })
-      .getCause()
+      .cause()
       .isInstanceOf(CoatProcessorException.class)
       .hasMessageStartingWith("Conflicting accessor methods:\n")
       ;
@@ -1810,7 +1810,7 @@ public class CoatProcessorIT {
             "\n" + "}" +
             ""));
         })
-      .getCause()
+      .cause()
       .isInstanceOf(CoatProcessorException.class)
       .hasMessageStartingWith("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.")
       .hasMessageContaining("embedded()")
@@ -1858,7 +1858,7 @@ public class CoatProcessorIT {
             "\n" + "}" +
             ""));
         })
-      .getCause()
+      .cause()
       .isInstanceOf(CoatProcessorException.class)
       .hasMessageStartingWith("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.")
       .hasMessageContaining("embedded()")
@@ -2230,7 +2230,7 @@ public class CoatProcessorIT {
             "\n" + "}" +
             ""));
       })
-      .getCause()
+      .cause()
       .isInstanceOf(CoatProcessorException.class)
       .hasMessageStartingWith("@Coat.Config is only supported on interfaced at the moment:\n")
       .hasMessageContaining("  Non-interface type: com.example.TestConfig")
