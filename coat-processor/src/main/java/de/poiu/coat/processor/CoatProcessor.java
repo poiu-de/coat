@@ -91,9 +91,14 @@ public class CoatProcessor extends AbstractProcessor {
   private static final Pattern PATTERN_JAVADOC_BLOCK_TAG = Pattern.compile("^\\s*@.*");
 
 
+  private ConfigParamHandler paramSpecBuilder= null;
+
+
   @Override
   public boolean process(final Set<? extends TypeElement> annotations,
                          final RoundEnvironment           roundEnv) {
+
+    this.paramSpecBuilder= new ConfigParamHandler(this.processingEnv);
 
     // for each Coat.Config annotation
     // get all the annotated types
@@ -158,7 +163,7 @@ public class CoatProcessor extends AbstractProcessor {
       .flatMap(l -> l.stream())
       .filter(e -> (e.getKind() == ElementKind.METHOD))
       .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
-      .map(ConfigParamSpec::from)
+      .map(paramSpecBuilder::from)
       .forEachOrdered(annotatedMethods::add);
       ;
 
@@ -198,7 +203,7 @@ public class CoatProcessor extends AbstractProcessor {
     final List<ConfigParamSpec> annotatedMethods= annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
       .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
-      .map(ConfigParamSpec::from)
+      .map(paramSpecBuilder::from)
       .collect(toCollection(ArrayList::new));
 
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
@@ -245,7 +250,7 @@ public class CoatProcessor extends AbstractProcessor {
     annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
       .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
-      .map(ConfigParamSpec::from)
+      .map(paramSpecBuilder::from)
       .forEachOrdered(annotatedMethods::add);
 
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
@@ -365,7 +370,7 @@ public class CoatProcessor extends AbstractProcessor {
     TypeSpec.Builder enumConstBuilder =
       TypeSpec.anonymousClassBuilder("$S, $L.class, $S, $L",
                                      configParamSpec.key(),
-                                     toBaseType(configParamSpec.typeName()),
+                                     toBaseType(configParamSpec.type()),
                                      configParamSpec.defaultValue() != null && !configParamSpec.defaultValue().trim().isEmpty()
                                        ? configParamSpec.defaultValue()
                                        : null,
@@ -423,6 +428,66 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
+  private String toBaseType(final TypeMirror type) {
+    final TypeMirror optionalType = this.processingEnv.getElementUtils().getTypeElement("java.util.Optional").asType();
+    final TypeMirror optionalIntType = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalInt").asType();
+    final TypeMirror optionalLongType = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalLong").asType();
+    final TypeMirror optionalDoubleType = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalDouble").asType();
+    final TypeMirror optErasure = this.processingEnv.getTypeUtils().erasure(optionalType);
+
+    if (this.processingEnv.getTypeUtils().isSameType(type, optionalIntType)) {
+      return int.class.getName();
+    }
+
+    if (this.processingEnv.getTypeUtils().isSameType(type, optionalLongType)) {
+      return long.class.getName();
+    }
+
+    if (this.processingEnv.getTypeUtils().isSameType(type, optionalDoubleType)) {
+      return double.class.getName();
+    }
+
+    if (type.getKind() == DECLARED) {
+      final DeclaredType declaredType= (DeclaredType) type;
+
+      final TypeMirror erasure = this.processingEnv.getTypeUtils().erasure(type);
+      final List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
+
+      if (this.processingEnv.getTypeUtils().isAssignable(erasure, optionalType)) {
+        if (typeArguments.size() < 1) {
+          throw new CoatProcessorException("Optionals without type argument are not supported.");
+        }
+        if (typeArguments.size() > 1) {
+          throw new RuntimeException("Optionals with multiple type arguments are not expected.");
+        }
+
+        return typeArguments.get(0).toString();
+      }
+    }
+
+    return type.toString();
+  }
+
+
+  private boolean isOptional(final TypeMirror type) {
+    final TypeMirror optionalType = this.processingEnv.getElementUtils().getTypeElement("java.util.Optional").asType();
+    final TypeMirror optionalIntType = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalInt").asType();
+    final TypeMirror optionalLongType = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalLong").asType();
+    final TypeMirror optionalDoubleType = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalDouble").asType();
+
+    final TypeMirror erasure = this.processingEnv.getTypeUtils().erasure(type);
+
+    if (this.processingEnv.getTypeUtils().isAssignable(erasure, optionalType)
+      || this.processingEnv.getTypeUtils().isAssignable(erasure, optionalIntType)
+      || this.processingEnv.getTypeUtils().isAssignable(erasure, optionalLongType)
+      || this.processingEnv.getTypeUtils().isAssignable(erasure, optionalDoubleType)) {
+      return true;
+    }
+
+    return false;
+  }
+
+
   private void addAccessorMethod(final TypeSpec.Builder typeSpecBuilder, final ConfigParamSpec configParamSpec, final ClassName fqEnumName) {
     final ExecutableElement annotatedMethod= configParamSpec.annotatedMethod();
 
@@ -433,13 +498,13 @@ public class CoatProcessor extends AbstractProcessor {
                                ? configParamSpec.defaultValue()
                                : "";
 
-    if (configParamSpec.typeName().startsWith("java.util.Optional") && !defaultValue.trim().isEmpty()) {
+    if (isOptional(configParamSpec.type()) && !defaultValue.trim().isEmpty()) {
       processingEnv.getMessager().printMessage(Kind.WARNING,
                                                "Optional and default value don't make much sense together. The Optional will never be empty.",
                                                annotatedMethod);
     }
 
-    final String getter= getSuperGetterName(configParamSpec.typeName(), !defaultValue.trim().isEmpty());
+    final String getter= getSuperGetterName(configParamSpec.type(), !defaultValue.trim().isEmpty());
 
     final MethodSpec.Builder methodSpecBuilder= MethodSpec.overriding((ExecutableElement) annotatedMethod)
         .addStatement("return super.$L($T)",
@@ -528,8 +593,10 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private String getSuperGetterName(final String typeName, final boolean hasDefaultValue) {
+  private String getSuperGetterName(final TypeMirror type, final boolean hasDefaultValue) {
     final StringBuilder sb= new StringBuilder("get");
+
+    final String typeName= type.toString();
 
     if (typeName.startsWith("java.util.Optional<")) {
       sb.append("Optional");
@@ -748,7 +815,7 @@ public class CoatProcessor extends AbstractProcessor {
     annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == METHOD)
       .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
-      .map(ConfigParamSpec::from)
+      .map(paramSpecBuilder::from)
       .forEachOrdered(result::add);
 
     // collect the accessor methods of all embedded configs
@@ -908,7 +975,7 @@ public class CoatProcessor extends AbstractProcessor {
         // are duplicates. One of them can be removed.
         // If at least one of these attribute differs, the accessor conflict with each other.
         if (annotatedMethod.key()         .equals(otherMethod.key())
-         && annotatedMethod.typeName()    .equals(otherMethod.typeName())
+         && annotatedMethod.type()        .equals(otherMethod.type())
          && annotatedMethod.defaultValue().equals(otherMethod.defaultValue())
          && annotatedMethod.mandatory()        == otherMethod.mandatory()) {
           if (!duplicateAccessors.containsValue(annotatedMethod)) {
