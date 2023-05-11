@@ -266,7 +266,6 @@ public class CoatProcessor extends AbstractProcessor {
 
     // add accessor for embedded configs
     // TODO: Check that not both, @Embedded and @Param are specified
-    // TODO: Check that embedded type is actually a @CoatConfig
     final List<EmbeddedParamSpec> embeddedAnnotatedMethods= annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
       .filter(e -> e.getAnnotation(Coat.Embedded.class) != null)
@@ -850,7 +849,7 @@ public class CoatProcessor extends AbstractProcessor {
     final TypeMirror baseType;
     final TypeMirror erasure = this.processingEnv.getTypeUtils().erasure(declaredReturnType);
 
-    // TODO: Check erasure for Optional and later for collection types
+    // TODO: Check erasure for collection types
     if (declaredReturnType.getTypeArguments().isEmpty()) {
       baseType= erasure;
     } else if (declaredReturnType.getTypeArguments().size() == 1) {
