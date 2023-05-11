@@ -68,6 +68,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toCollection;
+import static javax.lang.model.element.ElementKind.INTERFACE;
 import static javax.lang.model.element.ElementKind.METHOD;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
@@ -107,6 +108,7 @@ public class CoatProcessor extends AbstractProcessor {
       .filter(a -> a.getQualifiedName().contentEquals("de.poiu.coat.annotation.Coat.Config"))
       .flatMap(a -> roundEnv.getElementsAnnotatedWith(a).stream())
       .map(e -> (TypeElement) e)
+      .peek(this::assertIsInterface)
       .forEachOrdered(this::generateCode);
 
     return false;
@@ -116,8 +118,6 @@ public class CoatProcessor extends AbstractProcessor {
   private void generateCode(final TypeElement annotatedInterface) {
     processingEnv.getMessager().printMessage(Kind.NOTE,
                                              String.format("Generating code for %s.", annotatedInterface));
-
-    // FIXME: Check for interface / abstract class and disallow others?
 
     try {
       final ClassName fqGeneratedEnumName= this.deriveGeneratedEnumName(annotatedInterface);
@@ -882,6 +882,16 @@ public class CoatProcessor extends AbstractProcessor {
 
       processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
       throw new CoatProcessorException(sb.toString());
+    }
+  }
+
+
+  private void assertIsInterface(final TypeElement annotatedType) {
+    if (annotatedType.getKind() != INTERFACE) {
+      final String errorMsg= "@Coat.Config is only supported on interfaced at the moment:\n"
+        + "  Non-interface type: "+annotatedType.toString();
+      processingEnv.getMessager().printMessage(Kind.ERROR, errorMsg);
+      throw new CoatProcessorException(errorMsg);
     }
   }
 

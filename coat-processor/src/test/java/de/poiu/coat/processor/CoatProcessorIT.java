@@ -2207,6 +2207,37 @@ public class CoatProcessorIT {
   }
 
 
+  /**
+   * Test that an exception is thrown on annotated types other than interfaces.
+   */
+  @Test
+  public void testFailOnAnnotatedAbstractClass() throws Exception {
+    // - preparation && execution && verification
+
+    assertThatThrownBy(() -> {
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public abstract class TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public abstract String mandatoryString();" +
+            "\n" + "}" +
+            ""));
+      })
+      .getCause()
+      .isInstanceOf(CoatProcessorException.class)
+      .hasMessageStartingWith("@Coat.Config is only supported on interfaced at the moment:\n")
+      .hasMessageContaining("  Non-interface type: com.example.TestConfig")
+      ;
+  }
+
+
   ////////////////////////////////////////////////////////////////////////////////
   // Helper classes and methods
   //
