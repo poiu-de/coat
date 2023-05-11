@@ -36,84 +36,10 @@ abstract class ConfigParamSpec {
 
   public abstract String              key();
 
-  public abstract String              typeName();
+  public abstract TypeMirror          type();
 
   public abstract String              defaultValue();
 
   public abstract boolean             mandatory();
 
-
-  public static ConfigParamSpec from(final Element annotatedMethod) {
-    final ExecutableElement executableAnnotatedMethod = (ExecutableElement) annotatedMethod;
-    final Coat.Param        coatParamAnnotation       = assertAnnotation(executableAnnotatedMethod);
-
-    final TypeMirror returnTypeMirror = executableAnnotatedMethod.getReturnType();
-
-    final String methodName   = executableAnnotatedMethod.getSimpleName().toString();
-    final String key          = getOrInferKey(executableAnnotatedMethod, coatParamAnnotation);
-    final String defaultValue = coatParamAnnotation != null ? coatParamAnnotation.defaultValue() : "";
-    final String typeName     = returnTypeMirror.toString(); // FIXME: Should be TypeMirror?
-    final boolean isMandatory = !isOptional(typeName) && defaultValue != null;
-
-    return ImmutableConfigParamSpec.builder()
-      .annotatedMethod(executableAnnotatedMethod)
-      .methodeName(methodName)
-      .key(key)
-      .typeName(typeName)
-      .defaultValue(defaultValue)
-      .mandatory(isMandatory)
-      .build();
-  }
-
-
-  private static Coat.Param assertAnnotation(final ExecutableElement annotatedMethod) {
-    final Coat.Param[] annotationsByType = annotatedMethod.getAnnotationsByType(Coat.Param.class);
-
-    if (annotationsByType.length == 0) {
-      return null;
-    }
-
-    if (annotationsByType.length > 1) {
-      throw new RuntimeException("Only 1 @Coat.Param annotation allowed: " + annotatedMethod);
-    }
-
-    return annotationsByType[0];
-  }
-
-
-  private static String getOrInferKey(final ExecutableElement annotatedMethod, final Coat.Param coatParamAnnotation) {
-    final String specifiedKey= coatParamAnnotation != null ? coatParamAnnotation.key() : "";
-    if (!specifiedKey.isEmpty()) {
-      return specifiedKey;
-    }
-
-    // if no key was explicity specified, infer it from the methods name
-    return inferKey(annotatedMethod, coatParamAnnotation);
-  }
-
-
-  private static String inferKey(final ExecutableElement annotatedMethod, final Coat.Param coatParamAnnotation) {
-    final Element enclosingElement = annotatedMethod.getEnclosingElement();
-    if (enclosingElement == null) {
-      throw new RuntimeException("No enclosing element for annotatedMethod ”"+annotatedMethod.toString()+"”");
-    }
-
-    if (!(enclosingElement instanceof TypeElement)) {
-      throw new RuntimeException("Enclosing element of annotatedMethod “"+annotatedMethod.toString()+"” of unexpected type: "+enclosingElement);
-    }
-
-    final TypeElement type= (TypeElement) enclosingElement;
-    final Coat.Config coatConfigAnnotation = type.getAnnotation(Coat.Config.class);
-    if (coatConfigAnnotation == null) {
-      throw new RuntimeException("Enclosing element of annotatedMethod “"+annotatedMethod.toString()+"” does not have a @Coat.Config annotation: "+enclosingElement);
-    }
-
-    final CasingStrategy casingStrategy = coatConfigAnnotation.casing();
-    return casingStrategy.convert(annotatedMethod.getSimpleName().toString());
-  }
-
-
-  private static boolean isOptional(final String type) {
-    return type.startsWith("java.util.Optional");
-  }
 }
