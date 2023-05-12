@@ -15,11 +15,8 @@
  */
 package de.poiu.coat.processor;
 
-import de.poiu.coat.annotation.Coat;
-import de.poiu.coat.processor.casing.CasingStrategy;
-import javax.lang.model.element.Element;
+import java.util.Optional;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import org.immutables.value.Value;
 
@@ -37,6 +34,8 @@ abstract class ConfigParamSpec {
   public abstract String              key();
 
   public abstract TypeMirror          type();
+
+  public abstract Optional<TypeMirror> collectionType();
 
   public abstract String              defaultValue();
 

@@ -33,6 +33,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.reflect.Array;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -58,6 +59,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
@@ -74,6 +76,7 @@ import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
+import static javax.lang.model.type.TypeKind.ARRAY;
 import static javax.lang.model.type.TypeKind.DECLARED;
 import static javax.lang.model.type.TypeKind.VOID;
 
@@ -182,14 +185,16 @@ public class CoatProcessor extends AbstractProcessor {
       .addSuperinterface(ClassName.get(ConfigParam.class))
       .addMethod(MethodSpec.constructorBuilder()
         .addModifiers(PRIVATE)
-        .addParameter(String.class,     "key",          FINAL)
-        .addParameter(Class.class,      "type",         FINAL)
-        .addParameter(String.class,     "defaultValue", FINAL)
-        .addParameter(TypeName.BOOLEAN, "mandatory",    FINAL)
-        .addStatement("this.$N = $N", "key",          "key")
-        .addStatement("this.$N = $N", "type",         "type")
-        .addStatement("this.$N = $N", "defaultValue", "defaultValue")
-        .addStatement("this.$N = $N", "mandatory",    "mandatory")
+        .addParameter(String.class,     "key",            FINAL)
+        .addParameter(Class.class,      "type",           FINAL)
+        .addParameter(Class.class,      "collectionType", FINAL)
+        .addParameter(String.class,     "defaultValue",   FINAL)
+        .addParameter(TypeName.BOOLEAN, "mandatory",      FINAL)
+        .addStatement("this.$N = $N", "key",            "key")
+        .addStatement("this.$N = $N", "type",           "type")
+        .addStatement("this.$N = $N", "collectionType", "collectionType")
+        .addStatement("this.$N = $N", "defaultValue",   "defaultValue")
+        .addStatement("this.$N = $N", "mandatory",      "mandatory")
         .build())
       ;
 
@@ -197,6 +202,7 @@ public class CoatProcessor extends AbstractProcessor {
 
     this.addFieldAndAccessor(typeSpecBuilder, String.class,     "key");
     this.addFieldAndAccessor(typeSpecBuilder, Class.class,      "type");
+    this.addFieldAndAccessor(typeSpecBuilder, Class.class,      "collectionType");
     this.addFieldAndAccessor(typeSpecBuilder, String.class,     "defaultValue");
     this.addFieldAndAccessor(typeSpecBuilder, TypeName.BOOLEAN, "mandatory");
 
@@ -367,9 +373,10 @@ public class CoatProcessor extends AbstractProcessor {
     final String constName= this.toConstName(configParamSpec.methodeName());
 
     TypeSpec.Builder enumConstBuilder =
-      TypeSpec.anonymousClassBuilder("$S, $L.class, $S, $L",
+      TypeSpec.anonymousClassBuilder("$S, $L.class, $L, $S, $L",
                                      configParamSpec.key(),
-                                     toBaseType(configParamSpec.type()),
+                                     toBaseType(configParamSpec),
+                                     getCollectionTypeName(configParamSpec).map(c -> c+".class").orElse(null),
                                      configParamSpec.defaultValue() != null && !configParamSpec.defaultValue().trim().isEmpty()
                                        ? configParamSpec.defaultValue()
                                        : null,
@@ -427,7 +434,9 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private String toBaseType(final TypeMirror type) {
+  private String toBaseType(final ConfigParamSpec paramSpec) {
+    final TypeMirror type = paramSpec.type();
+
     final TypeMirror optionalType = this.processingEnv.getElementUtils().getTypeElement("java.util.Optional").asType();
     final TypeMirror optionalIntType = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalInt").asType();
     final TypeMirror optionalLongType = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalLong").asType();
@@ -452,7 +461,8 @@ public class CoatProcessor extends AbstractProcessor {
       final TypeMirror erasure = this.processingEnv.getTypeUtils().erasure(type);
       final List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
 
-      if (this.processingEnv.getTypeUtils().isAssignable(erasure, optionalType)) {
+      if (this.processingEnv.getTypeUtils().isAssignable(erasure, optionalType)
+        || paramSpec.collectionType().isPresent()) {
         if (typeArguments.size() < 1) {
           throw new CoatProcessorException("Optionals without type argument are not supported.");
         }
@@ -462,6 +472,11 @@ public class CoatProcessor extends AbstractProcessor {
 
         return typeArguments.get(0).toString();
       }
+    }
+
+    if (type.getKind() == ARRAY) {
+      final ArrayType arraysType= (ArrayType) type;
+      return arraysType.getComponentType().toString();
     }
 
     return type.toString();
@@ -487,6 +502,21 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
+  private Optional<String> getCollectionTypeName(final ConfigParamSpec configParamSpec) {
+    if (configParamSpec.collectionType().isEmpty()) {
+      return Optional.empty();
+    }
+
+    final TypeMirror collectionType = configParamSpec.collectionType().get();
+    if (collectionType.getKind() == DECLARED) {
+      final DeclaredType declaredType= (DeclaredType) collectionType;
+      return Optional.of(this.processingEnv.getTypeUtils().erasure(collectionType).toString());
+    }
+
+    return Optional.of(collectionType.toString());
+  }
+
+
   private void addAccessorMethod(final TypeSpec.Builder typeSpecBuilder, final ConfigParamSpec configParamSpec, final ClassName fqEnumName) {
     final ExecutableElement annotatedMethod= configParamSpec.annotatedMethod();
 
@@ -497,13 +527,13 @@ public class CoatProcessor extends AbstractProcessor {
                                ? configParamSpec.defaultValue()
                                : "";
 
-    if (isOptional(configParamSpec.type()) && !defaultValue.trim().isEmpty()) {
+    if (!configParamSpec.mandatory() && !defaultValue.trim().isEmpty()) {
       processingEnv.getMessager().printMessage(Kind.WARNING,
                                                "Optional and default value don't make much sense together. The Optional will never be empty.",
                                                annotatedMethod);
     }
 
-    final String getter= getSuperGetterName(configParamSpec.type(), !defaultValue.trim().isEmpty());
+    final String getter= getSuperGetterName(configParamSpec.type(), !defaultValue.trim().isEmpty(), configParamSpec.collectionType());
 
     final MethodSpec.Builder methodSpecBuilder= MethodSpec.overriding((ExecutableElement) annotatedMethod)
         .addStatement("return super.$L($T)",
@@ -592,12 +622,25 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private String getSuperGetterName(final TypeMirror type, final boolean hasDefaultValue) {
+  private String getSuperGetterName(final TypeMirror type, final boolean hasDefaultValue, final Optional<TypeMirror> collectionType) {
     final StringBuilder sb= new StringBuilder("get");
 
     final String typeName= type.toString();
 
-    if (typeName.startsWith("java.util.Optional<")) {
+    // FIXME: These types are used more often. They should be defined in a central place.
+    final TypeMirror listType = this.processingEnv.getElementUtils().getTypeElement(List.class.getCanonicalName()).asType();
+    final TypeMirror setType = this.processingEnv.getElementUtils().getTypeElement(Set.class.getCanonicalName()).asType();
+
+
+    if (collectionType.isPresent()) {
+      if (collectionType.get().toString().equals(Array.class.getCanonicalName())) {
+        sb.append("Array");
+      } else if (this.processingEnv.getTypeUtils().isAssignable(collectionType.get(), listType)) {
+        sb.append("List");
+      } else if (this.processingEnv.getTypeUtils().isAssignable(collectionType.get(), setType)) {
+        sb.append("Set");
+      }
+    } else if (typeName.startsWith("java.util.Optional<")) {
       sb.append("Optional");
     } else if (typeName.startsWith("java.util.Optional")) {
       sb.append(typeName.substring("java.util.".length()));

@@ -27,16 +27,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.stream.Stream;
 import javax.tools.JavaFileObject;
 import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,6 +50,7 @@ import static com.google.testing.compile.Compiler.javac;
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
 import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -699,6 +704,59 @@ public class CoatProcessorIT {
     ));
 
     this.assertResult(instance, "optionalWithDefault", Optional.of("Hurz!"));
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test the implementation of an existing optional float.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testOptionalFloat() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.util.Optional;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public Optional<Float> optionalFloat();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass, "optionalFloat");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "optionalFloat", "1.5",
+      "irrelevant key", "irrelevant value"
+    ));
+
+    this.assertResult(instance, "optionalFloat", Optional.of(Float.valueOf(1.5f)));
 
     this.assertNoValidationErrors(instance);
   }
@@ -2235,6 +2293,135 @@ public class CoatProcessorIT {
       .hasMessageStartingWith("@Coat.Config is only supported on interfaced at the moment:\n")
       .hasMessageContaining("  Non-interface type: com.example.TestConfig")
       ;
+  }
+
+
+  /**
+   * Test that multiple values can correctly be parsed into an array, a list and a set.
+   */
+  @Test
+  public void testCollectionTypes() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.List;" +
+            "\n" + "import java.util.Set;" +
+            "\n" + "import java.nio.file.Path;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String[] arrayOfStrings();" +
+            "\n" + "" +
+            "\n" + "  public List<Charset> listOfCharsets();" +
+            "\n" + "" +
+            "\n" + "  public Set<Path> setOfPaths();"+
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "arrayOfStrings",
+                       "listOfCharsets",
+                       "setOfPaths");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "arrayOfStrings", "val1 val2",
+      "listOfCharsets", "UTF-8 US-ASCII",
+      "setOfPaths", "/tmp /usr/share/doc /home/poiu"
+    ));
+
+    this.assertResult(instance, "arrayOfStrings", new String[]{"val1", "val2"});
+    this.assertResult(instance, "listOfCharsets", List.of(UTF_8, US_ASCII));
+    this.assertResult(instance, "setOfPaths", Set.of(Paths.get("/tmp"), Paths.get("/usr/share/doc"), Paths.get("/home/poiu")));
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that collections can take a default value.
+   */
+  @Test
+  public void testCollectionWithDefault() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.List;" +
+            "\n" + "import java.util.Set;" +
+            "\n" + "import java.nio.file.Path;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(defaultValue=\"one two\")" +
+            "\n" + "  public String[] arrayOfStrings();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(defaultValue=\"UTF-8 US-ASCII\")" +
+            "\n" + "  public List<Charset> listOfCharsets();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(defaultValue=\"/tmp /usr/share/doc /home/poiu\")" +
+            "\n" + "  public Set<Path> setOfPaths();"+
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "arrayOfStrings",
+                       "listOfCharsets",
+                       "setOfPaths");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      // no values are set, therefore the defaults shoutld apply
+    ));
+
+    this.assertResult(instance, "arrayOfStrings", new String[]{"one", "two"});
+    this.assertResult(instance, "listOfCharsets", List.of(UTF_8, US_ASCII));
+    this.assertResult(instance, "setOfPaths", Set.of(Paths.get("/tmp"), Paths.get("/usr/share/doc"), Paths.get("/home/poiu")));
+
+    this.assertNoValidationErrors(instance);
   }
 
 

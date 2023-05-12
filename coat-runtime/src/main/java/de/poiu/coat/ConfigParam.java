@@ -25,6 +25,8 @@ public interface ConfigParam {
 
   public Class<?>  type();
 
+  public Class<?> collectionType();
+
   public String  defaultValue();
 
   public boolean mandatory();
