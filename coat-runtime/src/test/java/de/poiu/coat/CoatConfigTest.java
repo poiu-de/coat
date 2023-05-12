@@ -17,10 +17,12 @@ package de.poiu.coat;
 
 import de.poiu.coat.validation.ConfigValidationException;
 import de.poiu.coat.validation.ImmutableValidationFailure;
-import de.poiu.coat.validation.ValidationFailure;
 import de.poiu.coat.validation.ValidationResult;
+import java.lang.reflect.Array;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
@@ -41,17 +43,19 @@ public class CoatConfigTest {
   }
 
   private static class ParamImpl implements ConfigParam {
-    private final String key;
+    private final String   key;
     private final Class<?> type;
-    private final String defaultValue;
-    private final boolean mandatory;
+    private final Class<?> collectionType;
+    private final String   defaultValue;
+    private final boolean  mandatory;
 
 
-    public ParamImpl(String key, Class<?> type, String defaultValue, boolean mandatory) {
-      this.key = key;
-      this.type = type;
-      this.defaultValue = defaultValue;
-      this.mandatory = mandatory;
+    public ParamImpl(String key, Class<?> type, Class<?> collectionType, String defaultValue, boolean mandatory) {
+      this.key            = key;
+      this.type           = type;
+      this.collectionType = collectionType;
+      this.defaultValue   = defaultValue;
+      this.mandatory      = mandatory;
     }
 
 
@@ -64,6 +68,12 @@ public class CoatConfigTest {
     @Override
     public Class<?> type() {
       return this.type;
+    }
+
+
+    @Override
+    public Class<?> collectionType() {
+      return this.collectionType;
     }
 
 
@@ -90,9 +100,9 @@ public class CoatConfigTest {
   public void testValidate_missingKey() throws Exception {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, true);
-    final ConfigParam p2= new ParamImpl("key2", String.class, null, true);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, null, true);
+    final ConfigParam p2= new ParamImpl("key2", String.class, null, null, true);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, null, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1")
@@ -126,9 +136,9 @@ public class CoatConfigTest {
   public void testValidate_parseError() throws Exception {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", int.class,    null, true);
-    final ConfigParam p2= new ParamImpl("key2", int.class,    null, true);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", int.class,    null, null, true);
+    final ConfigParam p2= new ParamImpl("key2", int.class,    null, null, true);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, null, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "55",
@@ -165,9 +175,9 @@ public class CoatConfigTest {
   public void testGet_String() {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, false);
-    final ConfigParam p2= new ParamImpl("key2", String.class, null, false);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, null, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, null, null, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, null, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1", "key2", "val2")
@@ -189,10 +199,10 @@ public class CoatConfigTest {
   public void testGet_Int() {
     // - preparation
 
-    final ConfigParam dec= new ParamImpl("dec", int.class, null, false);
-    final ConfigParam hex= new ParamImpl("hex", int.class, null, false);
-    final ConfigParam oct= new ParamImpl("oct", int.class, null, false);
-    final ConfigParam bin= new ParamImpl("bin", int.class, null, false);
+    final ConfigParam dec= new ParamImpl("dec", int.class, null, null, false);
+    final ConfigParam hex= new ParamImpl("hex", int.class, null, null, false);
+    final ConfigParam oct= new ParamImpl("oct", int.class, null, null, false);
+    final ConfigParam bin= new ParamImpl("bin", int.class, null, null, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("dec", "1234",
@@ -220,10 +230,10 @@ public class CoatConfigTest {
   public void testGet_Long() {
     // - preparation
 
-    final ConfigParam dec= new ParamImpl("dec", long.class, null, false);
-    final ConfigParam hex= new ParamImpl("hex", long.class, null, false);
-    final ConfigParam oct= new ParamImpl("oct", long.class, null, false);
-    final ConfigParam bin= new ParamImpl("bin", long.class, null, false);
+    final ConfigParam dec= new ParamImpl("dec", long.class, null, null, false);
+    final ConfigParam hex= new ParamImpl("hex", long.class, null, null, false);
+    final ConfigParam oct= new ParamImpl("oct", long.class, null, null, false);
+    final ConfigParam bin= new ParamImpl("bin", long.class, null, null, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("dec", "1234",
@@ -251,9 +261,9 @@ public class CoatConfigTest {
   public void testGet_Double() {
     // - preparation
 
-    final ConfigParam dec= new ParamImpl("dec", double.class, null, false);
-    final ConfigParam hex= new ParamImpl("hex", double.class, null, false);
-    final ConfigParam dot= new ParamImpl("dot", double.class, null, false);
+    final ConfigParam dec= new ParamImpl("dec", double.class, null, null, false);
+    final ConfigParam hex= new ParamImpl("hex", double.class, null, null, false);
+    final ConfigParam dot= new ParamImpl("dot", double.class, null, null, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("dec", "1234",
@@ -279,9 +289,9 @@ public class CoatConfigTest {
   public void testGet_DoubleWithExponent() {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("int", double.class, null, false);
-    final ConfigParam p2= new ParamImpl("dot", double.class, null, false);
-    final ConfigParam p3= new ParamImpl("hex", double.class, null, false);
+    final ConfigParam p1= new ParamImpl("int", double.class, null, null, false);
+    final ConfigParam p2= new ParamImpl("dot", double.class, null, null, false);
+    final ConfigParam p3= new ParamImpl("hex", double.class, null, null, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("int", "1234e2",
@@ -307,9 +317,9 @@ public class CoatConfigTest {
   public void testGet_ConfigParam() {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, false);
-    final ConfigParam p2= new ParamImpl("key2", String.class, null, false);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, null, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, null, null, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, null, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1", "key2", "val2")
@@ -331,9 +341,9 @@ public class CoatConfigTest {
   public void testGetOptional() {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, false);
-    final ConfigParam p2= new ParamImpl("key2", String.class, null, false);
-    final ConfigParam p3= new ParamImpl("key3", String.class, null, false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, null, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, null, null, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, null, false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1", "key2", "val2")
@@ -355,9 +365,9 @@ public class CoatConfigTest {
   public void testGetOrDefault() {
     // - preparation
 
-    final ConfigParam p1= new ParamImpl("key1", String.class, null, false);
-    final ConfigParam p2= new ParamImpl("key2", String.class, "default2", false);
-    final ConfigParam p3= new ParamImpl("key3", String.class, "default3", false);
+    final ConfigParam p1= new ParamImpl("key1", String.class, null, null, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, null, "default2", false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, null, "default3", false);
 
     final CoatConfig c= new ConfigImpl(
       Map.of("key1", "val1", "key2", "val2")
@@ -373,5 +383,30 @@ public class CoatConfigTest {
     assertThat((String)c.getOrDefault(p1)).isEqualTo("val1");
     assertThat((String)c.getOrDefault(p2)).isEqualTo("val2");
     assertThat((String)c.getOrDefault(p3)).isEqualTo("default3");
+  }
+
+
+  @Test
+  public void testCollectionTypes() {
+    // - preparation
+
+    final ConfigParam p1= new ParamImpl("key1", String.class, Array.class, null, false);
+    final ConfigParam p2= new ParamImpl("key2", String.class, List.class, null, false);
+    final ConfigParam p3= new ParamImpl("key3", String.class, Set.class, null, false);
+
+    final CoatConfig c= new ConfigImpl(
+      Map.of("key1", "val1.1 val1.2", "key2", "val2.1 val2.2", "key3", "val3.1 val3.2")
+      ,
+      new ConfigParam[]{
+        p1,
+        p2,
+        p3,
+      });
+
+    // - test and verification
+
+    assertThat((String[])c.getArray(p1)).isEqualTo(new String[]{"val1.1", "val1.2"});
+    assertThat(c.getList(p2)).isEqualTo(List.of("val2.1", "val2.2"));
+    assertThat(c.getSet(p3)).isEqualTo(Set.of("val3.1", "val3.2"));
   }
 }

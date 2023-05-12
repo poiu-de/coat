@@ -37,6 +37,7 @@ import de.poiu.coat.validation.ValidationResult;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -55,6 +56,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
@@ -191,6 +193,11 @@ public abstract class CoatConfig {
       try {
         if (this.isPrimitive(param)) {
           this.convertPrimitive(stringValue, param);
+        } else if (this.isCollection(param)) {
+          final String[] values= this.splitArray(stringValue);
+          for (final String value : values) {
+            this.convertValue(value, param);
+          }
         } else {
           this.convertValue(stringValue, param);
         }
@@ -259,6 +266,72 @@ public abstract class CoatConfig {
     } catch (TypeConversionException e) {
       throw new UncheckedTypeConversionException("Error converting value " + stringValue + " to type " + configParam.type().getName(), e);
     }
+  }
+
+
+  public <T> T[] getArrayOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
+    final String stringValue= this.props.get(configParam.key());
+    if (stringValue != null && !stringValue.trim().isEmpty()) {
+      return getArray(configParam);
+    } else {
+      try {
+        final String[] stringValues = this.splitArray(configParam.defaultValue());
+        return getArray(configParam, stringValues);
+      } catch (TypeConversionException ex) {
+        throw new UncheckedTypeConversionException("Error splitting value " + stringValue + " into a list", ex);
+      }
+    }
+  }
+
+
+  public <T> T[] getArray(final ConfigParam configParam) throws UncheckedTypeConversionException {
+    final String stringValue= this.getString(configParam);
+    try {
+      final String[] stringValues = this.splitArray(stringValue);
+      return getArray(configParam, stringValues);
+    } catch (TypeConversionException ex) {
+      throw new UncheckedTypeConversionException("Error splitting value " + stringValue + " into a list", ex);
+    }
+  }
+
+
+  private <T> T[] getArray(final ConfigParam configParam, final String[] stringValues) throws UncheckedTypeConversionException {
+    final T[] array= (T[]) Array.newInstance(configParam.type(), stringValues.length);
+    for (int i= 0; i<stringValues.length; i++) {
+      try {
+        array[i]= this.convertValue(stringValues[i], configParam);
+      } catch (TypeConversionException e) {
+        throw new UncheckedTypeConversionException("Error converting value " + stringValues[i] + " to type " + configParam.type().getName(), e);
+      }
+    }
+
+    return array;
+  }
+
+
+  private String[] splitArray(final String stringValue) {
+    // FIXME: Provide otper splitter implementations
+    return stringValue.split("\\s+");
+  }
+
+
+  public <T> List<T> getList(final ConfigParam configParam) throws UncheckedTypeConversionException {
+    return List.of(getArray(configParam));
+  }
+
+
+  public <T> List<T> getListOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
+    return List.of(getArrayOrDefault(configParam));
+  }
+
+
+  public <T> Set<T> getSet(final ConfigParam configParam) throws UncheckedTypeConversionException {
+    return Set.of(getArray(configParam));
+  }
+
+
+  public <T> Set<T> getSetOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
+    return Set.of(getArrayOrDefault(configParam));
   }
 
 
@@ -529,8 +602,13 @@ public abstract class CoatConfig {
   }
 
 
-  private boolean isPrimitive(ConfigParam param) {
+  private boolean isPrimitive(final ConfigParam param) {
     return !param.type().getName().contains(".");
+  }
+
+
+  private boolean isCollection(final ConfigParam param) {
+    return param.collectionType() != null;
   }
 
 
