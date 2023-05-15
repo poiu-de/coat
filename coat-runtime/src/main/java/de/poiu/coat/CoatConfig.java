@@ -18,12 +18,16 @@ package de.poiu.coat;
 import de.poiu.coat.convert.BooleanConverter;
 import de.poiu.coat.convert.CharsetConverter;
 import de.poiu.coat.convert.Converter;
+import de.poiu.coat.convert.DoubleConverter;
 import de.poiu.coat.convert.DurationConverter;
 import de.poiu.coat.convert.FileConverter;
+import de.poiu.coat.convert.FloatConverter;
 import de.poiu.coat.convert.InetAddressConverter;
+import de.poiu.coat.convert.IntegerConverter;
 import de.poiu.coat.convert.LocalDateConverter;
 import de.poiu.coat.convert.LocalDateTimeConverter;
 import de.poiu.coat.convert.LocalTimeConverter;
+import de.poiu.coat.convert.LongConverter;
 import de.poiu.coat.convert.MessageDigestConverter;
 import de.poiu.coat.convert.PathConverter;
 import de.poiu.coat.convert.StringConverter;
@@ -89,6 +93,10 @@ public abstract class CoatConfig {
     converters.put(Charset.class,       new CharsetConverter());
     converters.put(InetAddress.class,   new InetAddressConverter());
     converters.put(MessageDigest.class, new MessageDigestConverter());
+    converters.put(Integer.class,       new IntegerConverter());
+    converters.put(Long.class,          new LongConverter());
+    converters.put(Float.class,         new FloatConverter());
+    converters.put(Double.class,        new DoubleConverter());
   }
 
 
