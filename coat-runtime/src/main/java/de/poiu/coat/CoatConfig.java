@@ -24,6 +24,7 @@ import de.poiu.coat.convert.FileConverter;
 import de.poiu.coat.convert.FloatConverter;
 import de.poiu.coat.convert.InetAddressConverter;
 import de.poiu.coat.convert.IntegerConverter;
+import de.poiu.coat.convert.ListParser;
 import de.poiu.coat.convert.LocalDateConverter;
 import de.poiu.coat.convert.LocalDateTimeConverter;
 import de.poiu.coat.convert.LocalTimeConverter;
@@ -33,6 +34,7 @@ import de.poiu.coat.convert.PathConverter;
 import de.poiu.coat.convert.StringConverter;
 import de.poiu.coat.convert.TypeConversionException;
 import de.poiu.coat.convert.UncheckedTypeConversionException;
+import de.poiu.coat.convert.WhitespaceSeparatedListParser;
 import de.poiu.coat.validation.ConfigValidationException;
 import de.poiu.coat.validation.ImmutableValidationFailure;
 import de.poiu.coat.validation.ImmutableValidationResult;
@@ -62,6 +64,8 @@ import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
 import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
@@ -98,6 +102,8 @@ public abstract class CoatConfig {
     converters.put(Float.class,         new FloatConverter());
     converters.put(Double.class,        new DoubleConverter());
   }
+
+  private static ListParser listParser= new WhitespaceSeparatedListParser();
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -317,9 +323,8 @@ public abstract class CoatConfig {
   }
 
 
-  private String[] splitArray(final String stringValue) {
-    // FIXME: Provide otper splitter implementations
-    return stringValue.split("\\s+");
+  private String[] splitArray(final String stringValue) throws TypeConversionException {
+    return listParser.convert(stringValue);
   }
 
 
@@ -665,7 +670,6 @@ public abstract class CoatConfig {
   }
 
 
-
   public static void registerConverter(final Class<?> type, final Converter<?> converter) {
     converters.put(type, converter);
   }
@@ -685,6 +689,11 @@ public abstract class CoatConfig {
     }
 
     return filtered;
+  }
+
+
+  public static void registerListParser(final ListParser p) {
+    listParser= p;
   }
 
 
