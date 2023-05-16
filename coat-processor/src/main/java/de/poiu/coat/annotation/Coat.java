@@ -22,6 +22,7 @@ package de.poiu.coat.annotation;
  * All concrete annotations are inner classes of this one.
  *
  */
+import de.poiu.coat.convert.Converter;
 import de.poiu.coat.processor.casing.CasingStrategy;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
@@ -53,6 +54,7 @@ public @interface Coat {
   public @interface Config {
     public String          className()  default  "";
     public CasingStrategy  casing()     default  AS_IS;
+    public Class<? extends Converter<?>>[] converters() default VoidConverter.class;
   }
 
 
@@ -68,6 +70,7 @@ public @interface Coat {
   public @interface Param {
     public String  key()           default  "";
     public String  defaultValue()  default  "";
+    public Class<? extends Converter<?>> converter() default VoidConverter.class;
   }
 
 

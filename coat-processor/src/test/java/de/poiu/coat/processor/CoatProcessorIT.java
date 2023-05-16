@@ -40,7 +40,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 import javax.tools.JavaFileObject;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -2420,6 +2419,258 @@ public class CoatProcessorIT {
     this.assertResult(instance, "arrayOfStrings", new String[]{"one", "two"});
     this.assertResult(instance, "listOfCharsets", List.of(UTF_8, US_ASCII));
     this.assertResult(instance, "setOfPaths", Set.of(Paths.get("/tmp"), Paths.get("/usr/share/doc"), Paths.get("/home/poiu")));
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that custom converters are actually used and the converters on a @Param annotation
+   * take precedence over the @Config annotation;
+   */
+  @Test
+  public void testCustomConverters_onParamAndConfig() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.HurzConverter",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class HurzConverter implements Converter<String> {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String convert(final String s) throws TypeConversionException {" +
+            "\n" + "    return \"Hurz!\";" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.UppercaseConverter",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.StringConverter;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class UppercaseConverter implements Converter<String> {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String convert(final String s) throws TypeConversionException {" +
+            "\n" + "    if (s == null) { return \"\"; };" +
+            "\n" + "    return s.toUpperCase();" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(converters={ UppercaseConverter.class })" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String normalString();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(converter=HurzConverter.class)" +
+            "\n" + "  public String alwaysHurz();" +
+            "\n" + "" +
+            "\n" + "  public Charset unaffectedCharset();" +
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "normalString",
+                       "alwaysHurz",
+                       "unaffectedCharset");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "normalString", "some value",
+      "alwaysHurz", "25",
+      "unaffectedCharset", "UTF-8"
+    ));
+
+    this.assertResult(instance, "normalString", "SOME VALUE");
+    this.assertResult(instance, "alwaysHurz", "Hurz!");
+    this.assertResult(instance, "unaffectedCharset", UTF_8);
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that custom converters are correctly used for collections.
+   */
+  @Test
+  public void testCustomConverters_inCollection() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.HurzConverter",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class HurzConverter implements Converter<String> {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String convert(final String s) throws TypeConversionException {" +
+            "\n" + "    return \"Hurz!\";" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.UppercaseConverter",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.StringConverter;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class UppercaseConverter implements Converter<String> {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String convert(final String s) throws TypeConversionException {" +
+            "\n" + "    if (s == null) { return \"\"; };" +
+            "\n" + "    return s.toUpperCase();" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.List;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(converters={ UppercaseConverter.class })" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String[] normalStrings();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(converter=HurzConverter.class)" +
+            "\n" + "  public List<String> alwaysHurz();" +
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "normalStrings",
+                       "alwaysHurz");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "normalStrings", "some value",
+      "alwaysHurz", "one two 3"
+    ));
+
+    this.assertResult(instance, "normalStrings", new String[]{"SOME", "VALUE"});
+    this.assertResult(instance, "alwaysHurz", List.of("Hurz!", "Hurz!", "Hurz!"));
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that custom converters that extend other converters can be used.
+   */
+  @Test
+  public void testCustomConverters_ConverterExtendsOtherConverter() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.UppercaseConverter",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.StringConverter;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class UppercaseConverter extends StringConverter {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String convert(final String s) throws TypeConversionException {" +
+            "\n" + "    return super.convert(s).toUpperCase();" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(converters={ UppercaseConverter.class })" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String normalString();" +
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "normalString");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "normalString", "some value"
+    ));
+
+    this.assertResult(instance, "normalString", "SOME VALUE");
 
     this.assertNoValidationErrors(instance);
   }

@@ -44,6 +44,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -116,6 +119,7 @@ public abstract class CoatConfig {
 
   private final List<EmbeddedConfig> embeddedConfigs= new ArrayList<>();
 
+  private final Map<Class<?>, Converter<?>> customConverters= new ConcurrentHashMap<>();
 
   //////////////////////////////////////////////////////////////////////////////
   //
@@ -581,7 +585,25 @@ public abstract class CoatConfig {
 
 
   private <T> T convertValue(final String stringValue, final ConfigParam configParam) throws TypeConversionException {
-    final Converter<?> converter= converters.get(configParam.type());
+    Converter<?> converter= null;
+    // First try the converter that was explicitly configured for this field
+    final Class<? extends Converter<?>> paramConverterClass = configParam.converter();
+    if (paramConverterClass != null) {
+      try {
+        converter = paramConverterClass.getConstructor().newInstance();
+      } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+        throw new TypeConversionException("Error converting “" + stringValue + "” for type “" + configParam.type() + "” via explicit converter “" + paramConverterClass.getCanonicalName() + "”.", ex);
+      }
+    }
+    // Then try the converter registered for this CoatConfig
+    if (converter == null) {
+      converter= this.customConverters.get(configParam.type());
+    }
+    // Finally try the default converter
+    if (converter == null) {
+      converter= converters.get(configParam.type());
+    }
+
     if (converter == null) {
       throw new TypeConversionException("No converter registered for type '" + configParam.type() + "'.");
     }
@@ -672,6 +694,74 @@ public abstract class CoatConfig {
 
   public static void registerConverter(final Class<?> type, final Converter<?> converter) {
     converters.put(type, converter);
+  }
+
+
+  protected void registerCustomConverter(final Converter<?> converter) {
+    try {
+      final Class<?> type= this.getConverterBaseType(converter.getClass());
+      this.customConverters.put(type, converter);
+    } catch (TypeConversionException ex) {
+      throw new UncheckedTypeConversionException("Error trying to find base class of converter “" + converter.getClass().getCanonicalName() + "”", ex);
+    }
+  }
+
+
+  private static Class<?> getConverterBaseType(final Class<? extends Converter> converterClass) throws TypeConversionException {
+    final List<Type> genericInterfaces = getGenericInterfacesRecursively(converterClass);
+
+    final ParameterizedType converterType;
+    try {
+      converterType = getConverterType(genericInterfaces);
+      if (converterType == null) {
+        throw new RuntimeException("Could not find generic converter for “" + converterClass.getCanonicalName() + "”");
+      }
+    } catch (ClassNotFoundException ex) {
+      throw new TypeConversionException("Error loading generic converter for “" + converterClass.getCanonicalName() + "”");
+    }
+
+    final Type[] actualTypeArguments = converterType.getActualTypeArguments();
+    if (actualTypeArguments.length < 1) {
+      throw new RuntimeException("No type arguments for converter “" + converterType.getTypeName() + "”.");
+    } else if (actualTypeArguments.length > 1) {
+      throw new RuntimeException("More than 1 type argument for converter “" + converterType.getTypeName() + "”.");
+    }
+
+    final String typeName = actualTypeArguments[0].getTypeName();
+    try {
+      return Class.forName(typeName);
+    } catch (ClassNotFoundException ex) {
+      throw new TypeConversionException("Error loading class “" + typeName + "”", ex);
+    }
+  }
+
+
+  private static List<Type> getGenericInterfacesRecursively(final Class converterClass) {
+    final List<Type> genericInterfaces= new ArrayList<>();
+    genericInterfaces.addAll(List.of(converterClass.getGenericInterfaces()));
+
+    final Class<?> superclass = converterClass.getSuperclass();
+    if (superclass != null) {
+      genericInterfaces.addAll(getGenericInterfacesRecursively((Class)superclass));
+    }
+
+    return genericInterfaces;
+  }
+
+
+  private static ParameterizedType getConverterType(final List<Type> genericInterfaces) throws ClassNotFoundException {
+    for (final Type interf : genericInterfaces) {
+      if (interf instanceof ParameterizedType) {
+        final ParameterizedType pType= (ParameterizedType) interf;
+        if (pType.getRawType() != null) {
+          final Class<?> rawType = Class.forName(pType.getRawType().getTypeName());
+          if (rawType.isAssignableFrom(Converter.class)) {
+            return pType;
+          }
+        }
+      }
+    }
+    return null;
   }
 
 

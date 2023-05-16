@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2023 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat;
+package de.poiu.coat.annotation;
 
-import de.poiu.coat.convert.Converter;
+import de.poiu.coat.convert.ListParser;
 
 
-/**
- *
- */
-public interface ConfigParam {
+abstract class VoidListParser implements ListParser {
 
-  public String  key();
-
-  public Class<?>  type();
-
-  public Class<?> collectionType();
-
-  public String  defaultValue();
-
-  public boolean mandatory();
-
-  public Class<? extends Converter<?>> converter();
 }
