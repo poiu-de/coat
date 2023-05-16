@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2023 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * You may obtain a copy of the License arrayType
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -13,25 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat;
+package de.poiu.coat.processor;
 
-import de.poiu.coat.convert.Converter;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.SimpleAnnotationValueVisitor9;
 
 
-/**
- *
- */
-public interface ConfigParam {
+class ClassTypeVisitor extends SimpleAnnotationValueVisitor9<TypeMirror, Void> {
 
-  public String  key();
+  @Override
+  public TypeMirror visitType(final TypeMirror t, Void p) {
+    return t;
+  }
 
-  public Class<?>  type();
-
-  public Class<?> collectionType();
-
-  public String  defaultValue();
-
-  public boolean mandatory();
-
-  public Class<? extends Converter<?>> converter();
 }

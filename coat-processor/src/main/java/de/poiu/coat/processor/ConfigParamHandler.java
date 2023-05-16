@@ -19,15 +19,17 @@ import de.poiu.coat.annotation.Coat;
 import de.poiu.coat.processor.casing.CasingStrategy;
 import java.lang.reflect.Array;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 
@@ -49,6 +51,8 @@ public class ConfigParamHandler {
   }
 
 
+  private final ClassTypeVisitor classTypeVisitor= new ClassTypeVisitor();
+
   private final ProcessingEnvironment processingEnv;
   private final TypeMirror arrayTypeElement;
   private final TypeMirror listTypeElement;
@@ -57,6 +61,7 @@ public class ConfigParamHandler {
   private final TypeMirror optionalIntType;
   private final TypeMirror optionalDoubleType;
   private final TypeMirror optionalLongType;
+  private final TypeMirror coatParamType;
 
 
   public ConfigParamHandler(final ProcessingEnvironment processingEnv) {
@@ -68,6 +73,7 @@ public class ConfigParamHandler {
     this.optionalIntType   = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalInt").asType();
     this.optionalDoubleType= this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalDouble").asType();
     this.optionalLongType  = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalLong").asType();
+    this.coatParamType     = this.processingEnv.getElementUtils().getTypeElement(Coat.Param.class.getCanonicalName()).asType();
   }
 
 
@@ -84,6 +90,8 @@ public class ConfigParamHandler {
     final TypeMirror type                          = returnTypeMirror;
     final Optional<TypeMirror> collectionType      = getCollectionType(wrappedType.surrounding);
     final boolean isMandatory                      = !isOptional(type) && defaultValue != null;
+    final Optional<TypeMirror> converter           = getConverter(executableAnnotatedMethod);;
+
 
     return ImmutableConfigParamSpec.builder()
       .annotatedMethod(executableAnnotatedMethod)
@@ -93,6 +101,7 @@ public class ConfigParamHandler {
       .defaultValue(defaultValue)
       .mandatory(isMandatory)
       .collectionType(collectionType)
+      .converter(converter)
       .build();
   }
 
@@ -109,6 +118,32 @@ public class ConfigParamHandler {
     }
 
     return annotationsByType[0];
+  }
+
+
+  private Optional<TypeMirror> getConverter(final ExecutableElement annotatedMethod) {
+    final List<? extends AnnotationMirror> annotationMirrors = annotatedMethod.getAnnotationMirrors();
+
+    for (final AnnotationMirror annotationMirror : annotationMirrors) {
+      // only process @Coat.Param annotations
+      if (!this.processingEnv.getTypeUtils().isAssignable(annotationMirror.getAnnotationType(), coatParamType)) {
+        continue;
+      }
+
+      // search for the “converter” value
+      final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = annotationMirror.getElementValues();
+      for (final Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet()) {
+        final ExecutableElement key = entry.getKey();
+        if (!key.getSimpleName().toString().equals("converter")) {
+          continue;
+        }
+
+        final AnnotationValue val = entry.getValue();
+        return Optional.of(val.accept(classTypeVisitor, null));
+      }
+    }
+
+    return Optional.empty();
   }
 
 
@@ -214,6 +249,7 @@ public class ConfigParamHandler {
         return new SurroundingAndEnclosingTypes(null, type);
     }
   }
+
 
   private TypeMirror assertZeroOrOne(List<? extends TypeMirror> typeArguments) {
     switch (typeArguments.size()) {

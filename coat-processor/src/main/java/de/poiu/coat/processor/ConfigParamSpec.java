@@ -15,6 +15,7 @@
  */
 package de.poiu.coat.processor;
 
+import de.poiu.coat.convert.Converter;
 import java.util.Optional;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
@@ -27,18 +28,20 @@ import org.immutables.value.Value;
 @Value.Immutable
 abstract class ConfigParamSpec {
 
-  public abstract ExecutableElement   annotatedMethod();
+  public abstract ExecutableElement       annotatedMethod();
 
-  public abstract String              methodeName();
+  public abstract String                  methodeName();
 
-  public abstract String              key();
+  public abstract String                  key();
 
-  public abstract TypeMirror          type();
+  public abstract TypeMirror              type();
 
-  public abstract Optional<TypeMirror> collectionType();
+  public abstract Optional<TypeMirror>    collectionType();
 
-  public abstract String              defaultValue();
+  public abstract String                  defaultValue();
 
-  public abstract boolean             mandatory();
+  public abstract boolean                 mandatory();
+
+  public abstract Optional<TypeMirror>    converter();
 
 }

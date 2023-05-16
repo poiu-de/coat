@@ -29,6 +29,7 @@ import com.squareup.javapoet.TypeSpec;
 import de.poiu.coat.CoatConfig;
 import de.poiu.coat.ConfigParam;
 import de.poiu.coat.annotation.Coat;
+import de.poiu.coat.convert.Converter;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +38,7 @@ import java.lang.reflect.Array;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -54,6 +56,8 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -190,11 +194,13 @@ public class CoatProcessor extends AbstractProcessor {
         .addParameter(Class.class,      "collectionType", FINAL)
         .addParameter(String.class,     "defaultValue",   FINAL)
         .addParameter(TypeName.BOOLEAN, "mandatory",      FINAL)
+        .addParameter(Class.class,      "converter",      FINAL)
         .addStatement("this.$N = $N", "key",            "key")
         .addStatement("this.$N = $N", "type",           "type")
         .addStatement("this.$N = $N", "collectionType", "collectionType")
         .addStatement("this.$N = $N", "defaultValue",   "defaultValue")
         .addStatement("this.$N = $N", "mandatory",      "mandatory")
+        .addStatement("this.$N = $N", "converter",      "converter")
         .build())
       ;
 
@@ -205,6 +211,7 @@ public class CoatProcessor extends AbstractProcessor {
     this.addFieldAndAccessor(typeSpecBuilder, Class.class,      "collectionType");
     this.addFieldAndAccessor(typeSpecBuilder, String.class,     "defaultValue");
     this.addFieldAndAccessor(typeSpecBuilder, TypeName.BOOLEAN, "mandatory");
+    this.addFieldAndAccessor(typeSpecBuilder, Class.class,      "converter");
 
     final List<ConfigParamSpec> annotatedMethods= annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
@@ -285,6 +292,9 @@ public class CoatProcessor extends AbstractProcessor {
       final CodeBlock initEmbeddedCodeBlock = this.addEmbeddedAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
       initEmbeddedConfigs.add(initEmbeddedCodeBlock);
     }
+
+    final Optional<CodeBlock> registerCustomConverters= this.addRegisterCustomConverters(annotatedInterface);
+    registerCustomConverters.ifPresent(initEmbeddedConfigs::add);
 
     typeSpecBuilder.addMethod(
       MethodSpec.constructorBuilder()
@@ -373,15 +383,19 @@ public class CoatProcessor extends AbstractProcessor {
     final String constName= this.toConstName(configParamSpec.methodeName());
 
     TypeSpec.Builder enumConstBuilder =
-      TypeSpec.anonymousClassBuilder("$S, $L.class, $L, $S, $L",
+      TypeSpec.anonymousClassBuilder("$S, $L.class, $L, $S, $L, $L",
                                      configParamSpec.key(),
                                      toBaseType(configParamSpec),
                                      getCollectionTypeName(configParamSpec).map(c -> c+".class").orElse(null),
                                      configParamSpec.defaultValue() != null && !configParamSpec.defaultValue().trim().isEmpty()
                                        ? configParamSpec.defaultValue()
                                        : null,
-                                     configParamSpec.mandatory());
-
+                                     configParamSpec.mandatory(),
+                                     configParamSpec.converter()
+                                       .map(TypeMirror::toString)
+                                       .map(s -> s + ".class")
+                                       .orElse("null")
+                                     );
 
     final String javadoc= super.processingEnv.getElementUtils().getDocComment(annotatedMethod);
     if (javadoc != null) {
@@ -644,8 +658,6 @@ public class CoatProcessor extends AbstractProcessor {
       sb.append("Optional");
     } else if (typeName.startsWith("java.util.Optional")) {
       sb.append(typeName.substring("java.util.".length()));
-    } else if (typeName.equals("java.lang.String")) {
-      sb.append("String");
     } else if (!typeName.contains(".")) {
       sb.append(upperFirstChar(typeName));
     }
@@ -1157,5 +1169,60 @@ public class CoatProcessor extends AbstractProcessor {
     final TypeElement embeddedType = this.getEmbeddedType(configParamSpec);
     final Coat.Config[] configAnnotations = embeddedType.getAnnotationsByType(Coat.Config.class);
     return configAnnotations.length > 0;
+  }
+
+
+  private Optional<CodeBlock> addRegisterCustomConverters(final TypeElement annotatedInterface) {
+    // add custom converters
+    final List<TypeMirror> customConverters= this.getCustomConverters(annotatedInterface);
+
+    if (customConverters.isEmpty()) {
+      return Optional.empty();
+    }
+
+    // The code  to initialize this field. Needs to be added to the typeSpecs constructors
+    final CodeBlock.Builder codeBlockBuilder = CodeBlock.builder();
+    codeBlockBuilder.add("\n");
+
+    customConverters.
+      forEach((c) -> {
+        codeBlockBuilder.addStatement(
+          "super.registerCustomConverter(new $L())",
+          c.toString()
+        );
+      });
+
+    return Optional.of(codeBlockBuilder.build());
+  }
+
+
+  private List<TypeMirror> getCustomConverters(final TypeElement annotatedInterface) {
+    final List<? extends AnnotationMirror> annotationMirrors = annotatedInterface.getAnnotationMirrors();
+
+    final TypeMirror coatType= this.processingEnv.getElementUtils().getTypeElement(Coat.Config.class.getCanonicalName()).asType();
+
+    final List<TypeMirror> converters= new ArrayList<>();
+    final ClassTypeArrayVisitor visitor= new ClassTypeArrayVisitor(converters);
+
+    for (final AnnotationMirror annotationMirror : annotationMirrors) {
+      // only process @Coat.Param annotations
+      if (!this.processingEnv.getTypeUtils().isAssignable(annotationMirror.getAnnotationType(), coatType)) {
+        continue;
+      }
+
+      // search for the “converter” value
+      final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = annotationMirror.getElementValues();
+      for (final Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet()) {
+        final ExecutableElement key = entry.getKey();
+        if (!key.getSimpleName().toString().equals("converters")) {
+          continue;
+        }
+
+        final AnnotationValue val = entry.getValue();
+        val.accept(visitor, null);
+      }
+    }
+
+    return converters;
   }
 }
