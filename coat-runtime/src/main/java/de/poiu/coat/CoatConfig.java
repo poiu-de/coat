@@ -67,8 +67,6 @@ import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
 import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
@@ -113,13 +111,14 @@ public abstract class CoatConfig {
   //
   // Attributes
 
-  private final Map<String, String> props= new HashMap<>();
+  private final Map<String, String>         props=            new HashMap<>();
 
-  private final ConfigParam[] params;
+  private final ConfigParam[]               params;
 
-  private final List<EmbeddedConfig> embeddedConfigs= new ArrayList<>();
+  private final List<EmbeddedConfig>        embeddedConfigs=  new ArrayList<>();
 
   private final Map<Class<?>, Converter<?>> customConverters= new ConcurrentHashMap<>();
+
 
   //////////////////////////////////////////////////////////////////////////////
   //
@@ -139,7 +138,7 @@ public abstract class CoatConfig {
     // FIXME: By using java.util.Properties, the properties are unsorted. We would have to either
     //        use apron or parse them here again (which would be too much of a hassle)
 
-    // TODO: Differntiate between ignoring unexpected values, logging them or throwing an exception
+    // TODO: Differentiate between ignoring unexpected values, logging them or throwing an exception
     //       Better do this only at validation time
 
   }

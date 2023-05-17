@@ -52,8 +52,8 @@ public @interface Coat {
    */
   @Target(ElementType.TYPE)
   public @interface Config {
-    public String          className()  default  "";
-    public CasingStrategy  casing()     default  AS_IS;
+    public String          className()                  default "";
+    public CasingStrategy  casing()                     default AS_IS;
     public Class<? extends Converter<?>>[] converters() default VoidConverter.class;
   }
 
@@ -68,8 +68,8 @@ public @interface Coat {
    */
   @Target(ElementType.METHOD)
   public @interface Param {
-    public String  key()           default  "";
-    public String  defaultValue()  default  "";
+    public String  key()                             default "";
+    public String  defaultValue()                    default "";
     public Class<? extends Converter<?>> converter() default VoidConverter.class;
   }
 
