@@ -236,6 +236,37 @@ public class CoatConfigTest {
 
 
   @Test
+  public void testGet_IntWithUnderscores() {
+    // - preparation
+
+    final ConfigParam dec= new ParamImpl("dec", int.class, null, null, false, null);
+    final ConfigParam hex= new ParamImpl("hex", int.class, null, null, false, null);
+    final ConfigParam oct= new ParamImpl("oct", int.class, null, null, false, null);
+    final ConfigParam bin= new ParamImpl("bin", int.class, null, null, false, null);
+
+    final CoatConfig c= new ConfigImpl(
+      Map.of("dec", "1_2___34",
+             "hex", "0xf_f",
+             "oct", "0_644",
+             "bin", "0b0101_0101")
+      ,
+      new ConfigParam[]{
+        dec,
+        hex,
+        oct,
+        bin,
+      });
+
+    // - test and verification
+
+    assertThat(c.getInt(dec)).isEqualTo(1_2___34);
+    assertThat(c.getInt(hex)).isEqualTo(0xf_f);
+    assertThat(c.getInt(oct)).isEqualTo(0_644);
+    assertThat(c.getInt(bin)).isEqualTo(0b0101_0101);
+  }
+
+
+  @Test
   public void testGet_Long() {
     // - preparation
 
@@ -263,6 +294,37 @@ public class CoatConfigTest {
     assertThat(c.getLong(hex)).isEqualTo(255);
     assertThat(c.getLong(oct)).isEqualTo(420);
     assertThat(c.getLong(bin)).isEqualTo(85);
+  }
+
+
+  @Test
+  public void testGet_LongWithUnderscores() {
+    // - preparation
+
+    final ConfigParam dec= new ParamImpl("dec", long.class, null, null, false, null);
+    final ConfigParam hex= new ParamImpl("hex", long.class, null, null, false, null);
+    final ConfigParam oct= new ParamImpl("oct", long.class, null, null, false, null);
+    final ConfigParam bin= new ParamImpl("bin", long.class, null, null, false, null);
+
+    final CoatConfig c= new ConfigImpl(
+      Map.of("dec", "1_2___34",
+             "hex", "0xf_f",
+             "oct", "0_644",
+             "bin", "0b0101_0101")
+      ,
+      new ConfigParam[]{
+        dec,
+        hex,
+        oct,
+        bin,
+      });
+
+    // - test and verification
+
+    assertThat(c.getLong(dec)).isEqualTo(1_2___34);
+    assertThat(c.getLong(hex)).isEqualTo(0xf_f);
+    assertThat(c.getLong(oct)).isEqualTo(0_644);
+    assertThat(c.getLong(bin)).isEqualTo(0b0101_0101);
   }
 
 
@@ -319,6 +381,34 @@ public class CoatConfigTest {
     assertThat(c.getDouble(p1)).isEqualTo(123400d);
     assertThat(c.getDouble(p2)).isEqualTo(123456d);
     assertThat(c.getDouble(p3)).isEqualTo(1020d);
+  }
+
+
+  @Test
+  public void testGet_DoubleWithUnderscores() {
+    // - preparation
+
+    final ConfigParam dec= new ParamImpl("dec", double.class, null, null, false, null);
+    final ConfigParam hex= new ParamImpl("hex", double.class, null, null, false, null);
+    final ConfigParam dot= new ParamImpl("dot", double.class, null, null, false, null);
+
+    final CoatConfig c= new ConfigImpl(
+      Map.of("dec", "1_2__34",
+             "hex", "0xf__fp0",
+             "dot", "1_234.5_6__7___8"
+             )
+      ,
+      new ConfigParam[]{
+        dec,
+        hex,
+        dot
+      });
+
+    // - test and verification
+
+    assertThat(c.getDouble(dec)).isEqualTo(1_2__34d);
+    assertThat(c.getDouble(hex)).isEqualTo(0xf_fp0d);
+    assertThat(c.getDouble(dot)).isEqualTo(1_234.5_6__7___8d);
   }
 
 

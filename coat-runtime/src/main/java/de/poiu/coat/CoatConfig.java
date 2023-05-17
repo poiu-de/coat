@@ -508,16 +508,16 @@ public abstract class CoatConfig {
 
   protected double getDouble(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
-    return Double.parseDouble(stringValue);
+    return this.parseDouble(stringValue);
   }
 
 
   protected double getDoubleOrDefault(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
-      return Double.parseDouble(stringValue);
+      return this.parseDouble(stringValue);
     } else {
-      return Double.parseDouble(configParam.defaultValue());
+      return this.parseDouble(configParam.defaultValue());
     }
   }
 
@@ -525,7 +525,7 @@ public abstract class CoatConfig {
   protected OptionalDouble getOptionalDouble(final ConfigParam configParam) {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
-      final double value= Double.parseDouble(stringValue);
+      final double value= this.parseDouble(stringValue);
       return OptionalDouble.of(value);
     } else {
       return OptionalDouble.empty();
@@ -830,35 +830,52 @@ public abstract class CoatConfig {
 
 
   private int parseInt(final String stringValue) {
-    if (stringValue.startsWith("0x")) {
+    final String number= removeOptionalUnderscores(stringValue);
+    if (number.startsWith("0x")) {
       // hex value
-      return Integer.parseInt(stringValue.substring(2), 16);
-    } else if (stringValue.startsWith("0b")) {
+      return Integer.parseInt(number.substring(2), 16);
+    } else if (number.startsWith("0b")) {
       // bin value
-      return Integer.parseInt(stringValue.substring(2), 2);
-    } else if (stringValue.startsWith("0")) {
+      return Integer.parseInt(number.substring(2), 2);
+    } else if (number.startsWith("0")) {
       // oct value
-      return Integer.parseInt(stringValue.substring(1), 8);
+      return Integer.parseInt(number.substring(1), 8);
     } else {
       // dec value
-      return Integer.parseInt(stringValue);
+      return Integer.parseInt(number);
     }
   }
 
 
   private long parseLong(final String stringValue) {
-    if (stringValue.startsWith("0x")) {
+    final String number= removeOptionalUnderscores(stringValue);
+    if (number.startsWith("0x")) {
       // hex value
-      return Long.parseLong(stringValue.substring(2), 16);
-    } else if (stringValue.startsWith("0b")) {
+      return Long.parseLong(number.substring(2), 16);
+    } else if (number.startsWith("0b")) {
       // bin value
-      return Long.parseLong(stringValue.substring(2), 2);
-    } else if (stringValue.startsWith("0")) {
+      return Long.parseLong(number.substring(2), 2);
+    } else if (number.startsWith("0")) {
       // oct value
-      return Long.parseLong(stringValue.substring(1), 8);
+      return Long.parseLong(number.substring(1), 8);
     } else {
       // dec value
-      return Long.parseLong(stringValue);
+      return Long.parseLong(number);
+    }
+  }
+
+
+  private double parseDouble(final String stringValue) {
+    final String number= removeOptionalUnderscores(stringValue);
+    return Double.parseDouble(number);
+  }
+
+
+  private String removeOptionalUnderscores(final String number) {
+    if (number.startsWith("0x")) {
+      return number.replaceAll("(?<=[a-f])_+(?=[a-f])", "");
+    } else {
+      return number.replaceAll("(?<=\\d)_+(?=\\d)", "");
     }
   }
 }
