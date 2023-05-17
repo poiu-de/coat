@@ -649,7 +649,7 @@ public abstract class CoatConfig {
 
     sb.append("{\n");
     for (int i= 0; i< paramStrings.length; i++) {
-      sb.append(String.format("  %-"+maxKeyLength+"s %-"+maxTypeLength+"s: %s\n", paramStrings[i]));
+      sb.append(String.format("  %-"+maxKeyLength+"s %-"+maxTypeLength+"s: %s\n", (Object)paramStrings[i]));
     }
 
     // Include the embedded configs (and indent them a bit)
