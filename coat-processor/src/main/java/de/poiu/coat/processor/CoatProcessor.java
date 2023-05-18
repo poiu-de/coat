@@ -65,6 +65,8 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
@@ -457,16 +459,20 @@ public class CoatProcessor extends AbstractProcessor {
     final TypeMirror optionalDoubleType = this.processingEnv.getElementUtils().getTypeElement("java.util.OptionalDouble").asType();
     final TypeMirror optErasure = this.processingEnv.getTypeUtils().erasure(optionalType);
 
-    if (this.processingEnv.getTypeUtils().isSameType(type, optionalIntType)) {
+    if (type.getKind() == TypeKind.INT || this.processingEnv.getTypeUtils().isSameType(type, optionalIntType)) {
       return int.class.getName();
     }
 
-    if (this.processingEnv.getTypeUtils().isSameType(type, optionalLongType)) {
+    if (type.getKind() == TypeKind.LONG || this.processingEnv.getTypeUtils().isSameType(type, optionalLongType)) {
       return long.class.getName();
     }
 
-    if (this.processingEnv.getTypeUtils().isSameType(type, optionalDoubleType)) {
+    if (type.getKind() == TypeKind.DOUBLE || this.processingEnv.getTypeUtils().isSameType(type, optionalDoubleType)) {
       return double.class.getName();
+    }
+
+    if (type.getKind() == TypeKind.BOOLEAN) {
+      return boolean.class.getName();
     }
 
     if (type.getKind() == DECLARED) {
@@ -484,13 +490,23 @@ public class CoatProcessor extends AbstractProcessor {
           throw new RuntimeException("Optionals with multiple type arguments are not expected.");
         }
 
-        return typeArguments.get(0).toString();
+        final TypeMirror typeArg = typeArguments.get(0);
+        if (typeArg.getKind() == DECLARED) {
+          final DeclaredType dc= (DeclaredType) typeArg;
+          return dc.asElement().toString();
+        } else {
+          return typeArg.toString();
+        }
       }
+
+      return declaredType.asElement().toString();
     }
 
     if (type.getKind() == ARRAY) {
       final ArrayType arraysType= (ArrayType) type;
-      return arraysType.getComponentType().toString();
+      final TypeMirror componentType = arraysType.getComponentType();
+
+      return this.processingEnv.getTypeUtils().asElement(componentType).toString();
     }
 
     return type.toString();
@@ -639,7 +655,8 @@ public class CoatProcessor extends AbstractProcessor {
   private String getSuperGetterName(final TypeMirror type, final boolean hasDefaultValue, final Optional<TypeMirror> collectionType) {
     final StringBuilder sb= new StringBuilder("get");
 
-    final String typeName= type.toString();
+    final TypeNameVisitor visitor= new TypeNameVisitor();
+    final String typeName= type.accept(visitor, null);
 
     // FIXME: These types are used more often. They should be defined in a central place.
     final TypeMirror listType = this.processingEnv.getElementUtils().getTypeElement(List.class.getCanonicalName()).asType();
@@ -733,7 +750,7 @@ public class CoatProcessor extends AbstractProcessor {
 
 
   /**
-   * Returns the element corresponding to the {@code @Generated} annotation present at the target
+   * Returns the typeElement corresponding to the {@code @Generated} annotation present at the target
    * {@code SourceVersion}.
    * <p>
    * Returns {@code javax.annotation.processing.Generated} for JDK 9 and newer, {@code

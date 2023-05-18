@@ -1338,6 +1338,7 @@ public class CoatProcessorIT {
             "\n" + "package com.example;" +
             "\n" + "" +
             "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.util.Optional;" +
             "\n" + "" +
             "\n" + "@Coat.Config" +
             "\n" + "public interface BaseConfig1 {" +
@@ -2671,6 +2672,105 @@ public class CoatProcessorIT {
     ));
 
     this.assertResult(instance, "normalString", "SOME VALUE");
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that additional annotations (like for bean validation) do not disturb the
+   * Coat generation.
+   */
+  @Test
+  public void testAdditionalAnnotations() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.annotation.Hurz",
+            "" +
+            "\n" + "package com.example.annotation;" +
+            "\n" + "" +
+            "\n" + "import java.lang.annotation.*;" +
+            "\n" + "" +
+            "\n" + "@Retention(RetentionPolicy.RUNTIME)" +
+            "\n" + "@Target({ElementType.TYPE, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE})" +
+            "\n" + "public @interface Hurz {" +
+            "\n" + "" +
+            "\n" + "  public int     foo();" +
+            "\n" + "  public String  bar();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import com.example.annotation.Hurz;" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.lang.Integer;" +
+            "\n" + "import java.util.List;" +
+            "\n" + "import java.util.OptionalInt;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  @Hurz(foo = 10, bar = \"frobnitz\")" +
+            "\n" + "  public String mandatoryString();" +
+            "\n" + "" +
+            "\n" + "  @Hurz(foo = 15, bar = \"baz\")" +
+            "\n" + "  public int primitiveInt();" +
+            "\n" + "" +
+            "\n" + "  @Hurz(foo = 20, bar = \"qux\")" +
+            "\n" + "  public OptionalInt optionalInt();" +
+            "\n" + "" +
+            "\n" + "  @Hurz(foo = 25, bar = \"ham\")" +
+            "\n" + "  public String[] array();" +
+            "\n" + "" +
+            "\n" + "  @Hurz(foo = 30, bar = \"eggs\")" +
+            "\n" + "  public boolean bool();" +
+            "\n" + "" +
+            "\n" + "  public List<@Hurz(foo = 30, bar = \"spam\") Integer> listOfInts();" +
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "mandatoryString",
+                       "primitiveInt",
+                       "optionalInt",
+                       "array",
+                       "bool",
+                       "listOfInts");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "mandatoryString", "this is my string",
+      "primitiveInt", "1",
+      "optionalInt", "3",
+      "array", "one two three",
+      "bool", "true",
+      "listOfInts", "1 2 3"
+    ));
+
+    this.assertResult(instance, "mandatoryString", "this is my string");
+    this.assertResult(instance, "primitiveInt", 1);
+    this.assertResult(instance, "optionalInt", OptionalInt.of(3));
+    this.assertResult(instance, "array", new String[]{"one", "two", "three"});
+    this.assertResult(instance, "bool", Boolean.TRUE);
+    this.assertResult(instance, "listOfInts", List.of(1, 2, 3));
 
     this.assertNoValidationErrors(instance);
   }
