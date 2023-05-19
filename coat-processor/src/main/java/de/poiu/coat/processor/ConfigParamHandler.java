@@ -188,10 +188,10 @@ public class ConfigParamHandler {
 
 
   private static String stripGetPrefix(final String accessorName) {
-    final Pattern PATTERN_ACCESSOR_NAME= Pattern.compile(
-      "^(get)"        // the “get” prefix
-        + "(\\p{Lu})"   // followed by an uppercase letter
-        + "(.*)");      // and the rest of the name
+    final Pattern PATTERN_ACCESSOR_NAME= Pattern.compile(""
+      + "^(get)"      // the “get” prefix
+      + "(\\p{Lu})"   // followed by an uppercase letter
+      + "(.*)");      // and the rest of the name
     final Matcher matcher = PATTERN_ACCESSOR_NAME.matcher(accessorName);
     if (matcher.matches()) {
       return matcher.group(2).toLowerCase()

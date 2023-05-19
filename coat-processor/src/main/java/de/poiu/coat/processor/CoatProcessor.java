@@ -1222,12 +1222,12 @@ public class CoatProcessor extends AbstractProcessor {
     final ClassTypeArrayVisitor visitor= new ClassTypeArrayVisitor(converters);
 
     for (final AnnotationMirror annotationMirror : annotationMirrors) {
-      // only process @Coat.Param annotations
+      // only process @Coat.Config annotations
       if (!this.processingEnv.getTypeUtils().isAssignable(annotationMirror.getAnnotationType(), coatType)) {
         continue;
       }
 
-      // search for the “converter” value
+      // search for the “converters” value
       final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = annotationMirror.getElementValues();
       for (final Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet()) {
         final ExecutableElement key = entry.getKey();
