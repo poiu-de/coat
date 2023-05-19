@@ -2267,6 +2267,247 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test that the java bean get prefix is ignored when generating keys (unless specified otherwise)
+   */
+  @Test
+  public void testStripGetPrefix() throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config()" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String normalKey();" +
+            "\n" + "" +
+            "\n" + "  public String getSomeString();" +
+            "\n" + "" +
+            "\n" + "  public String getnobean();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "normalKey",
+                       "getSomeString",
+                       "getnobean");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "normalKey", "normal value",
+      "someString", "the prefix is stripped here",
+      "getSomeString", "this should not exist",
+      "getnobean", "the prefix is NOT stripped here",
+      "nobean", "this should not exist"
+    ));
+
+    this.assertResult(instance, "normalKey", "normal value");
+    this.assertResult(instance, "getSomeString", "the prefix is stripped here");
+    this.assertResult(instance, "getnobean", "the prefix is NOT stripped here");
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that the java bean get prefix is retained when generating keys if specified.
+   */
+  @Test
+  public void testDontStripGetPrefix() throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(stripGetPrefix = false)" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String normalKey();" +
+            "\n" + "" +
+            "\n" + "  public String getSomeString();" +
+            "\n" + "" +
+            "\n" + "  public String getnobean();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "normalKey",
+                       "getSomeString",
+                       "getnobean");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "normalKey", "normal value",
+      "someString", "this should not exist",
+      "getSomeString", "the prefix is NOT stripped here",
+      "getnobean", "the prefix is NOT stripped here",
+      "nobean", "this should not exist"
+    ));
+
+    this.assertResult(instance, "normalKey", "normal value");
+    this.assertResult(instance, "getSomeString", "the prefix is NOT stripped here");
+    this.assertResult(instance, "getnobean", "the prefix is NOT stripped here");
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that the java bean get prefix is ignored even when using a differt casing strategy than AS_IS.
+   */
+  @Test
+  public void testStripGetPrefixDifferentCasingStrategy() throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "import static de.poiu.coat.processor.casing.CasingStrategy.SNAKE_CASE;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(casing = SNAKE_CASE)" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String normalKey();" +
+            "\n" + "" +
+            "\n" + "  public String getSomeString();" +
+            "\n" + "" +
+            "\n" + "  public String getnobean();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "normalKey",
+                       "getSomeString",
+                       "getnobean");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "normal_key", "normal value",
+      "some_string", "the prefix is stripped here",
+      "get_some_string", "this should not exist",
+      "getnobean", "the prefix is NOT stripped here",
+      "nobean", "this should not exist"
+    ));
+
+    this.assertResult(instance, "normalKey", "normal value");
+    this.assertResult(instance, "getSomeString", "the prefix is stripped here");
+    this.assertResult(instance, "getnobean", "the prefix is NOT stripped here");
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test that the java bean get prefix is not stripped if an explicit key definition contains it.
+   */
+  @Test
+  public void testDontStripGetPrefixOnExplicitKey() throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config()" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String getSomeString();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"getSomeOtherString\")" +
+            "\n" + "  public String getSomeOtherString();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "getSomeString",
+                       "getSomeOtherString");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "someString", "the prefix is stripped here",
+      "getSomeOtherString", "the prefix is NOT stripped here",
+      "someOtherString", "this should not exist"
+    ));
+
+    this.assertResult(instance, "getSomeString", "the prefix is stripped here");
+    this.assertResult(instance, "getSomeOtherString", "the prefix is NOT stripped here");
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
    * Test that an exception is thrown on annotated types other than interfaces.
    */
   @Test

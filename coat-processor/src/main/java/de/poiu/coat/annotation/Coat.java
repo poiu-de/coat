@@ -54,6 +54,7 @@ public @interface Coat {
   public @interface Config {
     public String          className()                  default "";
     public CasingStrategy  casing()                     default AS_IS;
+    public boolean         stripGetPrefix()             default true;
     public Class<? extends Converter<?>>[] converters() default VoidConverter.class;
   }
 

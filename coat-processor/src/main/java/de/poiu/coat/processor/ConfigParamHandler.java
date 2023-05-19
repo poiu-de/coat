@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -174,8 +176,29 @@ public class ConfigParamHandler {
       throw new RuntimeException("Enclosing element of annotatedMethod “"+annotatedMethod.toString()+"” does not have a @Coat.Config annotation: "+enclosingElement);
     }
 
+    final boolean stripGetPrefix= coatConfigAnnotation.stripGetPrefix();
     final CasingStrategy casingStrategy = coatConfigAnnotation.casing();
-    return casingStrategy.convert(annotatedMethod.getSimpleName().toString());
+    String accessorName= annotatedMethod.getSimpleName().toString();
+    if (stripGetPrefix) {
+      accessorName= stripGetPrefix(accessorName);
+    }
+
+    return casingStrategy.convert(accessorName);
+  }
+
+
+  private static String stripGetPrefix(final String accessorName) {
+    final Pattern PATTERN_ACCESSOR_NAME= Pattern.compile(
+      "^(get)"        // the “get” prefix
+        + "(\\p{Lu})"   // followed by an uppercase letter
+        + "(.*)");      // and the rest of the name
+    final Matcher matcher = PATTERN_ACCESSOR_NAME.matcher(accessorName);
+    if (matcher.matches()) {
+      return matcher.group(2).toLowerCase()
+        + matcher.group(3);
+    }
+
+    return accessorName;
   }
 
 
