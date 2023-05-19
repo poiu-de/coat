@@ -44,4 +44,6 @@ abstract class ConfigParamSpec {
 
   public abstract Optional<TypeMirror>    converter();
 
+  public abstract Optional<TypeMirror>    listParser();
+
 }

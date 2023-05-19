@@ -92,7 +92,8 @@ public class ConfigParamHandler {
     final TypeMirror type                          = returnTypeMirror;
     final Optional<TypeMirror> collectionType      = getCollectionType(wrappedType.surrounding);
     final boolean isMandatory                      = !isOptional(type) && defaultValue != null;
-    final Optional<TypeMirror> converter           = getConverter(executableAnnotatedMethod);;
+    final Optional<TypeMirror> converter           = getAnnotationValue(executableAnnotatedMethod, "converter");
+    final Optional<TypeMirror> listParser          = getAnnotationValue(executableAnnotatedMethod, "listParser");
 
 
     return ImmutableConfigParamSpec.builder()
@@ -104,6 +105,7 @@ public class ConfigParamHandler {
       .mandatory(isMandatory)
       .collectionType(collectionType)
       .converter(converter)
+      .listParser(listParser)
       .build();
   }
 
@@ -123,7 +125,7 @@ public class ConfigParamHandler {
   }
 
 
-  private Optional<TypeMirror> getConverter(final ExecutableElement annotatedMethod) {
+  private Optional<TypeMirror> getAnnotationValue(final ExecutableElement annotatedMethod, final String valueName) {
     final List<? extends AnnotationMirror> annotationMirrors = annotatedMethod.getAnnotationMirrors();
 
     for (final AnnotationMirror annotationMirror : annotationMirrors) {
@@ -132,11 +134,11 @@ public class ConfigParamHandler {
         continue;
       }
 
-      // search for the “converter” value
+      // search for the given value
       final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = annotationMirror.getElementValues();
       for (final Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet()) {
         final ExecutableElement key = entry.getKey();
-        if (!key.getSimpleName().toString().equals("converter")) {
+        if (!key.getSimpleName().toString().equals(valueName)) {
           continue;
         }
 

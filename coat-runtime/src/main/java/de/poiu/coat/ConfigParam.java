@@ -16,6 +16,7 @@
 package de.poiu.coat;
 
 import de.poiu.coat.convert.Converter;
+import de.poiu.coat.convert.ListParser;
 
 
 /**
@@ -34,4 +35,6 @@ public interface ConfigParam {
   public boolean mandatory();
 
   public Class<? extends Converter<?>> converter();
+
+  public Class<? extends ListParser> listParser();
 }

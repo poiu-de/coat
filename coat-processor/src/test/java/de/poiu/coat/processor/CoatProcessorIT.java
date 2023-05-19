@@ -2980,6 +2980,101 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test that custom ListParsers are actually used and the ListParsers on a @Param annotation
+   * take precedence over the @Config annotation;
+   */
+  @Test
+  public void testCustomListParser_onParamAndConfig() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.CommaListParser",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.ListParser;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class CommaListParser implements ListParser {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String[] convert(final String s) throws TypeConversionException {" +
+            "\n" + "    return s.split(\"\\\\s*,\\\\s*\");" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.PipeListParser",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.ListParser;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class PipeListParser implements ListParser {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String[] convert(final String s) throws TypeConversionException {" +
+            "\n" + "    return s.split(\"\\\\s*\\\\|\\\\s*\");" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(listParser=CommaListParser.class)" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String normalString();" +
+            "\n" + "" +
+            "\n" + "  public String[] commaSeparated();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(listParser=PipeListParser.class)" +
+            "\n" + "  public String[] pipeSeparated();" +
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.CommaListParser",
+                                "com.example.PipeListParser",
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "normalString",
+                       "commaSeparated",
+                       "pipeSeparated");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "normalString", "some | value",
+      "commaSeparated", "first string, second string",
+      "pipeSeparated", "first, string | second, string"
+    ));
+
+    this.assertResult(instance, "normalString", "some | value");
+    this.assertResult(instance, "commaSeparated", new String[]{"first string", "second string"});
+    this.assertResult(instance, "pipeSeparated", new String[]{"first, string", "second, string"});
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
    * Test that additional annotations (like for bean validation) do not disturb the
    * Coat generation.
    */

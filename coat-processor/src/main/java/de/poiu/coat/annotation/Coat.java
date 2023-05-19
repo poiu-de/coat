@@ -23,6 +23,7 @@ package de.poiu.coat.annotation;
  *
  */
 import de.poiu.coat.convert.Converter;
+import de.poiu.coat.convert.ListParser;
 import de.poiu.coat.processor.casing.CasingStrategy;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
@@ -56,6 +57,7 @@ public @interface Coat {
     public CasingStrategy  casing()                     default AS_IS;
     public boolean         stripGetPrefix()             default true;
     public Class<? extends Converter<?>>[] converters() default VoidConverter.class;
+    public Class<? extends ListParser>     listParser() default VoidListParser.class;
   }
 
 
@@ -69,9 +71,10 @@ public @interface Coat {
    */
   @Target(ElementType.METHOD)
   public @interface Param {
-    public String  key()                             default "";
-    public String  defaultValue()                    default "";
-    public Class<? extends Converter<?>> converter() default VoidConverter.class;
+    public String  key()                              default "";
+    public String  defaultValue()                     default "";
+    public Class<? extends Converter<?>> converter()  default VoidConverter.class;
+    public Class<? extends ListParser>   listParser() default VoidListParser.class;
   }
 
 

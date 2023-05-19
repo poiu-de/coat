@@ -286,13 +286,28 @@ public abstract class CoatConfig {
   }
 
 
+  private ListParser getListParser(final ConfigParam configParam) throws TypeConversionException {
+    // First try the ListParser that was explicitly configured for this field
+    final Class<? extends ListParser> paramListParserClass = configParam.listParser();
+    if (paramListParserClass != null) {
+      try {
+        return paramListParserClass.getConstructor().newInstance();
+      } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+        throw new TypeConversionException("Error instantiating “" + paramListParserClass.getCanonicalName() + "”.", ex);
+      }
+    }
+    // Then try the ListParser registered for this CoatConfig (or the default one)
+    return this.listParser;
+  }
+
   public <T> T[] getArrayOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
       return getArray(configParam);
     } else {
       try {
-        final String[] stringValues = this.splitArray(configParam.defaultValue());
+        final ListParser listParser = this.getListParser(configParam);
+        final String[] stringValues = listParser.convert(configParam.defaultValue());
         return getArray(configParam, stringValues);
       } catch (TypeConversionException ex) {
         throw new UncheckedTypeConversionException("Error splitting value " + stringValue + " into a list", ex);
@@ -304,7 +319,8 @@ public abstract class CoatConfig {
   public <T> T[] getArray(final ConfigParam configParam) throws UncheckedTypeConversionException {
     final String stringValue= this.getString(configParam);
     try {
-      final String[] stringValues = this.splitArray(stringValue);
+        final ListParser listParser = this.getListParser(configParam);
+      final String[] stringValues = listParser.convert(stringValue);
       return getArray(configParam, stringValues);
     } catch (TypeConversionException ex) {
       throw new UncheckedTypeConversionException("Error splitting value " + stringValue + " into a list", ex);
