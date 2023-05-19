@@ -19,6 +19,7 @@ import com.google.testing.compile.Compilation;
 import com.google.testing.compile.CompilationSubject;
 import com.google.testing.compile.JavaFileObjects;
 import de.poiu.coat.CoatConfig;
+import de.poiu.coat.convert.TypeConversionException;
 import de.poiu.coat.validation.ConfigValidationException;
 import de.poiu.coat.validation.ImmutableValidationFailure;
 import de.poiu.coat.validation.ValidationFailure;
@@ -2430,6 +2431,61 @@ public class CoatProcessorIT {
    * take precedence over the @Config annotation;
    */
   @Test
+  public void testNoConverterForType() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.math.BigInteger;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public BigInteger bigInt();" +
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+
+    this.assertMethods(generatedConfigClass,
+                       "bigInt");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "bigInt", "200"
+    ));
+
+    assertThatThrownBy(() ->
+      instance.getClass().getMethod("bigInt").invoke(instance))
+      .cause()
+      .hasRootCauseInstanceOf(TypeConversionException.class)
+      .hasRootCauseMessage("No converter registered for type 'class java.math.BigInteger'.")
+      ;
+  }
+
+
+  /**
+   * Test that custom converters are actually used and the converters on a @Param annotation
+   * take precedence over the @Config annotation;
+   */
+  @Test
   public void testCustomConverters_onParamAndConfig() throws Exception {
     // - preparation && execution
 
@@ -2493,6 +2549,8 @@ public class CoatProcessorIT {
     CompilationSubject.assertThat(compilation).succeeded();
 
     this.assertGeneratedClasses(compilation,
+                                "com.example.HurzConverter",
+                                "com.example.UppercaseConverter",
                                 "com.example.TestConfig",
                                 "com.example.TestConfigParam",
                                 "com.example.ImmutableTestConfig");
@@ -2586,6 +2644,8 @@ public class CoatProcessorIT {
     CompilationSubject.assertThat(compilation).succeeded();
 
     this.assertGeneratedClasses(compilation,
+                                "com.example.HurzConverter",
+                                "com.example.UppercaseConverter",
                                 "com.example.TestConfig",
                                 "com.example.TestConfigParam",
                                 "com.example.ImmutableTestConfig");
@@ -2656,6 +2716,7 @@ public class CoatProcessorIT {
     CompilationSubject.assertThat(compilation).succeeded();
 
     this.assertGeneratedClasses(compilation,
+                                "com.example.UppercaseConverter",
                                 "com.example.TestConfig",
                                 "com.example.TestConfigParam",
                                 "com.example.ImmutableTestConfig");
