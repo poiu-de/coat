@@ -5,7 +5,7 @@ weight: 5
 
 ### Example config file generation
 
-The annotation processor generates an example config file (according to the
+The annotation processor generates an example config file (conforming to the
 specification of Java `.properties` files) for each annotated interface.
 That example contains an entry for each accessor method. 
 

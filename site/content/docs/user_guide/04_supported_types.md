@@ -8,6 +8,10 @@ weight: 4
 The following types are supported by Coat out of the box and can directly
 be used as return types of the accessor methods in the annotated interface.
 
+  * java.lang.Integer
+  * java.lang.Long
+  * java.lang.Float
+  * java.lang.Double
   * java.lang.String
   * java.time.Duration
   * java.time.LocalDate
@@ -51,14 +55,14 @@ different in that they are directly supported without any Converter.
 
   * boolean
 
-    The strings "true" and "yes" (regardless of their case) are considered
+    The strings “true" and “yes” (regardless of their case) are considered
     as `Boolean.TRUE`, all other Strings (including null) are considered to
     be `Boolean.FALSE`.
 
 Be aware that numeric types (int, long, double) do _not_ allow the
 specification of a type suffix (`l` for long, `d` for double, etc.) as
-would be valid in a Java literal numeric value. 
-Also underscores for separating parts of a number (like `1_000_000`) are not
+would be valid in a Java literal numeric value.  
+However, underscores for separating parts of a number (like `1_000_000`) _are_
 supported.
 
 
@@ -89,16 +93,38 @@ types with a custom Converter. If different parsing of such types is
 necessary the corresponding object type must be used and a Converter for
 that type written (e. g. a `Converter<Integer>`).
 
+Additionally to the above mentioned method of registering custom converters _at runtime_, they can also be specified declaratively on the corresponding annotations. See the description of these annotation parameters on the [type]({{< ref "/docs/user_guide/01_annotations#coat-config-converters" >}}) and on the [field]({{< ref "/docs/user_guide/01_annotations#coat-param-converter" >}}) level annotations for more information.
+
 ### Currently unsupported types
 
-At the moment no arrays or collection types are supported by Coat. Trying
-to specify an array or a collection of a generic type will lead to
-undefined behaviour.
-
-Support for arrays and collection types is in the roadmap, but not
-implemented yet.
-
-Also at the moment the primitive types `short`, `float`, `char` and `byte`
-are not supported. Therefore the next "bigger" types must be used (e. g.
+At the moment the primitive types `short`, `float`, `char` and `byte`
+are not supported. Therefore the next “bigger” types must be used (e. g.
 `int` instead of `short`) or the corresponding class (e. g. `Short` instead
 of `short`).
+
+## Collection types
+
+Since version 0.0.4 Coat supports Arrays and collections as return values of accessor methods.
+
+- Arrays
+- java.util.List
+- java.util.Set
+
+By default the values of collection types are expected to be separated by whitespace. Whitespace _inside a single_ value can be used by prefixing each such whitespace character with a backslash. For example the value `one\ two three` would then be split into a collection with the two values `one two` and `three`.
+
+Default values are supported for arrays and collections as well.
+
+```java
+@Coat.Config
+public AppConfig {
+  @Coat.Param(defaultValue = "UTF-8 US-ASCII")
+  public Charset[] allowedCharsets();
+}
+```
+
+## Registering custom ListParser
+
+Coat allows for different formats than the default whitespace separated values by registering a custom ListParser.
+Each generated config class provides a static method `registerListParser()` to register a custom parser for such values. Additionally such a ListParser can be declared on the [@Coat.Config]({{< ref "/docs/user_guide/01_annotations#coat-config-listparser" >}}) annotation as well as on the [@Coat.Param]({{< ref "/docs/user_guide/01_annotations#coat-param-listparser" >}}) annotation.
+
+A custom ListParser must implement the `de.poiu.coat.convert.ListParser` interface.

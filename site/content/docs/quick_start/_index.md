@@ -10,14 +10,14 @@ Many types are already
 [supported out of the box]({{< ref "/docs/user_guide/04_supported_types.md" >}}),
 but it is possible to use custom types.
 
-The source of the configuration data doesn't matter. While it is
+The source of the configuration data doesn’t matter. While it is
 mainly intended to be used for the usual Java `.properties` files, it can
 be used for any data that is composed of simple String-based
 key-value-mappings.
 
 Annotate the interface with the corresponding 
 [Annotations]({{< ref "/docs/user_guide/01_annotations.md" >}})
-and let the Coat annotation processor generate a concrete implementaion of
+and let the Coat annotation processor generate a concrete implementation of
 the interface. 
 
 That implementation can then be used to retrieve correctly typed config

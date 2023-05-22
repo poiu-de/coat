@@ -19,28 +19,30 @@ Missing mandatory values will throw exceptions at runtime.
 The interface _must_ be annotated with the `@Coat.Config` annotation for
 the annotation processor to recognize it.
 
-Also, each accessor _must_ be annotated with the `@Coat.Param` annotation
-to tell the processor the corresponding key in the config file.
+Each accessor _may_ be annotated with the `@Coat.Param` annotation
+to tell the processor the corresponding key in the config file (if it
+should be different than what Coat would infer otherwise) or a default
+value in case the key is missing in the config file.
+
+Both annotations have some possible attributes that can be set which are described in [Annotations]({{< ref "/docs/user_guide/01_annotations.md" >}}).
 
 For example:
 
 ```java
-package com.example; 
+package com.example;
 
 import de.poiu.coat.annotation.Coat;
 
 @Coat.Config
 public interface AppConfig {
-  @Coat.Param(key = "appName")
   public String      appName();
 
-  @Coat.Param(key = "remoteIP")
   public InetAddress remoteIP();
 
-  @Coat.Param(key = "remotePort")
+  @Coat.Param(default = "5044")
   public int         remotePort();
 
-  @Coat.Param(key = "desription")
+  @Coat.Param(key = "long_description")
   public Optional<String> description();
 }
 ```
@@ -51,7 +53,7 @@ When compiling the project the annotation processor will produce a
 concrete implementation of the interface in the same package and (by
 default) the same name with `Immutable` prepended to it. Therefore the
 above example interface would produce a `com.example.ImmutableAppConfig`
-class. 
+class.
 
 ### Use the generated config class
 
@@ -60,7 +62,7 @@ At runtime the generated config class can be instantiated with either a
 `java.util.Properties` object or, if the config data is read from some
 other source, with a `java.util.Map<String, String>`.
 
-The instantiated config object can be 
+The instantiated config object can be
 [validated]({{< ref "/docs/user_guide/03_validation.md" >}})
 to fail early in case mandatory config values are missing or existing
 values cannot be converted to the expected type.
@@ -81,9 +83,9 @@ public class MyApp {
 
     System.out.println("Starting " + config.appName());
     config.description.ifPresent(System.out::println);
-    
+
     final Socket s= new Socket(config.remoteIP, config.remotePort);
-    
+
     …
   }
 }

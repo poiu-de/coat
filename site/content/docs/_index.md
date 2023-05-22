@@ -3,8 +3,7 @@ title: "Coat — Config of Annotated Types"
 weight: 1
 ---
 
-The [Quick Start](./quick_start) guide should help getting started with Coat as easy as
-possible. 
+The [Quick Start](./quick_start) guide should help getting started with Coat as easily as possible.
 
 The [User Guide](./user_guide) is the thorough description of all aspects of Coat.
 

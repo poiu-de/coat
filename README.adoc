@@ -147,16 +147,6 @@ java.util.logging.
 //Known Bugs and Deficiencies
 //---------------------------
 
-////
-TODO:
-- Keine Collection-Typen (String[] würde gehen, aber der Unterschied null /
-  empty array ist nicht spezifiziert)
-- Keine Unterstützung von Generics. Geht sich auch, aber muss gesondert
-  behandelt werden.
-- Not a bug, but pay attention to optional params with default value. They
-  will never be absent.
-////
-
 
 
 License

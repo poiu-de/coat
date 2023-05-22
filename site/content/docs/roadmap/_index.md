@@ -8,7 +8,7 @@ planned, but not yet implemented.
 This roadmap lists some features that should be supported in future
 versions of Coat.
 
-Be aware that this is just a "vision" of Coats future. That some feature is
+Be aware that this is just a “vision” of Coats future. That some feature is
 listed in this roadmap does not necessarily mean that it will definitly be
 implemented. It may even be that some feature is planned in this roadmap
 even if it is technically not possible to implement.
