@@ -1,0 +1,3 @@
+[submodule "site/themes/compose"]
+	path = site/themes/compose
+	url = https://github.com/poiu-de/compose.git
