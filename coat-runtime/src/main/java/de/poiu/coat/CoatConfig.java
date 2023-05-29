@@ -707,8 +707,13 @@ public abstract class CoatConfig {
   }
 
 
-  public static void registerConverter(final Class<?> type, final Converter<?> converter) {
-    converters.put(type, converter);
+  public static void registerConverter(final Converter<?> converter) {
+    try {
+      final Class<?> type= getConverterBaseType(converter.getClass());
+      converters.put(type, converter);
+    } catch (TypeConversionException ex) {
+      throw new UncheckedTypeConversionException("Error trying to find base class of converter “" + converter.getClass().getCanonicalName() + "”", ex);
+    }
   }
 
 
