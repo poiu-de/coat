@@ -25,7 +25,10 @@ import org.immutables.value.Value;
 @Value.Immutable
 @Value.Style(optionalAcceptNullable = true)
 abstract class EmbeddedConfig {
+  /** The prefix to expect in the config file for all values of this embedded config. */
   public abstract String               prefix();
+  /** Whether this embedded config is optional. */
   public abstract boolean              isOptional();
+  /** The embedded config. */
   public abstract Optional<CoatConfig> embeddedConfig();
 }

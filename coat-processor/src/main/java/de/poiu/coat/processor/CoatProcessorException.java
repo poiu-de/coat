@@ -16,6 +16,9 @@
 package de.poiu.coat.processor;
 
 
+/**
+ * An exeption that is thrown if processing the Coat annotation fails.
+ */
 public class CoatProcessorException extends RuntimeException {
 
   public CoatProcessorException(String message) {

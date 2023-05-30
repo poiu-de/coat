@@ -44,6 +44,4 @@ class TypeNameVisitor extends SimpleTypeVisitor9<String, Void> {
         throw new RuntimeException("Unsupported primitive type: "+t);
     }
   }
-
-
 }

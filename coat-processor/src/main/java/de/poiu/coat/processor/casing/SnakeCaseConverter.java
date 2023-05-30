@@ -16,7 +16,7 @@
 package de.poiu.coat.processor.casing;
 
 
-public class SnakeCaseConverter {
+class SnakeCaseConverter {
 
   public static String convert(final String key) {
     final StringBuilder sb= new StringBuilder();

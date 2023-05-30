@@ -35,7 +35,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
 
-public class ConfigParamHandler {
+class ConfigParamHandler {
 
   private static class SurroundingAndEnclosingTypes {
     public final TypeMirror surrounding;

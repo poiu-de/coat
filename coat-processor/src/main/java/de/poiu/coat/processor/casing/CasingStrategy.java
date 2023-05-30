@@ -16,34 +16,41 @@
 package de.poiu.coat.processor.casing;
 
 
+/**
+ * A strategy to use when inferring keys from the accessor names.
+ */
 public enum CasingStrategy {
   /** A casing strategy that leaves Strings unchanged. */
   AS_IS {
     @Override
-    public String convert(final String key) {
-      return key;
+    public String convert(final String accessorName) {
+      return accessorName;
     }
   },
 
   /** A casing strategy that converts Strings to snake_case. */
   SNAKE_CASE {
     @Override
-    public String convert(final String key) {
-      return SnakeCaseConverter.convert(key);
+    public String convert(final String accessorName) {
+      return SnakeCaseConverter.convert(accessorName);
     }
   },
 
   /** A casing strategy that converts Strings to snake_case. */
   KEBAP_CASE {
     @Override
-    public String convert(final String key) {
-      return KebapCaseConverter.convert(key);
+    public String convert(final String accessorName) {
+      return KebapCaseConverter.convert(accessorName);
     }
   },
 
   ;
 
 
-
-  public abstract String convert(final String key);
+  /**
+   * Convert the given accessor name to the the expected key name.
+   * @param accessorName the name of the accessor method
+   * @return the key as it is expected from the config file
+   */
+  public abstract String convert(final String accessorName);
 }

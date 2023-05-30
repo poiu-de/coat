@@ -29,7 +29,6 @@ import com.squareup.javapoet.TypeSpec;
 import de.poiu.coat.CoatConfig;
 import de.poiu.coat.ConfigParam;
 import de.poiu.coat.annotation.Coat;
-import de.poiu.coat.convert.Converter;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +37,6 @@ import java.lang.reflect.Array;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -48,7 +46,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Stream;
-import java.util.regex.Pattern;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Processor;
@@ -65,7 +62,6 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
@@ -97,8 +93,6 @@ import static javax.lang.model.type.TypeKind.VOID;
 )
 @AutoService(Processor.class)
 public class CoatProcessor extends AbstractProcessor {
-
-  private static final Pattern PATTERN_JAVADOC_BLOCK_TAG = Pattern.compile("^\\s*@.*");
 
 
   private ConfigParamHandler paramSpecBuilder= null;
@@ -411,7 +405,7 @@ public class CoatProcessor extends AbstractProcessor {
 
     final String javadoc= super.processingEnv.getElementUtils().getDocComment(annotatedMethod);
     if (javadoc != null) {
-      enumConstBuilder.addJavadoc(stripBlockTagsFromJavadoc(javadoc));
+      enumConstBuilder.addJavadoc(Utils.stripBlockTagsFromJavadoc(javadoc));
     }
 
     typeSpecBuilder.addEnumConstant(constName, enumConstBuilder.build());
@@ -837,22 +831,6 @@ public class CoatProcessor extends AbstractProcessor {
     );
   }
 
-  protected static String stripBlockTagsFromJavadoc(final String javadoc) {
-    if (javadoc == null) {
-      return "";
-    }
-
-    final StringBuilder sb= new StringBuilder();
-
-    javadoc.lines()
-      .takeWhile(not(PATTERN_JAVADOC_BLOCK_TAG.asMatchPredicate()))
-      .map(s -> s + '\n')
-      .forEachOrdered(sb::append)
-      ;
-
-    return sb.toString();
-  }
-
 
   private String createExampleContent(final List<ConfigParamSpec> configParamSpecs) {
     final StringBuilder sb= new StringBuilder();
@@ -860,7 +838,7 @@ public class CoatProcessor extends AbstractProcessor {
     for (final ConfigParamSpec configParamSpec : configParamSpecs) {
       // add javadoc as comment
       final String javadoc = super.processingEnv.getElementUtils().getDocComment(configParamSpec.annotatedMethod());
-      this.stripBlockTagsFromJavadoc(javadoc)
+      Utils.stripBlockTagsFromJavadoc(javadoc)
         .lines()
         .map(s -> "## " + s + "\n")
         .forEachOrdered(sb::append);

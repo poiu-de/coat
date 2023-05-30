@@ -20,21 +20,22 @@ import de.poiu.coat.convert.ListParser;
 
 
 /**
- *
+ * Specification of a single accessor of a config class.
  */
 public interface ConfigParam {
 
+  /** The key to expect in the config file. */
   public String  key();
-
+  /** The type of this config value. */
   public Class<?>  type();
-
+  /** The collection type of this value. May be null if this is not a collection. */
   public Class<?> collectionType();
-
+  /** The default value to use if the corresponding value is not given in the config file. */
   public String  defaultValue();
-
+  /** Whether this config value is mandatory. */
   public boolean mandatory();
-
+  /** The converter to use for this config value. May be null to use the class-wide or global one. */
   public Class<? extends Converter<?>> converter();
-
+  /** The list parser to use for this config value (if it is a collection). May be null to use the class-wide or global one. */
   public Class<? extends ListParser> listParser();
 }

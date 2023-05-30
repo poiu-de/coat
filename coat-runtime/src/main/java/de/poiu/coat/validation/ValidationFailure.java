@@ -29,8 +29,11 @@ import org.immutables.value.Value;
 @Value.Style(stagedBuilder = true)
 public abstract class ValidationFailure {
 
+  /** The type of validation failure. */
   public static enum Type {
+    /** A mandatory value was not found in the config file. */
     MISSING_MANDATORY_VALUE ("Mandatory value for \"${key}\" is missing."),
+    /** A value could not be converted with the corresponding converter. */
     UNPARSABLE_VALUE        ("Config value for \"${key}\" cannot be converted to type \"${type}\": \"${value}\""),
     ;
 
@@ -41,18 +44,29 @@ public abstract class ValidationFailure {
     }
   }
 
+  /** Returns the type of validation failure. */
   public abstract Type             failureType();
+  /** Returns the name of the failed key (as specified in the config file). */
   public abstract String           key();
+  /** Returns the type of the failed value. */
   public abstract Optional<String> type();
+  /** Returns the failed value. */
   public abstract Optional<String> value();
 
 
+  /**
+   * Returns a formatted string representation of this ValidationFailure.
+   * This actually returns the same value as {@link #formattedMessage()}.
+   */
   @Override
   public String toString() {
     return this.formattedMessage();
   }
 
 
+  /**
+   * Returns a formatted string representation of this ValidationFailure.
+   */
   public String formattedMessage() {
     return this.failureType().formatString
       .replace("${key}",   this.key())

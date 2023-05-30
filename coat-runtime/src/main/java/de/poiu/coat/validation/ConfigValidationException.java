@@ -39,9 +39,12 @@ public class ConfigValidationException extends Exception {
   }
 
 
+  /**
+   * Returns the validation result of the failed validation.
+   *
+   * @return the result of the validation
+   */
   public ValidationResult getValidationResult() {
     return validationResult;
   }
-
-
 }

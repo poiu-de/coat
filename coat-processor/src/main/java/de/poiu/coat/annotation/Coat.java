@@ -53,11 +53,28 @@ public @interface Coat {
    */
   @Target(ElementType.TYPE)
   public @interface Config {
-    public String          className()                  default "";
-    public CasingStrategy  casing()                     default AS_IS;
-    public boolean         stripGetPrefix()             default true;
-    public Class<? extends Converter<?>>[] converters() default VoidConverter.class;
-    public Class<? extends ListParser>     listParser() default VoidListParser.class;
+    /**
+     * The class name to use for the generated class.
+     * It will be generated in the same package as the annotated interface.
+     * Therefore it must be a simple class name and not a fully qualified class name.
+     */
+    public String                          className()       default "";
+    /**
+     * The naming strategy to use for inferred keys.
+     */
+    public CasingStrategy                  casing()          default AS_IS;
+    /**
+     * Whether to ignore a “get” prefix on accessor methods.
+     */
+    public boolean                         stripGetPrefix()  default true;
+    /**
+     * Custom converters to register for the generated class.
+     */
+    public Class<? extends Converter<?>>[] converters()      default VoidConverter.class;
+    /**
+     * Custom list parser to register for the generated class.
+     */
+    public Class<? extends ListParser>     listParser()      default VoidListParser.class;
   }
 
 
@@ -71,10 +88,22 @@ public @interface Coat {
    */
   @Target(ElementType.METHOD)
   public @interface Param {
-    public String  key()                              default "";
-    public String  defaultValue()                     default "";
-    public Class<? extends Converter<?>> converter()  default VoidConverter.class;
-    public Class<? extends ListParser>   listParser() default VoidListParser.class;
+    /**
+     * The key to expect in the config file for this accessor method.
+     */
+    public String                        key()            default "";
+    /**
+     * The default value to use if the key is missing in the config file.
+     */
+    public String                        defaultValue()   default "";
+    /**
+     * Custom converter to register for this accessor.
+     */
+    public Class<? extends Converter<?>> converter()      default VoidConverter.class;
+    /**
+     * Custom list parser to register for this accessor.
+     */
+    public Class<? extends ListParser>   listParser()     default VoidListParser.class;
   }
 
 
@@ -91,7 +120,14 @@ public @interface Coat {
    */
   @Target(ElementType.METHOD)
   public @interface Embedded {
+    /**
+     * The key to expect in the config file for this prefix of the embedded values.
+     */
     public String  key()           default  "";
+    /**
+     * The separator to use between the prefix and the key of the embedded values.
+     * @return
+     */
     public String  keySeparator()  default  ".";
   }
 

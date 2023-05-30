@@ -271,12 +271,23 @@ public abstract class CoatConfig {
    * @param key the config key
    * @return the value of the config key as String
    */
-  public String get(final String key) {
+  protected String get(final String key) {
     return this.props.get(key);
   }
 
 
-  public <T> T get(final ConfigParam configParam) throws UncheckedTypeConversionException {
+  /**
+   * Get the value for the given configParam.
+   * The value will be returned in the type specified in the ConfigParam by utilizing the registered
+   * converter for that type.
+   * <p>
+   * No default values will be respected. If the given key doesn't have a value, {@code null} is
+   * returned.
+   *
+   * @param configParam the configParam
+   * @return the value of the config key
+   */
+  protected <T> T get(final ConfigParam configParam) throws UncheckedTypeConversionException {
     final String stringValue= this.getString(configParam);
     try {
       return this.convertValue(stringValue, configParam);
@@ -286,21 +297,7 @@ public abstract class CoatConfig {
   }
 
 
-  private ListParser getListParser(final ConfigParam configParam) throws TypeConversionException {
-    // First try the ListParser that was explicitly configured for this field
-    final Class<? extends ListParser> paramListParserClass = configParam.listParser();
-    if (paramListParserClass != null) {
-      try {
-        return paramListParserClass.getConstructor().newInstance();
-      } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-        throw new TypeConversionException("Error instantiating “" + paramListParserClass.getCanonicalName() + "”.", ex);
-      }
-    }
-    // Then try the ListParser registered for this CoatConfig (or the default one)
-    return this.listParser;
-  }
-
-  public <T> T[] getArrayOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
+  protected <T> T[] getArrayOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
     final String stringValue= this.props.get(configParam.key());
     if (stringValue != null && !stringValue.trim().isEmpty()) {
       return getArray(configParam);
@@ -316,7 +313,7 @@ public abstract class CoatConfig {
   }
 
 
-  public <T> T[] getArray(final ConfigParam configParam) throws UncheckedTypeConversionException {
+  protected <T> T[] getArray(final ConfigParam configParam) throws UncheckedTypeConversionException {
     final String stringValue= this.getString(configParam);
     try {
         final ListParser listParser = this.getListParser(configParam);
@@ -328,46 +325,27 @@ public abstract class CoatConfig {
   }
 
 
-  private <T> T[] getArray(final ConfigParam configParam, final String[] stringValues) throws UncheckedTypeConversionException {
-    final T[] array= (T[]) Array.newInstance(configParam.type(), stringValues.length);
-    for (int i= 0; i<stringValues.length; i++) {
-      try {
-        array[i]= this.convertValue(stringValues[i], configParam);
-      } catch (TypeConversionException e) {
-        throw new UncheckedTypeConversionException("Error converting value " + stringValues[i] + " to type " + configParam.type().getName(), e);
-      }
-    }
-
-    return array;
-  }
-
-
-  private String[] splitArray(final String stringValue) throws TypeConversionException {
-    return listParser.convert(stringValue);
-  }
-
-
-  public <T> List<T> getList(final ConfigParam configParam) throws UncheckedTypeConversionException {
+  protected <T> List<T> getList(final ConfigParam configParam) throws UncheckedTypeConversionException {
     return List.of(getArray(configParam));
   }
 
 
-  public <T> List<T> getListOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
+  protected <T> List<T> getListOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
     return List.of(getArrayOrDefault(configParam));
   }
 
 
-  public <T> Set<T> getSet(final ConfigParam configParam) throws UncheckedTypeConversionException {
+  protected <T> Set<T> getSet(final ConfigParam configParam) throws UncheckedTypeConversionException {
     return Set.of(getArray(configParam));
   }
 
 
-  public <T> Set<T> getSetOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
+  protected <T> Set<T> getSetOrDefault(final ConfigParam configParam) throws UncheckedTypeConversionException {
     return Set.of(getArrayOrDefault(configParam));
   }
 
 
-  public <T> Optional<T> getOptional(final ConfigParam configParam) {
+  protected <T> Optional<T> getOptional(final ConfigParam configParam) {
     final String stringValue= this.getString(configParam);
     if (stringValue == null || stringValue.trim().isEmpty()) {
       return Optional.empty();
@@ -382,7 +360,7 @@ public abstract class CoatConfig {
   }
 
 
-  public <T> T getOrDefault(final ConfigParam configParam) {
+  protected <T> T getOrDefault(final ConfigParam configParam) {
     final String stringValue= this.getStringOrDefault(configParam);
     try {
       return this.convertValue(stringValue, configParam);
@@ -394,14 +372,11 @@ public abstract class CoatConfig {
 
   /**
    *
-   * @param <T>
-   * @param configParam
-   * @return
    * @deprecated A parameter that is optional _and_ has a default value does not make sense.
    *             The optional will _never_ be null as it will at least contain the default value.
    */
   @Deprecated
-  public <T> Optional<T> getOptionalOrDefault(final ConfigParam configParam) {
+  protected <T> Optional<T> getOptionalOrDefault(final ConfigParam configParam) {
     final String stringValue= this.getStringOrDefault(configParam);
     try {
       return Optional.of(this.convertValue(stringValue, configParam));
@@ -652,6 +627,40 @@ public abstract class CoatConfig {
   }
 
 
+  private ListParser getListParser(final ConfigParam configParam) throws TypeConversionException {
+    // First try the ListParser that was explicitly configured for this field
+    final Class<? extends ListParser> paramListParserClass = configParam.listParser();
+    if (paramListParserClass != null) {
+      try {
+        return paramListParserClass.getConstructor().newInstance();
+      } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+        throw new TypeConversionException("Error instantiating “" + paramListParserClass.getCanonicalName() + "”.", ex);
+      }
+    }
+    // Then try the ListParser registered for this CoatConfig (or the default one)
+    return this.listParser;
+  }
+
+
+  private <T> T[] getArray(final ConfigParam configParam, final String[] stringValues) throws UncheckedTypeConversionException {
+    final T[] array= (T[]) Array.newInstance(configParam.type(), stringValues.length);
+    for (int i= 0; i<stringValues.length; i++) {
+      try {
+        array[i]= this.convertValue(stringValues[i], configParam);
+      } catch (TypeConversionException e) {
+        throw new UncheckedTypeConversionException("Error converting value " + stringValues[i] + " to type " + configParam.type().getName(), e);
+      }
+    }
+
+    return array;
+  }
+
+
+  private String[] splitArray(final String stringValue) throws TypeConversionException {
+    return listParser.convert(stringValue);
+  }
+
+
   private boolean isPrimitive(final ConfigParam param) {
     return !param.type().getName().contains(".");
   }
@@ -662,6 +671,13 @@ public abstract class CoatConfig {
   }
 
 
+  /**
+   * Returns a formatted string representation of this config class suitable for logging at runtime
+   * to print the actual values of the filled config.
+   * <p>
+   * Be aware that Coat does not understand the semantics of the config keys. Therefore use this
+   * method only for non-sensitive data (e.g. no passwords).
+   */
   @Override
   public String toString() {
     final String[][] paramStrings= new String[this.params.length][3];
@@ -707,6 +723,10 @@ public abstract class CoatConfig {
   }
 
 
+  /**
+   * Register a custom converter globally for all config classes.
+   * @param converter The converter to register
+   */
   public static void registerConverter(final Converter<?> converter) {
     try {
       final Class<?> type= getConverterBaseType(converter.getClass());
@@ -717,6 +737,10 @@ public abstract class CoatConfig {
   }
 
 
+  /**
+   * Register a custom converter for this config class.
+   * @param converter The converter to register
+   */
   protected void registerCustomConverter(final Converter<?> converter) {
     try {
       final Class<?> type= this.getConverterBaseType(converter.getClass());
@@ -802,6 +826,10 @@ public abstract class CoatConfig {
   }
 
 
+  /**
+   * Register a custom list parser globally for all config classes.
+   * @param p The list parser to register
+   */
   public static void registerListParser(final ListParser p) {
     listParser= p;
   }

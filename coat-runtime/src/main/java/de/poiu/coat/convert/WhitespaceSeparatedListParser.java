@@ -20,7 +20,7 @@ import java.util.List;
 
 
 /**
- * A ListParser that recognizeds whitespace characters as word delimiters. Whitespace characters
+ * A ListParser that recognizes whitespace characters as word delimiters. Whitespace characters
  * inside words are allowed if they are escaped by a backslash. To enter a literal backslash, escape
  * it as well. All other backslashes are silently dropped.
  */

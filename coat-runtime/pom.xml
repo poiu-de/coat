@@ -58,4 +58,23 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <show>public</show>
+          <sourceFileIncludes>
+            <include>de/poiu/coat/CoatConfig.java</include>
+            <include>de/poiu/coat/validation/ValidationResult.java</include>
+            <include>de/poiu/coat/validation/ValidationFailure.java</include>
+            <include>de/poiu/coat/validation/ConfigValidationException.java</include>
+            <include>de/poiu/coat/convert/*.java</include>
+          </sourceFileIncludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

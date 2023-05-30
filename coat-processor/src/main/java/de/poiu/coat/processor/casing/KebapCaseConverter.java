@@ -16,7 +16,7 @@
 package de.poiu.coat.processor.casing;
 
 
-public class KebapCaseConverter {
+class KebapCaseConverter {
 
   public static String convert(final String key) {
     final StringBuilder sb= new StringBuilder();

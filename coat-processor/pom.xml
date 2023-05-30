@@ -110,6 +110,23 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <show>public</show>
+          <sourceFileIncludes>
+            <include>de/poiu/coat/annotation/Coat.java</include>
+            <include>de/poiu/coat/processor/CoatProcessor.java</include>
+            <include>de/poiu/coat/processor/CoatProcessorException.java</include>
+            <include>de/poiu/coat/processor/casing/CasingStrategy.java</include>
+          </sourceFileIncludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <profile>
