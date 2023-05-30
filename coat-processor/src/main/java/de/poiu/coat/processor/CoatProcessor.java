@@ -292,17 +292,17 @@ public class CoatProcessor extends AbstractProcessor {
 
     this.assertEmbeddedTypeIsAnnotated(embeddedAnnotatedMethods);
 
-    final List<CodeBlock> initEmbeddedConfigs= new ArrayList<>();
+    final List<CodeBlock> initCodeBlocks= new ArrayList<>();
     for (final EmbeddedParamSpec annotatedMethod : embeddedAnnotatedMethods) {
       final CodeBlock initEmbeddedCodeBlock = this.addEmbeddedAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
-      initEmbeddedConfigs.add(initEmbeddedCodeBlock);
+      initCodeBlocks.add(initEmbeddedCodeBlock);
     }
 
     final Optional<CodeBlock> registerCustomConverters= this.addRegisterCustomConverters(annotatedInterface);
-    registerCustomConverters.ifPresent(initEmbeddedConfigs::add);
+    registerCustomConverters.ifPresent(initCodeBlocks::add);
 
     final Optional<CodeBlock> registerCustomListParser= this.addRegisterCustomListParser(annotatedInterface);
-    registerCustomListParser.ifPresent(initEmbeddedConfigs::add);
+    registerCustomListParser.ifPresent(initCodeBlocks::add);
 
     typeSpecBuilder.addMethod(
       MethodSpec.constructorBuilder()
@@ -322,7 +322,7 @@ public class CoatProcessor extends AbstractProcessor {
       .addModifiers(PUBLIC)
       .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
       .addStatement("super(props, $T.values())", fqEnumName);
-    for (final CodeBlock initEmbeddedConfig : initEmbeddedConfigs) {
+    for (final CodeBlock initEmbeddedConfig : initCodeBlocks) {
       mainConstructorBuilder.addCode(initEmbeddedConfig);
     }
     typeSpecBuilder.addMethod(mainConstructorBuilder.build());
