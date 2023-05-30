@@ -2980,6 +2980,135 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test that custom converters are that are specified in the @Coat.Config annotation are valid for that
+   * Config and not others.
+   */
+  @Test
+  public void testCustomConverters_differentConvertersForSameType() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.HurzConverter",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class HurzConverter implements Converter<String> {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String convert(final String s) throws TypeConversionException {" +
+            "\n" + "    return \"Hurz!\";" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.UppercaseConverter",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class UppercaseConverter implements Converter<String> {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String convert(final String s) throws TypeConversionException {" +
+            "\n" + "    if (s == null) { return \"\"; };" +
+            "\n" + "    return s.toUpperCase();" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public String alwaysAsIs();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.TestConfigHurz",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(converters={ HurzConverter.class })" +
+            "\n" + "public interface TestConfigHurz {" +
+            "\n" + "" +
+            "\n" + "  public String alwaysHurz();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.TestConfigUppercase",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config(converters={ UppercaseConverter.class })" +
+            "\n" + "public interface TestConfigUppercase {" +
+            "\n" + "" +
+            "\n" + "  public String alwaysUppercase();" +
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.HurzConverter",
+                                "com.example.UppercaseConverter",
+                                "com.example.TestConfig",
+                                "com.example.TestConfigParam",
+                                "com.example.ImmutableTestConfig",
+                                "com.example.TestConfigHurz",
+                                "com.example.TestConfigHurzParam",
+                                "com.example.ImmutableTestConfigHurz",
+                                "com.example.TestConfigUppercase",
+                                "com.example.TestConfigUppercaseParam",
+                                "com.example.ImmutableTestConfigUppercase");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    this.assertMethods(generatedConfigClass,
+                       "alwaysAsIs");
+
+    final Class<?> generatedConfigClassHurz= this.loadClass("com.example.ImmutableTestConfigHurz", compilation);
+    this.assertMethods(generatedConfigClassHurz,
+                       "alwaysHurz");
+
+    final Class<?> generatedConfigClassUppercase= this.loadClass("com.example.ImmutableTestConfigUppercase", compilation);
+    this.assertMethods(generatedConfigClassUppercase,
+                       "alwaysUppercase");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      "alwaysAsIs", "one"
+    ));
+    final Object instanceHurz = this.createInstance(generatedConfigClassHurz, mapOf(
+      "alwaysHurz", "one"
+    ));
+    final Object instanceUppercase = this.createInstance(generatedConfigClassUppercase, mapOf(
+      "alwaysUppercase", "one"
+    ));
+
+    this.assertResult(instance, "alwaysAsIs", "one");
+    this.assertResult(instanceHurz, "alwaysHurz", "Hurz!");
+    this.assertResult(instanceUppercase, "alwaysUppercase", "ONE");
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
    * Test that custom ListParsers are actually used and the ListParsers on a @Param annotation
    * take precedence over the @Config annotation;
    */
