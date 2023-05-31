@@ -11,9 +11,5 @@ The [Roadmap](./roadmap) gives an overview of the possible further enhancement o
 Coat.
 
 
-{{< button "./quick_start" "Quick Start" "mb-1" >}}
-
-{{< button "./user_guide" "User Guide" >}}
-
-{{< button "./roadmap" "Roadmap" >}}
+{{< button "./quick_start" "Quick Start" >}} {{< button "./user_guide" "User Guide" >}} {{< button "./roadmap" "Roadmap" >}}
 

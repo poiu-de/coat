@@ -132,4 +132,4 @@ config.description().ifPresent(
 
 Coat is licensed under the terms of the [Apache license 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
-{{< button "docs/quick_start/" "Quick Start" >}} {{< button "docs/user_guide" "User Guide" >}}
+{{< button "docs/quick_start/" "Quick Start" >}} {{< button "docs/user_guide" "User Guide" >}} {{< button "https://github.com/poiu-de/coat/tree/master/coat-example" "Example project" >}}
