@@ -4,7 +4,7 @@
 
   <groupId>de.poiu.coat</groupId>
   <artifactId>coat</artifactId>
-  <version>0.0.4-SNAPSHOT</version>
+  <version>0.0.4</version>
   <packaging>pom</packaging>
   <name>coat</name>
   <description>Config of Annotated Types — Easy and typesafe config objects</description>
@@ -32,7 +32,7 @@
     <url>https://github.com/poiu-de/coat</url>
     <connection>scm:git:git://github.com/poiu-de/coat.git</connection>
     <developerConnection>scm:git:git@github.com:poiu-de/coat.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>coat-0.0.4</tag>
   </scm>
 
   <issueManagement>
