@@ -44,17 +44,4 @@
       <version>8.0.0.Final</version>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <!-- We do not need Javadoc for this example project, therefore we explicitly disable the generation. -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <sourceFileIncludes> </sourceFileIncludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>
