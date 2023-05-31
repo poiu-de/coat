@@ -677,6 +677,16 @@ public abstract class CoatConfig {
    * <p>
    * Be aware that Coat does not understand the semantics of the config keys. Therefore use this
    * method only for non-sensitive data (e.g. no passwords).
+   * <p>
+   * The following information is printed:
+   * <p>
+   * <ul>
+   * <li>A field on each line with the “key”, “type” and “value”.</li>
+   * <li>The type is prefixed with a question mark if the field is optional.</li>
+   * <li>The type is suffixed with an asterisk if it is a collection.</li>
+   * <li>For embedded configs only the key and the separator char is printed on a line and all the
+   * fields of the embedded config are indented.</li>
+   * </ul>
    */
   @Override
   public String toString() {
@@ -686,7 +696,11 @@ public abstract class CoatConfig {
 
     for (int i= 0; i < this.params.length; i++) {
       final String keyString   = this.params[i].key();
-      final String typeString  = "[" + (this.params[i].mandatory() ? "" : "?") + this.params[i].type().getName() + "]";
+      final String typeString  = "["
+                                 + (this.params[i].mandatory() ? "" : "?")
+                                 + this.params[i].type().getName()
+                                 + (params[i].collectionType() != null ? "*" : "")
+                                 + "]";
       final String value       = this.props.get(params[i].key());
       final String valueString = value != null ? value : params[i].defaultValue();
       final String defaultMarker = this.params[i].mandatory() && params[i].defaultValue() != null && value == null? " (default)" : "";
