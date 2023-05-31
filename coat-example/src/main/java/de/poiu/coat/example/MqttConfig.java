@@ -16,6 +16,8 @@
 package de.poiu.coat.example;
 
 import de.poiu.coat.annotation.Coat;
+import de.poiu.coat.processor.casing.CasingStrategy;
+import jakarta.validation.constraints.Size;
 import java.net.InetAddress;
 import java.util.Optional;
 
@@ -23,26 +25,23 @@ import java.util.Optional;
 /**
  * MQTT Client configuration
  */
-@Coat.Config
+@Coat.Config(casing = CasingStrategy.SNAKE_CASE)                    // The keys in the config file will be written in “snake_case”
 public interface MqttConfig {
 
-  /** The clientId to send to the MQTT broker. */
-  @Coat.Param(key = "client_id")
-  public Optional<String>   clientId();
+  /** The getClientId to send to the MQTT broker. */
+  public Optional<String>   getClientId();
 
-  /** The address of the MQTT broker. */
-  @Coat.Param(key = "broker_address")
-  public InetAddress        brokerAddress();
+  /** The address(es) of the MQTT broker. */
+  @Size(min=1 )                                                     // Use Bean Validation to specify that at least one broker address must be given
+  public InetAddress[]        getBrokerAddresses();                 // Multiple addresses can be specified (1 primary, n fallback addresses)
 
-  /** The port to communicate with the MQTT broker. */
-  @Coat.Param(key = "port", defaultValue = "1883")
-  public int port();
+  /** The getPort to communicate with the MQTT broker. */
+  @Coat.Param(defaultValue = "1883")                                // The default getPort is 1883
+  public int getPort();
 
   /** The username to connect to the MQTT broker. */
-  @Coat.Param(key="username")
-  public Optional<String>   username();
+  public Optional<String>   username();                             // We leave the “get” prefix out here. Coat doesn’t need it
 
   /** The password to connect to the MQTT broker. */
-  @Coat.Param(key="password")
-  public Optional<String>   password();
+  public Optional<String>   password();                             // We leave the “get” prefix out here. Coat doesn’t need it
 }

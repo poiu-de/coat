@@ -18,30 +18,50 @@ package de.poiu.coat.example.mqtt;
 import java.net.InetAddress;
 
 
-
+/**
+ * A dummy MQTT client for demonstration purposes. It only provides a minimal API and no actual functionality.
+ */
 public class DummyMqttClient {
 
 
-  public DummyMqttClient(InetAddress brokerAddress, int port) {
+  /**
+   * Create a new DummyMqttClient that connects to the specified address(es) and port.
+   * The given addresses must include at least one address, but can have several fallback addresses.
+   * They will be tried sequentially.
+   */
+  public DummyMqttClient(final InetAddress[] brokerAddresses, final int port) {
     // no real functionality
   }
 
 
-  public void setClientId(String clientId) {
+  /**
+   * Set a custom client ID for connecting to the MQTT broker.
+   */
+  public void setClientId(final String clientId) {
     // no real functionality
   }
 
 
-  public void setUsername(String username) {
+  /**
+   * Set the username to connect to the MQTT broker.
+   */
+  public void setUsername(final String username) {
     // no real functionality
   }
 
 
-  public void setPassword(String password) {
+  /**
+   * Set the password to connect to the MQTT broker.
+   */
+  public void setPassword(final String password) {
     // no real functionality
   }
 
 
+  /**
+   * Connect to the MQTT broker. This will try to connect to each fallback broker in succession until
+   * a connection could be established.
+   */
   public void connect() {
     // no real functionality
   }
