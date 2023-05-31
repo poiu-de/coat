@@ -110,6 +110,27 @@ class ConfigParamHandler {
   }
 
 
+  public EmbeddedParamSpec embeddedFrom(final Element annotatedMethod) {
+    final ExecutableElement executableAnnotatedMethod = (ExecutableElement) annotatedMethod;
+    final Coat.Embedded     coatParamAnnotation       = assertEmbeddedAnnotation(executableAnnotatedMethod);
+
+    final TypeMirror returnTypeMirror = executableAnnotatedMethod.getReturnType();
+
+    final String methodName   = executableAnnotatedMethod.getSimpleName().toString();
+    final String key          = getOrInferKey(executableAnnotatedMethod, coatParamAnnotation);
+    final String keySeparator = coatParamAnnotation.keySeparator();
+    final TypeMirror type     = returnTypeMirror;
+
+    return ImmutableEmbeddedParamSpec.builder()
+      .annotatedMethod(executableAnnotatedMethod)
+      .methodeName(methodName)
+      .key(key)
+      .type(type)
+      .keySeparator(keySeparator)
+      .build();
+  }
+
+
   private static Coat.Param assertAnnotation(final ExecutableElement annotatedMethod) {
     final Coat.Param[] annotationsByType = annotatedMethod.getAnnotationsByType(Coat.Param.class);
 
@@ -119,6 +140,23 @@ class ConfigParamHandler {
 
     if (annotationsByType.length > 1) {
       throw new RuntimeException("Only 1 @Coat.Param annotation allowed: " + annotatedMethod);
+    }
+
+    return annotationsByType[0];
+  }
+
+
+
+
+  private static Coat.Embedded assertEmbeddedAnnotation(final ExecutableElement annotatedMethod) {
+    final Coat.Embedded[] annotationsByType = annotatedMethod.getAnnotationsByType(Coat.Embedded.class);
+
+    // FIXME: Here we can check the validity of the annotation, don't we?
+
+    if (annotationsByType.length == 0) {
+      throw new RuntimeException("Needs to be annotated with @Coat.Embedded: " + annotatedMethod);
+    } else if (annotationsByType.length > 1) {
+      throw new RuntimeException("Only 1 @Coat.Embedded annotation allowed: " + annotatedMethod);
     }
 
     return annotationsByType[0];
@@ -158,11 +196,22 @@ class ConfigParamHandler {
     }
 
     // if no key was explicity specified, infer it from the methods name
-    return inferKey(annotatedMethod, coatParamAnnotation);
+    return inferKey(annotatedMethod);
   }
 
 
-  private static String inferKey(final ExecutableElement annotatedMethod, final Coat.Param coatParamAnnotation) {
+  private static String getOrInferKey(final ExecutableElement annotatedMethod, final Coat.Embedded coatEmbeddedAnnotation) {
+    final String specifiedKey= coatEmbeddedAnnotation != null ? coatEmbeddedAnnotation.key() : "";
+    if (!specifiedKey.isEmpty()) {
+      return specifiedKey;
+    }
+
+    // if no key was explicity specified, infer it from the methods name
+    return inferKey(annotatedMethod);
+  }
+
+
+  private static String inferKey(final ExecutableElement annotatedMethod) {
     final Element enclosingElement = annotatedMethod.getEnclosingElement();
     if (enclosingElement == null) {
       throw new RuntimeException("No enclosing element for annotatedMethod ”"+annotatedMethod.toString()+"”");

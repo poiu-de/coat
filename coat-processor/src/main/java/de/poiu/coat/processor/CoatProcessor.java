@@ -281,7 +281,7 @@ public class CoatProcessor extends AbstractProcessor {
     final List<EmbeddedParamSpec> embeddedAnnotatedMethods= annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == ElementKind.METHOD)
       .filter(e -> e.getAnnotation(Coat.Embedded.class) != null)
-      .map(EmbeddedParamSpec::from)
+      .map(paramSpecBuilder::embeddedFrom)
       .collect(toList());
 
     this.assertEmbeddedTypeIsAnnotated(embeddedAnnotatedMethods);
@@ -881,7 +881,7 @@ public class CoatProcessor extends AbstractProcessor {
     final List<EmbeddedParamSpec> embeddingAccessors = annotatedInterface.getEnclosedElements().stream()
       .filter(e -> e.getKind() == METHOD)
       .filter(e -> e.getAnnotation(Coat.Embedded.class) != null)
-      .map(EmbeddedParamSpec::from)
+      .map(paramSpecBuilder::embeddedFrom)
       .collect(toList());
 
     for (final EmbeddedParamSpec eps : embeddingAccessors) {

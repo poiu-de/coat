@@ -15,8 +15,6 @@
  */
 package de.poiu.coat.processor;
 
-import de.poiu.coat.annotation.Coat;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import org.immutables.value.Value;
@@ -37,40 +35,4 @@ abstract class EmbeddedParamSpec {
   public abstract TypeMirror          type();
 
   public abstract String              keySeparator();
-
-
-  public static EmbeddedParamSpec from(final Element annotatedMethod) {
-    final ExecutableElement executableAnnotatedMethod = (ExecutableElement) annotatedMethod;
-    final Coat.Embedded     coatParamAnnotation       = assertAnnotation(executableAnnotatedMethod);
-
-    final TypeMirror returnTypeMirror = executableAnnotatedMethod.getReturnType();
-
-    final String methodName   = executableAnnotatedMethod.getSimpleName().toString();
-    final String key          = coatParamAnnotation.key();
-    final String keySeparator = coatParamAnnotation.keySeparator();
-    final TypeMirror type     = returnTypeMirror;
-
-    return ImmutableEmbeddedParamSpec.builder()
-      .annotatedMethod(executableAnnotatedMethod)
-      .methodeName(methodName)
-      .key(key)
-      .type(type)
-      .keySeparator(keySeparator)
-      .build();
-  }
-
-
-  private static Coat.Embedded assertAnnotation(final ExecutableElement annotatedMethod) {
-    final Coat.Embedded[] annotationsByType = annotatedMethod.getAnnotationsByType(Coat.Embedded.class);
-
-    // FIXME: Here we can check the validity of the annotation, don't we?
-
-    if (annotationsByType.length == 0) {
-      throw new RuntimeException("Needs to be annotated with @Coat.Embedded: " + annotatedMethod);
-    } else if (annotationsByType.length > 1) {
-      throw new RuntimeException("Only 1 @Coat.Embedded annotation allowed: " + annotatedMethod);
-    }
-
-    return annotationsByType[0];
-  }
 }
