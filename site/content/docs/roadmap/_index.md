@@ -2,6 +2,7 @@
 title: "Roadmap"
 ---
 
+<!--
 Coat is a project in its early stages. There are some features that are
 planned, but not yet implemented.
 
@@ -12,6 +13,9 @@ Be aware that this is just a “vision” of Coats future. That some feature is
 listed in this roadmap does not necessarily mean that it will definitly be
 implemented. It may even be that some feature is planned in this roadmap
 even if it is technically not possible to implement.
+-->
+
+There are no immediate plans for the implementation of further features.
 
 Of course, contributions are welcome to support more features in the
 future. In any case, before starting to implement a feature, discuss it on

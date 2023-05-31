@@ -1,5 +1,7 @@
 ---
 title: "Planned Features"
+draft: true
+expiryDate: 2023-05-30
 ---
 
 ### Support for arrays and collection types
