@@ -12,7 +12,7 @@ Marco Herrn <marco@mherrn.de>
 :log4j2-jul-bridge: https://logging.apache.org/log4j/2.x/log4j-jul/index.html
 :slf4j-jul-bridge: https://www.slf4j.org/legacy.html#jul-to-slf4j
 :source-highlighter: prettify
-:coat-version: 0.0.2
+:coat-version: 0.0.4
 
 [.float-group]
 --
@@ -40,13 +40,10 @@ import de.poiu.coat.annotation.Coat;
 
 @Coat.Config
 public interface MyConfig {
-  @Coat.Param(key = "appName")
   public String appName();
 
-  @Coat.Param(key = "listenPort")
   public int listenPort();
 
-  @Coat.Param(key = "desription")
   public Optional<String> description();
 }
 ----
