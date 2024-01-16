@@ -469,26 +469,17 @@ public class CoatProcessor extends AbstractProcessor {
 
 
   private void addWriteExampleConfigMethod(final TypeSpec.Builder typeSpecBuilder, final List<ConfigParamSpec> configParamSpecs) {
+    final String exampleContent= this.createExampleContent(configParamSpecs);
+
     typeSpecBuilder.addMethod(
       MethodSpec.methodBuilder("writeExampleConfig")
         .addModifiers(PUBLIC, STATIC)
         .addParameter(TypeName.get(Writer.class), "writer", FINAL)
-        .addStatement("writeExampleConfig(new $T(writer))", BufferedWriter.class)
+        .addStatement("writer.append($S)", exampleContent)
+        .addStatement("writer.flush()")
         .addException(IOException.class)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_WRITE_EXAMPLE_CONFIG)
         .build());
-
-    final String exampleContent= this.createExampleContent(configParamSpecs);
-
-    final MethodSpec.Builder methodBuilder= MethodSpec.methodBuilder("writeExampleConfig");
-    methodBuilder
-      .addModifiers(PUBLIC, STATIC)
-      .addParameter(TypeName.get(BufferedWriter.class), "writer", FINAL)
-      .addStatement("writer.append($S)", exampleContent)
-      .addStatement("writer.flush()")
-      .addException(IOException.class)
-      ;
-
-    typeSpecBuilder.addMethod(methodBuilder.build());
   }
 
 

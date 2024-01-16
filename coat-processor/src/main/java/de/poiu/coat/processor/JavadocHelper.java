@@ -84,4 +84,11 @@ public class JavadocHelper {
     + "<code>SERVER_MQTT_HOST</code> will match the config key <code>server.mqttHost</code>.\n"
     + "\n"
     + "@return this $T";
+
+
+  public static final String JAVADOC_ON_WRITE_EXAMPLE_CONFIG= ""
+    + "Write an example config file to the given Writer.\n"
+    + "\n"
+    + "@param writer the Writer to write to\n"
+    + "@throws IOException if writing the example config file fails";
 }
