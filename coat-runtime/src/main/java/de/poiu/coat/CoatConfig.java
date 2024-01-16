@@ -134,13 +134,6 @@ public abstract class CoatConfig {
    */
   protected CoatConfig(final File file, final ConfigParam[] params) throws IOException {
     this(toMap(file), params);
-
-    // FIXME: By using java.util.Properties, the properties are unsorted. We would have to either
-    //        use apron or parse them here again (which would be too much of a hassle)
-
-    // TODO: Differentiate between ignoring unexpected values, logging them or throwing an exception
-    //       Better do this only at validation time
-
   }
 
 

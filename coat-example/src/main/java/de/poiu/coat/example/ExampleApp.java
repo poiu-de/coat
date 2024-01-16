@@ -82,7 +82,7 @@ public class ExampleApp {
     // Use the embedded MqttConfig to connect to the MQTT broker.
     startMqttClient(appConfig.mqtt());
 
-    // Print the application getName and, if specified, the getDescription of this application.
+    // Print the application name and, if specified, the description of this application.
     System.out.println("Starting server for " + appConfig.getName() + " …");
     appConfig.getDescription().ifPresent(System.out::println);
 

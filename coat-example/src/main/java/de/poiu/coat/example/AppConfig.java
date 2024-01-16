@@ -32,12 +32,12 @@ import java.util.Optional;
 @Coat.Config(casing = CasingStrategy.SNAKE_CASE)                    // The keys in the config file will be written in “snake_case”
 public interface AppConfig {
 
-  /** A shorthand getName for this application. */
-  @Coat.Param(key = "application_name")                             // Rather than “getName“ this property will be specified as “application_name” in the config file
+  /** A shorthand name for this application. */
+  @Coat.Param(key = "application_name")                             // Rather than “name“ this property will be specified as “application_name” in the config file
   public String getName();                                          // The application_name is mandatory
 
-  /** A short getDescription of the purpose of this application. */
-  public Optional<String> getDescription();                         // The getDescription is optional
+  /** A short description of the purpose of this application. */
+  public Optional<String> getDescription();                         // The description is optional
 
   /** The interfaces to listen on for incoming connections. */
   @Coat.Param(defaultValue = "0.0.0.0")                             // If the listen_address is not given, default to 0.0.0.0

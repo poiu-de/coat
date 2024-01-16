@@ -28,16 +28,16 @@ import java.util.Optional;
 @Coat.Config(casing = CasingStrategy.SNAKE_CASE)                    // The keys in the config file will be written in “snake_case”
 public interface MqttConfig {
 
-  /** The getClientId to send to the MQTT broker. */
+  /** The clientId to send to the MQTT broker. */
   public Optional<String>   getClientId();
 
   /** The address(es) of the MQTT broker. */
   @Size(min=1 )                                                     // Use Bean Validation to specify that at least one broker address must be given
-  public InetAddress[]        getBrokerAddresses();                 // Multiple addresses can be specified (1 primary, n fallback addresses)
+  public InetAddress[]      getBrokerAddresses();                   // Multiple addresses can be specified (1 primary, n fallback addresses)
 
-  /** The getPort to communicate with the MQTT broker. */
-  @Coat.Param(defaultValue = "1883")                                // The default getPort is 1883
-  public int getPort();
+  /** The port to communicate with the MQTT broker. */
+  @Coat.Param(defaultValue = "1883")                                // The default port is 1883
+  public int                getPort();
 
   /** The username to connect to the MQTT broker. */
   public Optional<String>   username();                             // We leave the “get” prefix out here. Coat doesn’t need it

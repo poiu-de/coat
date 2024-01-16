@@ -36,7 +36,7 @@ public enum CasingStrategy {
     }
   },
 
-  /** A casing strategy that converts Strings to snake_case. */
+  /** A casing strategy that converts Strings to kebab-case. */
   KEBAP_CASE {
     @Override
     public String convert(final String accessorName) {
