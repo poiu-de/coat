@@ -3498,7 +3498,7 @@ public class CoatProcessorIT {
    * @throws InvocationTargetException
    */
   private Object createInstance(final Class<?> clazz, final Map<String, String> props) throws NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    return clazz.getDeclaredConstructor(Map.class).newInstance(props);
+    return clazz.getDeclaredMethod("from", Map.class).invoke(null, props);
   }
 
 
@@ -3559,6 +3559,10 @@ public class CoatProcessorIT {
       .filteredOn(n -> !n.equals("equals"))
       .filteredOn(n -> !n.equals("hashCode"))
       .filteredOn(n -> !n.equals("writeExampleConfig"))
+      .filteredOn(n -> !n.equals("from"))
+      .filteredOn(n -> !n.equals("add"))
+      .filteredOn(n -> !n.equals("fromEnvVars"))
+      .filteredOn(n -> !n.equals("addEnvVars"))
       .containsExactlyInAnyOrder(
         methodNames
       );

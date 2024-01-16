@@ -256,6 +256,67 @@ public class CoatProcessor extends AbstractProcessor {
 
     this.addGeneratedAnnotation(typeSpecBuilder);
 
+    // add static factory methods
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("from")
+        .addModifiers(PUBLIC, STATIC)
+        .returns(fqClassName)
+        .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
+        .addStatement("return new $T(props)", fqClassName)
+        .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("from")
+        .addModifiers(PUBLIC, STATIC)
+        .returns(fqClassName)
+        .addParameter(File.class, "file", FINAL)
+        .addStatement("return new $T(toMap(file))", fqClassName)
+        .addException(IOException.class)
+        .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("from")
+        .addModifiers(PUBLIC, STATIC)
+        .returns(fqClassName)
+        .addParameter(Properties.class, "jup", FINAL)
+        .addStatement("return new $T(toMap(jup))", fqClassName)
+        .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("fromEnvVars")
+        .addModifiers(PUBLIC, STATIC)
+        .returns(fqClassName)
+        .addStatement("final $T c= new $T(java.util.Collections.EMPTY_MAP)", fqClassName, fqClassName)
+        .addStatement("return c.addEnvVars()")
+        .build());
+
+    // add “add” methods for merging multiple config sources into the same config object
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("add")
+      .addModifiers(PUBLIC)
+        .returns(fqClassName)
+      .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
+      .addStatement("return ($T) super.add(props)", fqClassName)
+      .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("add")
+        .addModifiers(PUBLIC)
+        .returns(fqClassName)
+        .addParameter(File.class, "file", FINAL)
+        .addStatement("return ($T) super.add(file)", fqClassName)
+        .addException(IOException.class)
+        .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("add")
+        .addModifiers(PUBLIC)
+        .returns(fqClassName)
+        .addParameter(Properties.class, "jup", FINAL)
+        .addStatement("return ($T) super.add(jup)", fqClassName)
+        .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("addEnvVars")
+        .addModifiers(PUBLIC)
+        .returns(fqClassName)
+        .addStatement("return ($T) super.addEnvVars()", fqClassName)
+        .build());
+
     final List<ConfigParamSpec> annotatedMethods= new ArrayList<>();
 
     // add accessor for direct parameters
@@ -298,22 +359,9 @@ public class CoatProcessor extends AbstractProcessor {
     final Optional<CodeBlock> registerCustomListParser= this.addRegisterCustomListParser(annotatedInterface);
     registerCustomListParser.ifPresent(initCodeBlocks::add);
 
-    typeSpecBuilder.addMethod(
-      MethodSpec.constructorBuilder()
-        .addModifiers(PUBLIC)
-        .addParameter(File.class, "file", FINAL)
-        .addStatement("this(toMap(file))")
-        .addException(IOException.class)
-        .build());
-    typeSpecBuilder.addMethod(
-      MethodSpec.constructorBuilder()
-        .addModifiers(PUBLIC)
-        .addParameter(Properties.class, "props", FINAL)
-        .addStatement("this(toMap(props))")
-        .build());
-
+    // add (private) constructor
     final MethodSpec.Builder mainConstructorBuilder= MethodSpec.constructorBuilder()
-      .addModifiers(PUBLIC)
+      .addModifiers(PRIVATE)
       .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
       .addStatement("super(props, $T.values())", fqEnumName);
     for (final CodeBlock initEmbeddedConfig : initCodeBlocks) {
@@ -610,7 +658,7 @@ public class CoatProcessor extends AbstractProcessor {
       );
     }
     initCodeBlockBuilder
-      .addStatement("this.$N= new $T(\n"
+      .addStatement("this.$N= $T.from(\n"
         + "filterByAndStripPrefix(props, $S))",
                     embeddedParamSpec.key(),
                     generatedTypeName,

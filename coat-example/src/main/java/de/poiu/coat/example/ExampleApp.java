@@ -39,7 +39,7 @@ public class ExampleApp {
 
     // The “ImmutableAppConfig” is the generated config class.
     // We construct it and hand it the properties from the properties file.
-    final ImmutableAppConfig appConfig= new ImmutableAppConfig(props);
+    final ImmutableAppConfig appConfig= ImmutableAppConfig.from(props);
 
     // The generated config contains a “toString()” method that prints the whole config
     // with all actually assigned values.
