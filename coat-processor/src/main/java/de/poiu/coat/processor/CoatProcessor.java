@@ -261,16 +261,18 @@ public class CoatProcessor extends AbstractProcessor {
       MethodSpec.methodBuilder("from")
         .addModifiers(PUBLIC, STATIC)
         .returns(fqClassName)
-        .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
-        .addStatement("return new $T(props)", fqClassName)
+        .addParameter(File.class, "file", FINAL)
+        .addStatement("return new $T(toMap(file))", fqClassName)
+        .addException(IOException.class)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_FILE, fqClassName, fqClassName)
         .build());
     typeSpecBuilder.addMethod(
       MethodSpec.methodBuilder("from")
         .addModifiers(PUBLIC, STATIC)
         .returns(fqClassName)
-        .addParameter(File.class, "file", FINAL)
-        .addStatement("return new $T(toMap(file))", fqClassName)
-        .addException(IOException.class)
+        .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
+        .addStatement("return new $T(props)", fqClassName)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_MAP, fqClassName, fqClassName)
         .build());
     typeSpecBuilder.addMethod(
       MethodSpec.methodBuilder("from")
@@ -278,6 +280,7 @@ public class CoatProcessor extends AbstractProcessor {
         .returns(fqClassName)
         .addParameter(Properties.class, "jup", FINAL)
         .addStatement("return new $T(toMap(jup))", fqClassName)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_PROPERTIES, fqClassName, fqClassName)
         .build());
     typeSpecBuilder.addMethod(
       MethodSpec.methodBuilder("fromEnvVars")
@@ -285,16 +288,10 @@ public class CoatProcessor extends AbstractProcessor {
         .returns(fqClassName)
         .addStatement("final $T c= new $T(java.util.Collections.EMPTY_MAP)", fqClassName, fqClassName)
         .addStatement("return c.addEnvVars()")
+        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_ENV_VARS, fqClassName, fqClassName)
         .build());
 
     // add “add” methods for merging multiple config sources into the same config object
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("add")
-      .addModifiers(PUBLIC)
-        .returns(fqClassName)
-      .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
-      .addStatement("return ($T) super.add(props)", fqClassName)
-      .build());
     typeSpecBuilder.addMethod(
       MethodSpec.methodBuilder("add")
         .addModifiers(PUBLIC)
@@ -302,19 +299,30 @@ public class CoatProcessor extends AbstractProcessor {
         .addParameter(File.class, "file", FINAL)
         .addStatement("return ($T) super.add(file)", fqClassName)
         .addException(IOException.class)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_ADD_FILE, fqClassName, fqClassName)
         .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("add")
+      .addModifiers(PUBLIC)
+        .returns(fqClassName)
+      .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
+      .addStatement("return ($T) super.add(props)", fqClassName)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_ADD_MAP, fqClassName, fqClassName)
+      .build());
     typeSpecBuilder.addMethod(
       MethodSpec.methodBuilder("add")
         .addModifiers(PUBLIC)
         .returns(fqClassName)
         .addParameter(Properties.class, "jup", FINAL)
         .addStatement("return ($T) super.add(jup)", fqClassName)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_ADD_PROPERTIES, fqClassName, fqClassName)
         .build());
     typeSpecBuilder.addMethod(
       MethodSpec.methodBuilder("addEnvVars")
         .addModifiers(PUBLIC)
         .returns(fqClassName)
         .addStatement("return ($T) super.addEnvVars()", fqClassName)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_ADD_ENV_VARS, fqClassName, fqClassName)
         .build());
 
     final List<ConfigParamSpec> annotatedMethods= new ArrayList<>();
