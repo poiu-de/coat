@@ -44,4 +44,20 @@
       <version>8.0.1.Final</version>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessors>
+            <!-- The annotation processor needs to be explicitly declared in
+                 Java versions from 21 onwards -->
+            <annotationProcessor>de.poiu.coat.processor.CoatProcessor</annotationProcessor>
+          </annotationProcessors>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
