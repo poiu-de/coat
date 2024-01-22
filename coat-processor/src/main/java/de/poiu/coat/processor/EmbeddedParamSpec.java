@@ -34,5 +34,7 @@ abstract class EmbeddedParamSpec {
 
   public abstract TypeMirror          type();
 
+  public abstract TypeMirror          uncollectedType();
+
   public abstract String              keySeparator();
 }

@@ -71,7 +71,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
 import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
-import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -126,43 +127,14 @@ public abstract class CoatConfig {
   //
   // Constructors
 
-  /**
-   * Creates a new CoatConfig object by reading the given {@code file} into a {@link Properties}
-   * instance that should provide the values for the given {@link params}.
-   *
-   * @param file the config file to read
-   * @param params the defined config keys for this CoatConfig
-   * @throws IOException if reading the given file failed
-   */
-  protected CoatConfig(final File file, final ConfigParam[] params) throws IOException {
-    this(toMap(file), params);
-  }
-
-
-  /**
-   * Creates a new CoatConfig object from a {@link Properties}
-   * instance that should provide the values for the given {@link params}.
-   *
-   * @param jup the Properties object with the config data
-   * @param params the defined config keys for this CoatConfig
-   */
-  protected CoatConfig(final Properties jup, final ConfigParam[] params) {
-    this(toMap(jup), params);
-  }
-
-
-  /**
-   * Creates a new CoatConfig object from a Map instance that should provide the values
-   * for the given {@link params}.
-   *
-   * @param props the map with the config data
-   * @param params the defined config keys for this CoatConfig
-   */
-  protected CoatConfig(final Map<String, String> props, final ConfigParam[] params) {
-    this.props.putAll(props);
+  protected CoatConfig(final ConfigParam[] params) {
     this.params= params;
   }
 
+
+  //////////////////////////////////////////////////////////////////////////////
+  //
+  // Methods
 
   /**
    * Add the given properties to the current ones. Already existing properties will be overwritten
@@ -178,98 +150,6 @@ public abstract class CoatConfig {
     return this;
   }
 
-
-  /**
-   * Add the given properties to the current ones. Already existing properties will be overwritten
-   * with the new values.
-   * <p>
-   * Returns this CoatConfig for method chaining.
-   *
-   * @param jup the Properties object with the config data
-   * @return this CoatConfig
-   */
-  protected CoatConfig add(final Properties jup) {
-    final Map<String, String> props= toMap(jup);
-    this.props.putAll(props);
-    return this;
-  }
-
-
-  /**
-   * Add the properties from the given file to the current ones. Already existing properties will
-   * be overwritten with the new values.
-   * <p>
-   * Returns this CoatConfig for method chaining.
-   *
-   * @param file the config file to read
-   * @return this CoatConfig
-   * @throws IOException if reading the given file failed
-   */
-  protected CoatConfig add(final File file) throws IOException {
-    final Map<String, String> props= toMap(file);
-    this.props.putAll(props);
-    return this;
-  }
-
-
-  /**
-   * Add the environment variables to the current config. Already existing properties will
-   * be overwritten with the new values.
-   * <p>
-   * Returns this CoatConfig for method chaining.
-   * <p>
-   * Since the characters for an environment variable are much more restricted than the keys in
-   * Java Properties files, a special logic is applied to match them in a much more relaxed way.
-   * An environment variable will be expected to be all uppercase and an underscore is the only
-   * allowed special character. Therefore dots an hyphens are treated as underscores. Also uppercase
-   * characters in config keys are preceded by an underscore (to convert camelCase to UPPER_CASE).
-   * <p>
-   * For example the environment variable <code>DB_MQTT_HOST</code> will match (and therefore
-   * overwrite the value of) the config key <code>db.mqttHost</code>.
-   *
-   * @return this CoatConfig
-   */
-  protected CoatConfig addEnvVars() {
-    for (final Map.Entry<String, String> e : System.getenv().entrySet()) {
-      final ConfigParam p= findRelaxedEqual(e.getKey(), this.params);
-      if (p != null) {
-        LOGGER.log(DEBUG, "Mapping environment variable {0} to config key {1}", e.getKey(), p.key());
-        this.props.put(p.key(), e.getValue());
-      }
-    }
-
-    return this;
-  }
-
-
-  /**
-   * Compare the given environment variable to the keys in the given ConfigParams.
-   * The comparision will be done relaxed to be able to use the restricted character set of
-   * environment variables.
-   * <p>
-   * If any key in the given ConfigParams matches the name of the given environment variable,
-   * this ConfigParam is returned. If no ConfigParam matches, <code>null</code> is returned.
-   *
-   * @param envVar the environment variable to compare
-   * @param params the ConfigParam to compare to the environment variable
-   * @return the matching ConfigParam or <code>null</code>
-   */
-  private static ConfigParam findRelaxedEqual(final String envVar, final ConfigParam[] params) {
-    for (final ConfigParam p : params) {
-      if (envVar.equals(
-        KeyC14n.c14n(p.key()))) {
-        return p;
-      }
-    }
-
-
-    return null;
-  }
-
-
-  //////////////////////////////////////////////////////////////////////////////
-  //
-  // Methods
 
   /**
    * Validate this CoatConfig.
@@ -351,11 +231,6 @@ public abstract class CoatConfig {
     if (result.hasFailures()) {
       throw new ConfigValidationException(result);
     }
-
-    // TODO: Should this method throw a ValidationException (which contains validation details)
-    //       or should it return a ValidationResult object?
-    //       Or should we provide both methods?
-
   }
 
 
@@ -382,6 +257,7 @@ public abstract class CoatConfig {
    * No default values will be respected. If the given key doesn't have a value, {@code null} is
    * returned.
    *
+   * @param <T> the type of the configParam to return
    * @param configParam the configParam
    * @return the value of the config key
    */
@@ -715,7 +591,7 @@ public abstract class CoatConfig {
       }
     } else if (param.type().equals(double.class)) {
       try {
-        Double.parseDouble(stringValue);
+        Double.valueOf(stringValue);
       } catch (NumberFormatException ex) {
         throw new TypeConversionException("Error converting value to double", ex);
       }

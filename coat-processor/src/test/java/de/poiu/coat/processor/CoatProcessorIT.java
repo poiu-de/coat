@@ -28,7 +28,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1826,7 +1828,7 @@ public class CoatProcessorIT {
       this.assertResult(instance, "someParam", "some value");
       // the following is not testable as it would call the converter which would then fail
       //final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "invalid value"));
-      //this.assertResult(instance, "embedded", Optional.of(expectedEmbedded));
+      //this.assertResult(builderInstance, "embedded", Optional.of(expectedEmbedded));
 
       this.assertValidationErrors(instance, ImmutableValidationFailure.builder()
         .failureType(UNPARSABLE_VALUE)
@@ -3425,7 +3427,7 @@ public class CoatProcessorIT {
 
 
   /**
-   * Test the implementation of a Coat config interface that embeds another Coat config interface.
+   * Test that config values can be set via environment variables.
    */
   @Test
   @SetEnvironmentVariable(key = "some_param", value = "some env var in lowercase")
@@ -3498,6 +3500,85 @@ public class CoatProcessorIT {
   }
 
 
+  /**
+   * Test that Config instances can be created via Builder and multiple sources can be merged.
+   */
+  @Test
+  @SetEnvironmentVariable(key = "SOME_PARAM", value = "some param set via env var")
+  @SetEnvironmentVariable(key = "IRRELEVANT", value = "irrelevant")
+  public void testConfigFromMultipleSourcesViaBuilder() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\", defaultValue = \"embedded default\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\", defaultValue = \"some default\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public EmbeddedConfig embedded();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.MainConfig",
+                                "com.example.MainConfigParam",
+                                "com.example.ImmutableMainConfig",
+                                "com.example.EmbeddedConfig",
+                                "com.example.EmbeddedConfigParam",
+                                "com.example.ImmutableEmbeddedConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+
+    this.assertMethods(generatedEmbeddedClass, "embeddedParam");
+    this.assertMethods(generatedConfigClass, "someParam", "embedded");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object builderInstance= generatedConfigClass.getDeclaredMethod("builder").invoke(null);
+    builderInstance.getClass().getDeclaredMethod("add", Map.class).invoke(builderInstance, mapOf(
+      "someParam",              "some param set via map",
+      "embedded.embeddedParam", "embedded param set via map"
+    ));
+    builderInstance.getClass().getDeclaredMethod("addEnvVars").invoke(builderInstance);
+    final Object instance= builderInstance.getClass().getDeclaredMethod("build").invoke(builderInstance);
+
+    this.assertResult(instance, "someParam", "some param set via env var");
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "embedded param set via map"));
+    this.assertResult(instance, "embedded", expectedEmbedded);
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
   ////////////////////////////////////////////////////////////////////////////////
   // Helper classes and methods
   //
@@ -3538,7 +3619,7 @@ public class CoatProcessorIT {
    * Load a class via ByteClassLoader.
    *
    * @param fqClassName the fully qualified name of the class to load
-   * @param compilation the compiloation instance from which to take the class
+   * @param compilation the compiloation builderInstance from which to take the class
    * @return the Class object for the class
    * @throws ClassNotFoundException if the class cannot be found
    * @throws IOException if reading the class failed
@@ -3558,14 +3639,14 @@ public class CoatProcessorIT {
 
 
   /**
-   * Create an instance of the given <code>clazz</code> with the given <code>props</code> as parameter
+   * Create an builderInstance of the given <code>clazz</code> with the given <code>props</code> as parameter
    * to the constructor.
    * <p>
    * Used for creating the generated concrete implementation of a Coat config object.
    *
    * @param clazz the class to load
    * @param props the properties to fill the (Coat config) object
-   * @return the newly created instance
+   * @return the newly created builderInstance
    * @throws NoSuchMethodException
    * @throws InstantiationException
    * @throws IllegalAccessException
@@ -3598,11 +3679,11 @@ public class CoatProcessorIT {
 
   /**
    * Assert that calling the method with the given <code>methodName</code> on the given
-   * <code>instance</code> object returns the expected <code>result</code>.
+   * <code>builderInstance</code> object returns the expected <code>result</code>.
    * <p>
    * Used for verifying the correct result on calling the generated methods on the Coat config object.
    *
-   * @param instance the instance to call the method on
+   * @param instance the builderInstance to call the method on
    * @param methodName the method to call
    * @param expectedResult the expected result
    * @throws NoSuchMethodException
@@ -3628,6 +3709,7 @@ public class CoatProcessorIT {
    * @param methodNames the names of the methods to assert
    */
   private void assertMethods(final Class<?> generatedConfigClass, final String... methodNames) {
+    // FIXME: Check for parameters, not only name?
     assertThat(
       Stream.of(generatedConfigClass.getDeclaredMethods())
         .map(Method::getName))
@@ -3638,6 +3720,9 @@ public class CoatProcessorIT {
       .filteredOn(n -> !n.equals("add"))
       .filteredOn(n -> !n.equals("fromEnvVars"))
       .filteredOn(n -> !n.equals("addEnvVars"))
+      .filteredOn(n -> !n.equals("builder"))
+      .filteredOn(n -> !n.equals("access$000")) // FIXME: This is actually CoatConfig#toMap(…) Generate it?
+      .filteredOn(n -> !n.equals("access$100")) // FIXME: This is actually CoatConfig#toMap(…) Generate it?
       .containsExactlyInAnyOrder(
         methodNames
       );
@@ -3646,7 +3731,7 @@ public class CoatProcessorIT {
 
   /**
    * Assert that calling the {@link CoatConfig#validate()} methods returns the given <code>validationFailureMessages</code>.
-   * @param instance the instance to call <code>validate()</code> on
+   * @param instance the builderInstance to call <code>validate()</code> on
    * @param validationFailureMessages the expected validation failure messages
    */
   private void assertValidationErrors(final Object instance, final ValidationFailure... validationFailureMessages) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException {
@@ -3671,7 +3756,7 @@ public class CoatProcessorIT {
 
   /**
    * Assert that calling the {@link CoatConfig#validate()} succeeds without failure.
-   * @param instance the instance to call <code>validate()</code> on
+   * @param instance the builderInstance to call <code>validate()</code> on
    */
   private void assertNoValidationErrors(final Object instance) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     instance.getClass().getMethod("validate").invoke(instance);

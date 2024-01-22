@@ -85,15 +85,15 @@ class ConfigParamHandler {
 
     final TypeMirror returnTypeMirror = executableAnnotatedMethod.getReturnType();
 
-    final String methodName                        = executableAnnotatedMethod.getSimpleName().toString();
-    final String key                               = getOrInferKey(executableAnnotatedMethod, coatParamAnnotation);
-    final String defaultValue                      = coatParamAnnotation != null ? coatParamAnnotation.defaultValue() : "";
-    final SurroundingAndEnclosingTypes wrappedType = getWrappedType(returnTypeMirror);
-    final TypeMirror type                          = returnTypeMirror;
-    final Optional<TypeMirror> collectionType      = getCollectionType(wrappedType.surrounding);
-    final boolean isMandatory                      = !isOptional(type) && defaultValue != null;
-    final Optional<TypeMirror> converter           = getAnnotationValue(executableAnnotatedMethod, "converter");
-    final Optional<TypeMirror> listParser          = getAnnotationValue(executableAnnotatedMethod, "listParser");
+    final String                       methodName     = executableAnnotatedMethod.getSimpleName().toString();
+    final String                       key            = getOrInferKey(executableAnnotatedMethod, coatParamAnnotation);
+    final String                       defaultValue   = coatParamAnnotation != null ? coatParamAnnotation.defaultValue() : "";
+    final SurroundingAndEnclosingTypes wrappedType    = getWrappedType(returnTypeMirror);
+    final TypeMirror                   type           = returnTypeMirror;
+    final Optional<TypeMirror>         collectionType = getCollectionType(wrappedType.surrounding);
+    final boolean                      isMandatory    = !isOptional(type) && defaultValue != null;
+    final Optional<TypeMirror>         converter      = getAnnotationValue(executableAnnotatedMethod, "converter");
+    final Optional<TypeMirror>         listParser     = getAnnotationValue(executableAnnotatedMethod, "listParser");
 
 
     return ImmutableConfigParamSpec.builder()
@@ -101,6 +101,7 @@ class ConfigParamHandler {
       .methodeName(methodName)
       .key(key)
       .type(type)
+      .uncollectedType(wrappedType.enclosed)
       .defaultValue(defaultValue)
       .mandatory(isMandatory)
       .collectionType(collectionType)
@@ -116,16 +117,18 @@ class ConfigParamHandler {
 
     final TypeMirror returnTypeMirror = executableAnnotatedMethod.getReturnType();
 
-    final String methodName   = executableAnnotatedMethod.getSimpleName().toString();
-    final String key          = getOrInferKey(executableAnnotatedMethod, coatParamAnnotation);
-    final String keySeparator = coatParamAnnotation.keySeparator();
-    final TypeMirror type     = returnTypeMirror;
+    final String                       methodName   = executableAnnotatedMethod.getSimpleName().toString();
+    final String                       key          = getOrInferKey(executableAnnotatedMethod, coatParamAnnotation);
+    final String                       keySeparator = coatParamAnnotation.keySeparator();
+    final TypeMirror                   type         = returnTypeMirror;
+    final SurroundingAndEnclosingTypes wrappedType  = getWrappedType(returnTypeMirror);
 
     return ImmutableEmbeddedParamSpec.builder()
       .annotatedMethod(executableAnnotatedMethod)
       .methodeName(methodName)
       .key(key)
       .type(type)
+      .uncollectedType(wrappedType.enclosed)
       .keySeparator(keySeparator)
       .build();
   }

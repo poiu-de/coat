@@ -40,7 +40,8 @@ public class CoatConfigTest {
 
   private static class ConfigImpl extends CoatConfig {
     public ConfigImpl(final Map<String, String> map, final ConfigParam[] params) {
-      super(map, params);
+      super(params);
+      super.add(map);
     }
   }
 

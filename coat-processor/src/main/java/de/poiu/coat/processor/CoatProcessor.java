@@ -29,7 +29,6 @@ import com.squareup.javapoet.TypeSpec;
 import de.poiu.coat.CoatConfig;
 import de.poiu.coat.ConfigParam;
 import de.poiu.coat.annotation.Coat;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -256,94 +255,6 @@ public class CoatProcessor extends AbstractProcessor {
 
     this.addGeneratedAnnotation(typeSpecBuilder);
 
-    // add static factory methods
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("from")
-        .addModifiers(PUBLIC, STATIC)
-        .returns(fqClassName)
-        .addParameter(File.class, "file", FINAL)
-        .addStatement("return new $T(toMap(file))", fqClassName)
-        .addException(IOException.class)
-        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_FILE, fqClassName, fqClassName)
-        .build());
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("from")
-        .addModifiers(PUBLIC, STATIC)
-        .returns(fqClassName)
-        .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
-        .addStatement("return new $T(props)", fqClassName)
-        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_MAP, fqClassName, fqClassName)
-        .build());
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("from")
-        .addModifiers(PUBLIC, STATIC)
-        .returns(fqClassName)
-        .addParameter(Properties.class, "jup", FINAL)
-        .addStatement("return new $T(toMap(jup))", fqClassName)
-        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_PROPERTIES, fqClassName, fqClassName)
-        .build());
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("fromEnvVars")
-        .addModifiers(PUBLIC, STATIC)
-        .returns(fqClassName)
-        .addStatement("final $T c= new $T(java.util.Collections.EMPTY_MAP)", fqClassName, fqClassName)
-        .addStatement("return c.addEnvVars()")
-        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_ENV_VARS, fqClassName, fqClassName)
-        .build());
-
-    // add “add” methods for merging multiple config sources into the same config object
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("add")
-        .addModifiers(PUBLIC)
-        .returns(fqClassName)
-        .addParameter(File.class, "file", FINAL)
-        .addStatement("return ($T) super.add(file)", fqClassName)
-        .addException(IOException.class)
-        .addJavadoc(JavadocHelper.JAVADOC_ON_ADD_FILE, fqClassName, fqClassName)
-        .build());
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("add")
-      .addModifiers(PUBLIC)
-        .returns(fqClassName)
-      .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
-      .addStatement("return ($T) super.add(props)", fqClassName)
-        .addJavadoc(JavadocHelper.JAVADOC_ON_ADD_MAP, fqClassName, fqClassName)
-      .build());
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("add")
-        .addModifiers(PUBLIC)
-        .returns(fqClassName)
-        .addParameter(Properties.class, "jup", FINAL)
-        .addStatement("return ($T) super.add(jup)", fqClassName)
-        .addJavadoc(JavadocHelper.JAVADOC_ON_ADD_PROPERTIES, fqClassName, fqClassName)
-        .build());
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("addEnvVars")
-        .addModifiers(PUBLIC)
-        .returns(fqClassName)
-        .addStatement("return ($T) super.addEnvVars()", fqClassName)
-        .addJavadoc(JavadocHelper.JAVADOC_ON_ADD_ENV_VARS, fqClassName, fqClassName)
-        .build());
-
-    final List<ConfigParamSpec> annotatedMethods= new ArrayList<>();
-
-    // add accessor for direct parameters
-    annotatedInterface.getEnclosedElements().stream()
-      .filter(e -> e.getKind() == ElementKind.METHOD)
-      .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
-      .map(paramSpecBuilder::from)
-      .forEachOrdered(annotatedMethods::add);
-
-    annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
-
-    this.assertReturnType(annotatedMethods);
-    this.assertNoParameters(annotatedMethods);
-    this.reduceDuplicateAccessors(annotatedMethods);
-    this.assertUniqueKeys(annotatedMethods);
-
-    for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
-      this.addAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
-    }
 
     // add accessor for embedded configs
     // TODO: Check that not both, @Embedded and @Param are specified
@@ -367,14 +278,72 @@ public class CoatProcessor extends AbstractProcessor {
     final Optional<CodeBlock> registerCustomListParser= this.addRegisterCustomListParser(annotatedInterface);
     registerCustomListParser.ifPresent(initCodeBlocks::add);
 
+
+    // add static factory methods
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("from")
+        .addModifiers(PUBLIC, STATIC)
+        .returns(fqClassName)
+        .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
+        .addStatement("return new $T(props)", fqClassName)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_MAP, fqClassName, fqClassName)
+        .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("from")
+        .addModifiers(PUBLIC, STATIC)
+        .returns(fqClassName)
+        .addParameter(File.class, "file", FINAL)
+        .addStatement("return new $T(toMap(file))", fqClassName)
+        .addException(IOException.class)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_FILE, fqClassName, fqClassName)
+        .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("from")
+        .addModifiers(PUBLIC, STATIC)
+        .returns(fqClassName)
+        .addParameter(Properties.class, "jup", FINAL)
+        .addStatement("return new $T(toMap(jup))", fqClassName)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_PROPERTIES, fqClassName, fqClassName)
+        .build());
+    typeSpecBuilder.addMethod(
+      MethodSpec.methodBuilder("fromEnvVars")
+        .addModifiers(PUBLIC, STATIC)
+        .returns(fqClassName)
+        .addStatement("return builder().addEnvVars().build()")
+        .addJavadoc(JavadocHelper.JAVADOC_ON_FROM_ENV_VARS, fqClassName, fqClassName)
+        .build());
+
+
+    final List<ConfigParamSpec> annotatedMethods= new ArrayList<>();
+
+    // add accessor for direct parameters
+    annotatedInterface.getEnclosedElements().stream()
+      .filter(e -> e.getKind() == ElementKind.METHOD)
+      .filter(e -> e.getAnnotation(Coat.Embedded.class) == null)
+      .map(paramSpecBuilder::from)
+      .forEachOrdered(annotatedMethods::add);
+
+    annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
+
+    this.assertReturnType(annotatedMethods);
+    this.assertNoParameters(annotatedMethods);
+    this.reduceDuplicateAccessors(annotatedMethods);
+    this.assertUniqueKeys(annotatedMethods);
+
+    for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
+      this.addAccessorMethod(typeSpecBuilder, annotatedMethod, fqEnumName);
+    }
+
     // add (private) constructor
     final MethodSpec.Builder mainConstructorBuilder= MethodSpec.constructorBuilder()
       .addModifiers(PRIVATE)
       .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
-      .addStatement("super(props, $T.values())", fqEnumName);
+      .addStatement("super($T.values())", fqEnumName);
     for (final CodeBlock initEmbeddedConfig : initCodeBlocks) {
       mainConstructorBuilder.addCode(initEmbeddedConfig);
     }
+    mainConstructorBuilder.addCode("\n");
+    mainConstructorBuilder.addStatement("this.add(props)");
     typeSpecBuilder.addMethod(mainConstructorBuilder.build());
 
     final List<Element> allAnnotatedMethods=
@@ -391,6 +360,11 @@ public class CoatProcessor extends AbstractProcessor {
 
     final List<ConfigParamSpec> allAnnotatedParams= this.getAnnotatedParamsRecursively(annotatedInterface);
     this.addWriteExampleConfigMethod(typeSpecBuilder, allAnnotatedParams);
+
+    final CoatBuilderGenerator builderGenerator= CoatBuilderGenerator.forType(annotatedInterface, fqClassName, this.processingEnv);
+    typeSpecBuilder.addMethod(builderGenerator.generateBuilderMethod());
+    typeSpecBuilder.addType(builderGenerator.generateBuilderClass());
+
 
     JavaFile.builder(fqClassName.packageName(), typeSpecBuilder.build())
       .build()

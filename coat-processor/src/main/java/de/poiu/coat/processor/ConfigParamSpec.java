@@ -38,6 +38,8 @@ abstract class ConfigParamSpec {
 
   public abstract Optional<TypeMirror>    collectionType();
 
+  public abstract TypeMirror              uncollectedType();
+
   public abstract String                  defaultValue();
 
   public abstract boolean                 mandatory();
