@@ -15,7 +15,6 @@
  */
 package de.poiu.coat;
 
-import de.poiu.coat.c14n.KeyC14n;
 import de.poiu.coat.convert.BooleanConverter;
 import de.poiu.coat.convert.CharsetConverter;
 import de.poiu.coat.convert.Converter;
@@ -71,8 +70,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
 import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
-import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
