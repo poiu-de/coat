@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.processor.casing;
+package de.poiu.coat.casing;
 
 
-class SnakeCaseConverter {
+class KebapCaseConverter {
 
   public static String convert(final String key) {
     final StringBuilder sb= new StringBuilder();
 
     for (final char c : key.toCharArray()) {
       if (Character.isUpperCase(c)) {
-        sb.append("_");
+        sb.append("-");
         sb.append(Character.toLowerCase(c));
       } else {
         sb.append(c);

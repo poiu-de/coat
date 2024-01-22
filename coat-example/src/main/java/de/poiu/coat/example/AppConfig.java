@@ -16,7 +16,7 @@
 package de.poiu.coat.example;
 
 import de.poiu.coat.annotation.Coat;
-import de.poiu.coat.processor.casing.CasingStrategy;
+import de.poiu.coat.casing.CasingStrategy;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.net.InetAddress;

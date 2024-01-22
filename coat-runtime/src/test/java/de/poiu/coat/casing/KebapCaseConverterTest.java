@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.processor.casing;
+package de.poiu.coat.casing;
 
+import de.poiu.coat.casing.KebapCaseConverter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

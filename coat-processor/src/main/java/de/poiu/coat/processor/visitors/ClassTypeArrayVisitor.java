@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.processor;
+package de.poiu.coat.processor.visitors;
 
 import java.util.List;
 import javax.lang.model.element.AnnotationValue;
@@ -21,7 +21,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.SimpleAnnotationValueVisitor9;
 
 
-class ClassTypeArrayVisitor extends SimpleAnnotationValueVisitor9<Void, Void> {
+public class ClassTypeArrayVisitor extends SimpleAnnotationValueVisitor9<Void, Void> {
 
   private final List<TypeMirror> list;
 

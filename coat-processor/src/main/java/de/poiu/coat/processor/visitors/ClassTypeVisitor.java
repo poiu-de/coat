@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.processor;
+package de.poiu.coat.processor.visitors;
 
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.SimpleAnnotationValueVisitor9;
 
 
-class ClassTypeVisitor extends SimpleAnnotationValueVisitor9<TypeMirror, Void> {
+public class ClassTypeVisitor extends SimpleAnnotationValueVisitor9<TypeMirror, Void> {
 
   @Override
   public TypeMirror visitType(final TypeMirror t, Void p) {

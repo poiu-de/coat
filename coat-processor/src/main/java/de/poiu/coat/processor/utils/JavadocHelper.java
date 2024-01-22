@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.processor;
+package de.poiu.coat.processor.utils;
+
+import java.util.regex.Pattern;
+
+import static java.util.function.Predicate.not;
 
 
 public class JavadocHelper {
@@ -97,4 +101,32 @@ public class JavadocHelper {
     + "\n"
     + "@param writer the Writer to write to\n"
     + "@throws IOException if writing the example config file fails";
+
+
+
+  private static final Pattern PATTERN_JAVADOC_BLOCK_TAG = Pattern.compile("^\\s*@.*");
+
+
+  /**
+   * Return a String of the given Javadoc String where all lines with Javadoc block tags
+   * (lines starting with an @ character) are removed.
+   *
+   * @param javadoc
+   * @return
+   */
+  public static String stripBlockTagsFromJavadoc(final String javadoc) {
+    if (javadoc == null) {
+      return "";
+    }
+
+    final StringBuilder sb= new StringBuilder();
+
+    javadoc.lines()
+      .takeWhile(not(PATTERN_JAVADOC_BLOCK_TAG.asMatchPredicate()))
+      .map(s -> s + '\n')
+      .forEachOrdered(sb::append)
+      ;
+
+    return sb.toString();
+  }
 }

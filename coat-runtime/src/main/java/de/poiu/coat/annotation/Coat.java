@@ -24,11 +24,11 @@ package de.poiu.coat.annotation;
  */
 import de.poiu.coat.convert.Converter;
 import de.poiu.coat.convert.ListParser;
-import de.poiu.coat.processor.casing.CasingStrategy;
+import de.poiu.coat.casing.CasingStrategy;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
-import static de.poiu.coat.processor.casing.CasingStrategy.AS_IS;
+import static de.poiu.coat.casing.CasingStrategy.AS_IS;
 
 /**
  * Container annotation for different concrete annotations supported by Coat.

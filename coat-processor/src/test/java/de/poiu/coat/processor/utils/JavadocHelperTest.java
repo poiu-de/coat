@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.processor;
+package de.poiu.coat.processor.utils;
 
+import de.poiu.coat.processor.utils.JavadocHelper;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-public class UtilsTest {
+public class JavadocHelperTest {
 
   @Test
   public void testStripBlockTagsFromJavadoc() {
@@ -39,7 +40,7 @@ public class UtilsTest {
       + " @return an intersting value\n"
       + " @throws RuntimeException if something goes wrong";
 
-    assertThat(Utils.stripBlockTagsFromJavadoc(javadoc))
+    assertThat(JavadocHelper.stripBlockTagsFromJavadoc(javadoc))
       .isEqualTo(""
       + " bla bla dumdidum\n"
       + " lalala oo jaja {@code somecode}\n"

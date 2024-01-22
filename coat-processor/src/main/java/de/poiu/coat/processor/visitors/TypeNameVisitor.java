@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.processor;
+package de.poiu.coat.processor.visitors;
 
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.util.SimpleTypeVisitor9;
 
 
-class TypeNameVisitor extends SimpleTypeVisitor9<String, Void> {
+public class TypeNameVisitor extends SimpleTypeVisitor9<String, Void> {
 
 
   @Override

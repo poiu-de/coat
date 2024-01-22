@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.processor;
+package de.poiu.coat.processor.specs;
 
+import java.util.Optional;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import org.immutables.value.Value;
 
 
-
-
-@Value.Style(stagedBuilder = true)
+/**
+ * Data model for an accessor (a method in a @Coat.Config annotated interface).
+ * 
+ */
 @Value.Immutable
-abstract class EmbeddedParamSpec {
+public abstract class AccessorSpec {
+  public abstract ExecutableElement    accessor();
 
-  public abstract ExecutableElement   annotatedMethod();
+  public abstract String               key();
+  public abstract String               defaultValue();
+  public abstract boolean              mandatory();
 
-  public abstract String              methodeName();
+  public abstract Optional<TypeMirror> converter();
+  public abstract Optional<TypeMirror> listParser();
 
-  public abstract String              key();
+  public abstract String               methodName();
 
-  public abstract TypeMirror          type();
-
-  public abstract TypeMirror          uncollectedType();
-
-  public abstract String              keySeparator();
+  public abstract TypeMirror           type();
+  public abstract Optional<TypeMirror> collectionType();
 }

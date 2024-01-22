@@ -770,7 +770,7 @@ public class CoatProcessorIT {
   public void testDuplicateKey() throws Exception {
     // - preparation && execution && verification
 
-    assertThatThrownBy(() -> {
+    final Compilation compilation =
       javac()
         .withProcessors(new CoatProcessor())
         .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
@@ -795,12 +795,8 @@ public class CoatProcessorIT {
             "\n" + "  public Charset charsetWithDefault();" +
             "\n" + "}" +
             ""));
-      })
-      .cause()
-      .isInstanceOf(CoatProcessorException.class)
-      .hasMessageStartingWith("Duplicate keys:\n")
-      .hasMessageContaining("\n  duplicateKey:\n")
-      ;
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("Duplicate key");
   }
 
 
@@ -1014,7 +1010,7 @@ public class CoatProcessorIT {
   public void testAccessorWithoutReturnType() throws Exception {
     // - preparation && execution && verification
 
-    assertThatThrownBy(() -> {
+    final Compilation compilation =
       javac()
         .withProcessors(new CoatProcessor())
         .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
@@ -1036,12 +1032,8 @@ public class CoatProcessorIT {
             "\n" + "  public OptionalInt optionalInt();" +
             "\n" + "}" +
             ""));
-      })
-      .cause()
-      .isInstanceOf(CoatProcessorException.class)
-      .hasMessageStartingWith("Accessors without return type:\n")
-      .hasMessageContaining("\n  missingReturnType():\n")
-      ;
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("Accessors must have a return type");
   }
 
 
@@ -1052,7 +1044,7 @@ public class CoatProcessorIT {
   public void testAccessorWithParameter() throws Exception {
     // - preparation && execution && verification
 
-    assertThatThrownBy(() -> {
+    final Compilation compilation =
       javac()
         .withProcessors(new CoatProcessor())
         .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
@@ -1074,12 +1066,8 @@ public class CoatProcessorIT {
             "\n" + "  public OptionalInt optionalInt();" +
             "\n" + "}" +
             ""));
-      })
-      .cause()
-      .isInstanceOf(CoatProcessorException.class)
-      .hasMessageStartingWith("Accessors with parameters:\n")
-      .hasMessageContaining("\n  unexpectedParameter(int):\n")
-      ;
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("Accessors must not have parameters");
   }
 
 
@@ -1237,7 +1225,7 @@ public class CoatProcessorIT {
   public void testInheritedConfig_DuplicateKey() throws Exception {
     // - preparation && execution && verification
 
-    assertThatThrownBy(() -> {
+    final Compilation compilation =
         javac()
           .withProcessors(new CoatProcessor())
           .compile(JavaFileObjects.forSourceString("com.example.BaseConfig1",
@@ -1285,12 +1273,8 @@ public class CoatProcessorIT {
             "\n" + "  public String additionalParam();" +
             "\n" + "}" +
             ""));
-      })
-      .cause()
-      .isInstanceOf(CoatProcessorException.class)
-      .hasMessageStartingWith("Duplicate keys:\n")
-      .hasMessageContaining("\n  duplicateKey:\n")
-      ;
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("Duplicate key");
   }
 
 
@@ -1386,6 +1370,94 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test the implementation of a Coat config interface that inherits from anotherr Coat config interfaces
+   * that itself inherits from another one. The lowest one shares an accessor method.
+   */
+  @Test
+  public void testDeeplyInheritedConfig_DuplicateAccessorMethod() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.BaseConfig1",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface BaseConfig1 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"inheritedParam\", defaultValue = \"inherited default\")" +
+            "\n" + "  public String inheritedParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"shared accessor\")" +
+            "\n" + "  public String sharedAccessor();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.BaseConfig2",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface BaseConfig2 extends BaseConfig1 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"otherParam\", defaultValue = \"other default\")" +
+            "\n" + "  public int otherParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.SubConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface SubConfig extends BaseConfig2 {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"additionalParam\", defaultValue = \"additional default\")" +
+            "\n" + "  public String additionalParam();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.BaseConfig1",
+                                "com.example.BaseConfig2",
+                                "com.example.BaseConfig1Param",
+                                "com.example.BaseConfig2Param",
+                                "com.example.ImmutableBaseConfig1",
+                                "com.example.ImmutableBaseConfig2",
+                                "com.example.SubConfig",
+                                "com.example.SubConfigParam",
+                                "com.example.ImmutableSubConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableSubConfig", compilation);
+
+    this.assertMethods(generatedConfigClass, "inheritedParam", "additionalParam", "sharedAccessor", "otherParam");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      // no values are explicitly set
+      "irrelevant key", "irrelevant value"
+    ));
+
+    this.assertResult(instance, "inheritedParam", "inherited default");
+    this.assertResult(instance, "additionalParam", "additional default");
+    this.assertResult(instance, "sharedAccessor", "shared accessor");
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
    * Test the failure of the processing of a Coat config interface that inherits from two other Coat config interfaces
    * that have a conflicting accessor method (same name, but different signature).
    */
@@ -1403,11 +1475,14 @@ public class CoatProcessorIT {
     // different mandatority
     "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"shared accessor\")" +
     "\n" + "  public Optional<String> sharedAccessor();",
+    // different collectivity
+    "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"shared accessor\")" +
+    "\n" + "  public List<String> sharedAccessor();",
   })
  public void testInheritedConfig_ConflictingAccessorMethod(final String conflictingAccessor) throws Exception {
     // - preparation && execution && verification
 
-    assertThatThrownBy(() -> {
+    final Compilation compilation=
         javac()
           .withProcessors(new CoatProcessor())
           .compile(JavaFileObjects.forSourceString("com.example.BaseConfig1",
@@ -1455,11 +1530,8 @@ public class CoatProcessorIT {
             "\n" + "  public String additionalParam();" +
             "\n" + "}" +
             ""));
-      })
-      .cause()
-      .isInstanceOf(CoatProcessorException.class)
-      .hasMessageStartingWith("Conflicting accessor methods:\n")
-      ;
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("Conflicting accessor methods");
   }
 
 
@@ -1925,7 +1997,7 @@ public class CoatProcessorIT {
 
     // - preparation && execution
 
-    assertThatThrownBy(() -> {
+    final Compilation compilation=
       javac()
         .withProcessors(new CoatProcessor())
         .compile(JavaFileObjects.forSourceString("com.example.MainConfig",
@@ -1944,12 +2016,7 @@ public class CoatProcessorIT {
             "\n" + "  public String embedded();" +
             "\n" + "}" +
             ""));
-        })
-      .cause()
-      .isInstanceOf(CoatProcessorException.class)
-      .hasMessageStartingWith("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.")
-      .hasMessageContaining("embedded()")
-      ;
+    CompilationSubject.assertThat(compilation).hadErrorContaining("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.");
   }
 
 
@@ -1961,7 +2028,7 @@ public class CoatProcessorIT {
 
     // - preparation && execution
 
-    assertThatThrownBy(() -> {
+    final Compilation compilation=
       javac()
         .withProcessors(new CoatProcessor())
         .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
@@ -1992,12 +2059,7 @@ public class CoatProcessorIT {
             "\n" + "  public EmbeddedConfig embedded();" +
             "\n" + "}" +
             ""));
-        })
-      .cause()
-      .isInstanceOf(CoatProcessorException.class)
-      .hasMessageStartingWith("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.")
-      .hasMessageContaining("embedded()")
-      ;
+    CompilationSubject.assertThat(compilation).hadErrorContaining("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.");
   }
 
 
@@ -2079,7 +2141,7 @@ public class CoatProcessorIT {
 
     // - preparation && execution
 
-    assertThatThrownBy(() -> {
+    final Compilation compilation=
       javac()
         .withProcessors(new CoatProcessor())
         .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
@@ -2112,11 +2174,56 @@ public class CoatProcessorIT {
             "\n" + "  public List<EmbeddedConfig> embedded();" +
             "\n" + "}" +
             ""));
-      })
-      .cause()
-      .isInstanceOf(CoatProcessorException.class)
-      .hasMessageStartingWith("Collection types are not supported for EmbeddedConfigs:")
-      ;
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("Collection types are not supported for EmbeddedConfigs");
+  }
+
+
+  /**
+   * Test that annotation processing fails with a helpful error message if an embedded config
+   * not only has a @Coat.Embedded annotation, but also a @Coat.Param annotation.
+   */
+  @Test
+  public void testEmbeddedConfigWithParamAnnotation() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation=
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\", defaultValue = \"embedded default\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.util.List;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\", defaultValue = \"some default\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embedded\", defaultValue = \"some default\")" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public EmbeddedConfig embedded();" +
+            "\n" + "}" +
+            ""));
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("@Param or @Embedded annotations are mutually exclusive");
   }
 
 
@@ -2318,7 +2425,7 @@ public class CoatProcessorIT {
             "\n" + "import java.nio.charset.Charset;" +
             "\n" + "import java.util.OptionalInt;" +
             "\n" + "" +
-            "\n" + "import static de.poiu.coat.processor.casing.CasingStrategy.AS_IS;" +
+            "\n" + "import static de.poiu.coat.casing.CasingStrategy.AS_IS;" +
             "\n" + "" +
             "\n" + "@Coat.Config(casing = AS_IS)" +
             "\n" + "public interface TestConfig {" +
@@ -2383,7 +2490,7 @@ public class CoatProcessorIT {
             "\n" + "import java.nio.charset.Charset;" +
             "\n" + "import java.util.OptionalInt;" +
             "\n" + "" +
-            "\n" + "import static de.poiu.coat.processor.casing.CasingStrategy.SNAKE_CASE;" +
+            "\n" + "import static de.poiu.coat.casing.CasingStrategy.SNAKE_CASE;" +
             "\n" + "" +
             "\n" + "@Coat.Config(casing = SNAKE_CASE)" +
             "\n" + "public interface TestConfig {" +
@@ -2460,7 +2567,7 @@ public class CoatProcessorIT {
             "\n" + "" +
             "\n" + "import de.poiu.coat.annotation.Coat;" +
             "\n" + "" +
-            "\n" + "import static de.poiu.coat.processor.casing.CasingStrategy.SNAKE_CASE;" +
+            "\n" + "import static de.poiu.coat.casing.CasingStrategy.SNAKE_CASE;" +
             "\n" + "" +
             "\n" + "@Coat.Config(casing = SNAKE_CASE)" +
             "\n" + "public interface MainConfig {" +
@@ -2645,7 +2752,7 @@ public class CoatProcessorIT {
             "\n" + "" +
             "\n" + "import de.poiu.coat.annotation.Coat;" +
             "\n" + "" +
-            "\n" + "import static de.poiu.coat.processor.casing.CasingStrategy.SNAKE_CASE;" +
+            "\n" + "import static de.poiu.coat.casing.CasingStrategy.SNAKE_CASE;" +
             "\n" + "" +
             "\n" + "@Coat.Config(casing = SNAKE_CASE)" +
             "\n" + "public interface TestConfig {" +
@@ -2755,7 +2862,7 @@ public class CoatProcessorIT {
   public void testFailOnAnnotatedAbstractClass() throws Exception {
     // - preparation && execution && verification
 
-    assertThatThrownBy(() -> {
+    final Compilation compilation=
       javac()
         .withProcessors(new CoatProcessor())
         .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
@@ -2770,12 +2877,8 @@ public class CoatProcessorIT {
             "\n" + "  public abstract String mandatoryString();" +
             "\n" + "}" +
             ""));
-      })
-      .cause()
-      .isInstanceOf(CoatProcessorException.class)
-      .hasMessageStartingWith("@Coat.Config is only supported on interfaced at the moment:\n")
-      .hasMessageContaining("  Non-interface type: com.example.TestConfig")
-      ;
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("@Coat.Config is only supported on interfaces at the moment");
   }
 
 
