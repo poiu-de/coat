@@ -45,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 
 import static com.google.testing.compile.Compiler.javac;
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
@@ -3418,6 +3419,80 @@ public class CoatProcessorIT {
     this.assertResult(instance, "array", new String[]{"one", "two", "three"});
     this.assertResult(instance, "bool", Boolean.TRUE);
     this.assertResult(instance, "listOfInts", List.of(1, 2, 3));
+
+    this.assertNoValidationErrors(instance);
+  }
+
+
+  /**
+   * Test the implementation of a Coat config interface that embeds another Coat config interface.
+   */
+  @Test
+  @SetEnvironmentVariable(key = "some_param", value = "some env var in lowercase")
+  @SetEnvironmentVariable(key = "EMBEDDED_EMBEDDED_PARAM", value = "embedded env var in uppercase")
+  @SetEnvironmentVariable(key = "IRRELEVANT", value = "irrelevant")
+  public void testConfigFromEnvVars() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\", defaultValue = \"embedded default\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\", defaultValue = \"some default\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public EmbeddedConfig embedded();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.MainConfig",
+                                "com.example.MainConfigParam",
+                                "com.example.ImmutableMainConfig",
+                                "com.example.EmbeddedConfig",
+                                "com.example.EmbeddedConfigParam",
+                                "com.example.ImmutableEmbeddedConfig");
+
+    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+
+    this.assertMethods(generatedEmbeddedClass, "embeddedParam");
+    this.assertMethods(generatedConfigClass, "someParam", "embedded");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance= generatedConfigClass.getDeclaredMethod("fromEnvVars").invoke(null);
+
+    this.assertResult(instance, "someParam", "some env var in lowercase");
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "embedded env var in uppercase"));
+    this.assertResult(instance, "embedded", expectedEmbedded);
 
     this.assertNoValidationErrors(instance);
   }
