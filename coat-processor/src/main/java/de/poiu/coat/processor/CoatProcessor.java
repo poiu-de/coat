@@ -220,9 +220,8 @@ public class CoatProcessor extends AbstractProcessor {
     annotatedMethods.addAll(this.getInheritedAnnotatedMethods(annotatedInterface));
 
     if (annotatedMethods.isEmpty()) {
-      processingEnv.getMessager().printMessage(Kind.WARNING,
-                                             String.format("No annotated methods in %s.", annotatedInterface));
-      throw new RuntimeException("At least one annotated method is necessary for " + annotatedInterface.toString());
+      // not creating an enum if there is no accessor for it
+      return;
     }
 
     this.assertReturnType(annotatedMethods);
@@ -337,8 +336,16 @@ public class CoatProcessor extends AbstractProcessor {
     // add (private) constructor
     final MethodSpec.Builder mainConstructorBuilder= MethodSpec.constructorBuilder()
       .addModifiers(PRIVATE)
-      .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL)
-      .addStatement("super($T.values())", fqEnumName);
+      .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "props", FINAL);
+    if (annotatedMethods.isEmpty()) {
+      // if there are no annotated methods, no enum is being generated (due to a bug in JavaPoet)
+      // therefore we cannot refer to it and instaed use an empty ConfigParam array
+      // see https://github.com/square/javapoet/issues/739
+      // and https://github.com/square/javapoet/issues/832
+      mainConstructorBuilder.addStatement("super(new $T[]{})", ConfigParam.class);
+    } else {
+      mainConstructorBuilder.addStatement("super($T.values())", fqEnumName);
+    }
     for (final CodeBlock initEmbeddedConfig : initCodeBlocks) {
       mainConstructorBuilder.addCode(initEmbeddedConfig);
     }
