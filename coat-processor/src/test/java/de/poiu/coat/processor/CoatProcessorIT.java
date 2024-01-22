@@ -27,10 +27,7 @@ import de.poiu.coat.validation.ValidationResult;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,6 +52,7 @@ import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toList;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -3703,29 +3701,56 @@ public class CoatProcessorIT {
 
   /**
    * Assert that the <code>generatedConfigClass</code> contains all methods of the given
-   * <code>methodNames</code> plus the two delegate methods "toString()" and "validate()"
-   * and the generated methods "equals()" and "hashCode()".
+   * <code>methodNames</code> plus the always generated methods and delegate methods
+   * (e.g. "equals()", "hashCode(), "toString()", "validate()", etc.).
+   *
+   * @param generatedConfigClass the class to check
+   * @param expectedMethods the methods to assert
+   */
+  private void assertMethods(final Class<?> clazz, final MethodAndParams... expectedMethods) {
+    final List<MethodAndParams> generatedMethods = Stream.of(clazz.getDeclaredMethods())
+      .map(MethodAndParams::from)
+      .filter(m -> !m.equals(MethodAndParams.from("equals", Object.class)))
+      .filter(m -> !m.equals(MethodAndParams.from("hashCode")))
+      .filter(m -> !m.equals(MethodAndParams.from("writeExampleConfig", java.io.Writer.class)))
+      .filter(m -> !m.equals(MethodAndParams.from("from", java.util.Map.class)))
+      .filter(m -> !m.equals(MethodAndParams.from("from", java.io.File.class)))
+      .filter(m -> !m.equals(MethodAndParams.from("from", java.util.Properties.class)))
+      .filter(m -> !m.equals(MethodAndParams.from("add", java.util.Map.class)))
+      .filter(m -> !m.equals(MethodAndParams.from("add", java.io.File.class)))
+      .filter(m -> !m.equals(MethodAndParams.from("add", java.util.Properties.class)))
+      .filter(m -> !m.equals(MethodAndParams.from("fromEnvVars")))
+      .filter(m -> !m.equals(MethodAndParams.from("addEnvVars")))
+      .filter(m -> !m.equals(MethodAndParams.from("builder")))
+      .filter(m -> !m.equals(MethodAndParams.from("access$000", java.io.File.class))) // FIXME: This is actually CoatConfig#toMap(File) Generate it?
+      .filter(m -> !m.equals(MethodAndParams.from("access$100", java.util.Properties.class))) // FIXME: This is actually CoatConfig#toMap(Properties) Generate it?
+      .collect(toList());
+
+    assertThat(
+      generatedMethods)
+      .containsExactlyInAnyOrder(
+        expectedMethods);
+  }
+
+
+  /**
+   * Assert that the <code>generatedConfigClass</code> contains all methods of the given
+   * <code>methodNames</code> plus the always generated methods and delegate methods
+   * (e.g. "equals()", "hashCode(), "toString()", "validate()", etc.).
+   * <p>
+   * This method expects only parameterless methods. To check for methods with parameters use
+   * {@link #assertMethods(java.lang.Class, de.poiu.coat.processor.MethodAndParams...)}.
+   *
    * @param generatedConfigClass the class to check
    * @param methodNames the names of the methods to assert
    */
   private void assertMethods(final Class<?> generatedConfigClass, final String... methodNames) {
-    // FIXME: Check for parameters, not only name?
-    assertThat(
-      Stream.of(generatedConfigClass.getDeclaredMethods())
-        .map(Method::getName))
-      .filteredOn(n -> !n.equals("equals"))
-      .filteredOn(n -> !n.equals("hashCode"))
-      .filteredOn(n -> !n.equals("writeExampleConfig"))
-      .filteredOn(n -> !n.equals("from"))
-      .filteredOn(n -> !n.equals("add"))
-      .filteredOn(n -> !n.equals("fromEnvVars"))
-      .filteredOn(n -> !n.equals("addEnvVars"))
-      .filteredOn(n -> !n.equals("builder"))
-      .filteredOn(n -> !n.equals("access$000")) // FIXME: This is actually CoatConfig#toMap(…) Generate it?
-      .filteredOn(n -> !n.equals("access$100")) // FIXME: This is actually CoatConfig#toMap(…) Generate it?
-      .containsExactlyInAnyOrder(
-        methodNames
-      );
+    final MethodAndParams[] expected= new MethodAndParams[methodNames.length];
+    for (int i= 0; i < methodNames.length; i++) {
+      expected[i]= MethodAndParams.from(methodNames[i]);
+    }
+
+    this.assertMethods(generatedConfigClass, expected);
   }
 
 
