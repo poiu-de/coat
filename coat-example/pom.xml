@@ -5,12 +5,12 @@
   <parent>
     <groupId>de.poiu.coat</groupId>
     <artifactId>coat</artifactId>
-    <version>0.0.5-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
   </parent>
 
   <groupId>de.poiu.coat</groupId>
   <artifactId>coat-example</artifactId>
-  <version>0.0.5-SNAPSHOT</version>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <licenses>
