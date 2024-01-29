@@ -33,6 +33,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import javax.tools.Diagnostic.Kind;
 
 
 class ConfigParamHandler {
@@ -111,7 +112,7 @@ class ConfigParamHandler {
   }
 
 
-  public EmbeddedParamSpec embeddedFrom(final Element annotatedMethod) {
+  public EmbeddedParamSpec embeddedFrom(final Element annotatedMethod) throws CoatProcessorException {
     final ExecutableElement executableAnnotatedMethod = (ExecutableElement) annotatedMethod;
     final Coat.Embedded     coatParamAnnotation       = assertEmbeddedAnnotation(executableAnnotatedMethod);
 
@@ -122,6 +123,13 @@ class ConfigParamHandler {
     final String                       keySeparator = coatParamAnnotation.keySeparator();
     final TypeMirror                   type         = returnTypeMirror;
     final SurroundingAndEnclosingTypes wrappedType  = getWrappedType(returnTypeMirror);
+
+    if (wrappedType.surrounding != null && !isOptional(type)) {
+      this.processingEnv.getMessager().printMessage(
+        Kind.ERROR,
+        "Collection types are not supported for EmbeddedConfigs.",
+        annotatedMethod);
+    }
 
     return ImmutableEmbeddedParamSpec.builder()
       .annotatedMethod(executableAnnotatedMethod)

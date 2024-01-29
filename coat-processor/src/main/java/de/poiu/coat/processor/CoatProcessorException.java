@@ -15,19 +15,51 @@
  */
 package de.poiu.coat.processor;
 
+import javax.lang.model.element.Element;
+
 
 /**
  * An exeption that is thrown if processing the Coat annotation fails.
  */
 public class CoatProcessorException extends RuntimeException {
 
-  public CoatProcessorException(String message) {
-    super(message);
+  private final String msg;
+  private final Element element;
+
+  public CoatProcessorException(final String message) {
+    this.msg= message;
+    this.element= null;
+  }
+
+  public CoatProcessorException(final String message, final Element element) {
+    this.msg= message;
+    this.element= element;
   }
 
 
-  public CoatProcessorException(String message, Throwable cause) {
-    super(message, cause);
+  public CoatProcessorException(final String message, final Throwable cause) {
+    super(cause);
+    this.msg= message;
+    this.element= null;
   }
+
+
+  public CoatProcessorException(final String message, final Element element, final Throwable cause) {
+    super(cause);
+    this.msg= message;
+    this.element= element;
+  }
+
+
+  public String getMsg() {
+    return msg;
+  }
+
+
+  public Element getElement() {
+    return element;
+  }
+
+
 
 }

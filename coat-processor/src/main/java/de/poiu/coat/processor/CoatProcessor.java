@@ -37,6 +37,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +69,6 @@ import javax.tools.FileObject;
 import org.eclipse.collections.impl.multimap.list.FastListMultimap;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toCollection;
 import static javax.lang.model.element.ElementKind.INTERFACE;
@@ -113,7 +113,7 @@ public class CoatProcessor extends AbstractProcessor {
       .peek(this::assertIsInterface)
       .forEachOrdered(this::generateCode);
 
-    return false;
+    return true;
   }
 
 
@@ -132,8 +132,12 @@ public class CoatProcessor extends AbstractProcessor {
       this.generateExampleFile(exampleFileName, annotatedInterface, processingEnv.getFiler());
     } catch (IOException ex) {
       processingEnv.getMessager().printMessage(Kind.ERROR,
-                                               String.format("Error generating code for %s.", annotatedInterface));
-      ex.printStackTrace();
+                                               String.format("Error generating code for %s: %s", annotatedInterface, ex.getMessage()),
+                                               annotatedInterface);
+    } catch (CoatProcessorException ex) {
+      processingEnv.getMessager().printMessage(Kind.ERROR,
+                                               ex.getMsg(),
+                                               ex.getElement() != null ? ex.getElement() : annotatedInterface);
     }
   }
 
@@ -263,7 +267,9 @@ public class CoatProcessor extends AbstractProcessor {
       .map(paramSpecBuilder::embeddedFrom)
       .collect(toList());
 
-    this.assertEmbeddedTypeIsAnnotated(embeddedAnnotatedMethods);
+    if (!this.assertEmbeddedTypeIsAnnotated(embeddedAnnotatedMethods)) {
+      return;
+    }
 
     final List<CodeBlock> initCodeBlocks= new ArrayList<>();
     for (final EmbeddedParamSpec annotatedMethod : embeddedAnnotatedMethods) {
@@ -516,10 +522,10 @@ public class CoatProcessor extends AbstractProcessor {
       if (this.processingEnv.getTypeUtils().isAssignable(erasure, optionalType)
         || paramSpec.collectionType().isPresent()) {
         if (typeArguments.size() < 1) {
-          throw new CoatProcessorException("Optionals without type argument are not supported.");
+          throw new CoatProcessorException("Optionals without type argument are not supported.", this.processingEnv.getTypeUtils().asElement(type));
         }
         if (typeArguments.size() > 1) {
-          throw new RuntimeException("Optionals with multiple type arguments are not expected.");
+          throw new CoatProcessorException("Optionals with multiple type arguments are not expected.", this.processingEnv.getTypeUtils().asElement(type));
         }
 
         final TypeMirror typeArg = typeArguments.get(0);
@@ -950,61 +956,51 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private void assertReturnType(final List<ConfigParamSpec> annotatedMethods) throws CoatProcessorException {
-    final List<ConfigParamSpec> missingReturnTypes= new ArrayList<>();
-
+  private void assertReturnType(final List<ConfigParamSpec> annotatedMethods) {
     // filter out all accessors without return type
     annotatedMethods.stream()
       .filter(this::hasVoidReturnType)
-      .forEachOrdered(missingReturnTypes::add);
-
-    if (!missingReturnTypes.isEmpty()) {
-      final StringBuilder sb= new StringBuilder("Accessors without return type:\n");
-      missingReturnTypes.forEach(accessor -> {
-        sb.append("  ").append(accessor.annotatedMethod()).append(":\n");
-          sb.append("    ")
-            .append(toHumanReadableString(accessor))
-            .append("\n\n");
-      });
-
-      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
-      throw new CoatProcessorException(sb.toString());
-    }
+      .forEachOrdered(cps ->
+        processingEnv.getMessager().printMessage(
+          Kind.ERROR,
+          "Accessors must have a return type",
+          cps.annotatedMethod()));
   }
 
 
   private void assertIsInterface(final TypeElement annotatedType) {
     if (annotatedType.getKind() != INTERFACE) {
-      final String errorMsg= "@Coat.Config is only supported on interfaced at the moment:\n"
-        + "  Non-interface type: "+annotatedType.toString();
-      processingEnv.getMessager().printMessage(Kind.ERROR, errorMsg);
-      throw new CoatProcessorException(errorMsg);
+      processingEnv.getMessager().printMessage(
+        Kind.ERROR,
+        "@Coat.Config is only supported on interfaced at the moment",
+        annotatedType);
     }
   }
 
 
-  private void assertEmbeddedTypeIsAnnotated(final List<EmbeddedParamSpec> annotatedMethods) throws CoatProcessorException {
-    final List<EmbeddedParamSpec> unannotatedEmbeddedTypes= new ArrayList<>();
+  private boolean assertEmbeddedTypeIsAnnotated(final List<EmbeddedParamSpec> annotatedMethods) {
+    boolean assertionFailure= false;
 
-    // filter out all accessors without return type
-    annotatedMethods.stream()
-      .filter(this::hasEmbeddedAnnotation)
-      .filter(not(this::hasEmbeddedTypeWithoutAnnotation))
-      .forEachOrdered(unannotatedEmbeddedTypes::add);
-
-    if (!unannotatedEmbeddedTypes.isEmpty()) {
-      final StringBuilder sb= new StringBuilder("@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.\n");
-      sb.append("Accessors with unannotated types:\n");
-      unannotatedEmbeddedTypes.forEach(accessor -> {
-        sb.append("  ").append(accessor.annotatedMethod()).append(":\n");
-          sb.append("    ")
-            .append(toHumanReadableString(accessor))
-            .append("\n\n");
-      });
-
-      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
-      throw new CoatProcessorException(sb.toString());
+    for (final EmbeddedParamSpec annotatedMethod : annotatedMethods) {
+      assertionFailure= assertionFailure || this.assertEmbeddedTypeIsAnnotated(annotatedMethod);
     }
+
+    return assertionFailure;
+  }
+
+
+  private boolean assertEmbeddedTypeIsAnnotated(final EmbeddedParamSpec annotatedMethod) {
+    // FIXME: We should not check the parent type over and over again
+    if (this.hasEmbeddedAnnotation(annotatedMethod)
+      && !this.hasEmbeddedTypeWithoutAnnotation(annotatedMethod)) {
+      processingEnv.getMessager().printMessage(
+        Kind.ERROR,
+        "@Coat.Embedded annotation can only be applied to types that are annotated with @Coat.Config.",
+        annotatedMethod.annotatedMethod());
+      return true;
+    }
+
+    return false;
   }
 
 
@@ -1018,26 +1014,14 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private void assertNoParameters(final List<ConfigParamSpec> annotatedMethods) throws CoatProcessorException {
-    final List<ConfigParamSpec> withParameters= new ArrayList<>();
-
+  private void assertNoParameters(final List<ConfigParamSpec> annotatedMethods) {
     // filter out all accessors without return type
     annotatedMethods.stream()
       .filter(this::hasParameters)
-      .forEachOrdered(withParameters::add);
-
-    if (!withParameters.isEmpty()) {
-      final StringBuilder sb= new StringBuilder("Accessors with parameters:\n");
-      withParameters.forEach(accessor -> {
-        sb.append("  ").append(accessor.annotatedMethod()).append(":\n");
-          sb.append("    ")
-            .append(toHumanReadableString(accessor))
-            .append("\n\n");
-      });
-
-      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
-      throw new CoatProcessorException(sb.toString());
-    }
+      .forEachOrdered((cps) -> processingEnv.getMessager().printMessage(
+        Kind.ERROR,
+        "Accessors must not have parameters",
+        cps.annotatedMethod()));
   }
 
 
@@ -1051,9 +1035,8 @@ public class CoatProcessor extends AbstractProcessor {
   }
 
 
-  private void reduceDuplicateAccessors(final List<ConfigParamSpec> annotatedMethods) throws CoatProcessorException {
+  private void reduceDuplicateAccessors(final List<ConfigParamSpec> annotatedMethods) {
     final FastListMultimap<String, ConfigParamSpec> duplicateAccessors  = FastListMultimap.newMultimap();
-    final FastListMultimap<String, ConfigParamSpec> conflictingAccessors= FastListMultimap.newMultimap();
 
     // gather all duplicate and conflicting accessors
     for (final ConfigParamSpec annotatedMethod : annotatedMethods) {
@@ -1068,7 +1051,10 @@ public class CoatProcessor extends AbstractProcessor {
           continue;
         }
 
-        // Equally named ccessors with the same return type, key, default value, mandatoriness
+        // FIXME: Are duplicate accessors possible?
+        //        Those will conflict due to a duplicate key!
+
+        // Equally named accessors with the same return type, key, default value, mandatoriness
         // are duplicates. One of them can be removed.
         // If at least one of these attribute differs, the accessor conflict with each other.
         if (annotatedMethod.key()         .equals(otherMethod.key())
@@ -1082,12 +1068,15 @@ public class CoatProcessor extends AbstractProcessor {
             duplicateAccessors.put(annotatedMethod.methodeName(), otherMethod);
           }
         } else {
-          if (!conflictingAccessors.containsValue(annotatedMethod)) {
-            conflictingAccessors.put(annotatedMethod.methodeName(), annotatedMethod);
-          }
-          if (!conflictingAccessors.containsValue(otherMethod)) {
-            conflictingAccessors.put(annotatedMethod.methodeName(), otherMethod);
-          }
+          processingEnv.getMessager().printMessage(
+            Kind.ERROR,
+            "Conflicting accessor methods",
+            annotatedMethod.annotatedMethod());
+
+          processingEnv.getMessager().printMessage(
+            Kind.ERROR,
+            "Conflicting accessor methods",
+            otherMethod.annotatedMethod());
         }
       }
     }
@@ -1101,28 +1090,12 @@ public class CoatProcessor extends AbstractProcessor {
           }
         });
     });
-
-    // error out on conflicting accessors
-    if (!conflictingAccessors.isEmpty()) {
-      final StringBuilder sb= new StringBuilder("Conflicting accessor methods:\n");
-      conflictingAccessors.forEachKeyMultiValues((accessor, conflicting) -> {
-        sb.append("  ").append(accessor).append("():\n");
-        conflicting.forEach(a -> {
-          sb.append("    ")
-            .append(toHumanReadableString(a))
-            .append("\n\n");
-        });
-      });
-
-      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
-      throw new CoatProcessorException(sb.toString());
-    }
   }
 
 
-  private void assertUniqueKeys(final List<ConfigParamSpec> annotatedMethods) throws CoatProcessorException {
-    final Map<String, List<ConfigParamSpec>> existingKeys   = new HashMap<>();
-    final Map<String, List<ConfigParamSpec>> duplicateKeys  = new HashMap<>();
+  private void assertUniqueKeys(final List<ConfigParamSpec> annotatedMethods) {
+    final Map<String, List<ConfigParamSpec>> existingKeys= new HashMap<>();
+    final Set<ConfigParamSpec> duplicateKeys= new HashSet<>();
 
     // collect all keys and their corresponding accessor methods
     for (final ConfigParamSpec accessor : annotatedMethods) {
@@ -1135,22 +1108,15 @@ public class CoatProcessor extends AbstractProcessor {
     // filter out all keys with more than 1 accessor method
     existingKeys.entrySet().stream()
       .filter(e -> e.getValue().size() > 1)
-      .forEach(e -> duplicateKeys.put(e.getKey(), e.getValue()));
+      .forEach(e -> duplicateKeys.addAll(e.getValue()));
 
-    if (!duplicateKeys.isEmpty()) {
-      final StringBuilder sb= new StringBuilder("Duplicate keys:\n");
-      duplicateKeys.forEach((accessor, duplicates) -> {
-        sb.append("  ").append(accessor).append(":\n");
-        duplicates.forEach(a -> {
-          sb.append("    ")
-            .append(toHumanReadableString(a))
-            .append("\n\n");
-        });
-      });
-
-      processingEnv.getMessager().printMessage(Kind.ERROR, sb.toString());
-      throw new CoatProcessorException(sb.toString());
-    }
+    duplicateKeys.stream()
+      .forEach(cps ->
+        processingEnv.getMessager().printMessage(
+          Kind.ERROR,
+          "Duplicate key",
+          cps.annotatedMethod())
+      );
   }
 
 
