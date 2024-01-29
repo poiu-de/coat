@@ -19,9 +19,15 @@ import java.util.regex.Pattern;
 
 
 /**
- * A ListParser that recognizes whitespace characters as word delimiters. Whitespace characters
- * inside words are allowed if they are escaped by a backslash. To enter a literal backslash, escape
- * it as well. All other backslashes are silently dropped.
+ * A ListParser that considers commas (including any optional surrounding whitespace) as word
+ * delimiters.
+ * <p>
+ * For supporting commas <i>inside</i> config values they need to be preceded by a backslash.
+ * <p>
+ * For example the value
+ *   <code>Ceasar\, Iulius Gaius &lt;emperor@rome.it&gt;, Asterix &lt;asterix@gallia.fr&gt;</code>
+ * will be split into <code>Ceasar\, Iulius Gaius &lt;emperor@rome.it&gt;</code> and
+ * <code>Asterix &lt;asterix@gallia.fr&gt;</code>
  */
 public class CommaSeparatedListParser implements ListParser {
 

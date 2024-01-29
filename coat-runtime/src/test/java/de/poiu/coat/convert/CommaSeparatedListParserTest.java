@@ -65,7 +65,7 @@ public class CommaSeparatedListParserTest {
    *  Test that commas inside Strings that are escaped by backslashes are correctly parsed.
    */
   @Test
-  public void testConvert_SpacesInStrings() throws Exception {
+  public void testConvert_CommasInStrings() throws Exception {
     assertThat(p.convert("first\\, string, second\\,string")).isEqualTo(new String[]{"first, string", "second,string"});
     assertThat(p.convert("first\\,\\,string\\,,second string")).isEqualTo(new String[]{"first,,string,", "second string"});
   }
