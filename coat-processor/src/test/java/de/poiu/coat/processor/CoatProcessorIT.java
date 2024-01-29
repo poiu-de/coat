@@ -2071,6 +2071,56 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test that annotation processing fails with a helpful error message if an embedded config
+   * is defined as a collection.
+   */
+  @Test
+  public void testEmbeddedConfigInCollection() throws Exception {
+
+    // - preparation && execution
+
+    assertThatThrownBy(() -> {
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\", defaultValue = \"embedded default\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.util.List;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\", defaultValue = \"some default\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public List<EmbeddedConfig> embedded();" +
+            "\n" + "}" +
+            ""));
+      })
+      .cause()
+      .isInstanceOf(CoatProcessorException.class)
+      .hasMessageStartingWith("Collection types are not supported for EmbeddedConfigs:")
+      ;
+  }
+
+
+  /**
    * Test the generated equals() and hashCode() methods with embedded configs.
    */
   @Test
