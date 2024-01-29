@@ -98,6 +98,9 @@ public interface AppConfig {
 
 Since version 0.0.4 Coat supports [Arrays and other collection types]({{< ref "/docs/user_guide/04_supported_types#collection-types" >}}). By default it splits the values given in the config file on whitespace. To define a different format to use for Arrays and collections a custom ListParser can be registered.
 
+Since version 0.1.0 Coat provides such an optional ListParser for splitting config values on commas, ignoring any whitespace around the commas.
+Of course, other custom ListParsers can be implemented and specified in the same way.
+
 ```java
 @Coat.Confg(listParser = CommaSeparatedListParser.class)
 public interface AppConfig {

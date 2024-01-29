@@ -47,7 +47,7 @@ public interface MyConfig {
 3. Then use the generated class
 ```java
 final MyConfig config=
-  new ImmutableMyConfig(
+  ImmutableMyConfig.from(
     new File("/path/to/config.properties"));
 
 final String appName    = config.appName();
@@ -110,7 +110,7 @@ public interface MyConfig {
 3. Then use the generated class
 ```java
 final MyConfig config=
-  new ImmutableMyConfig(
+  ImmutableMyConfig.from(
     new File("/path/to/config.properties"));
 
 final String appName    = config.appName();
