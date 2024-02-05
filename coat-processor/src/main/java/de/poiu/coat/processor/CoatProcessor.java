@@ -34,7 +34,6 @@ import javax.tools.Diagnostic.Kind;
  * The actual annotation processor of Coat.
  *
  */
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
 @SupportedAnnotationTypes(
   "de.poiu.coat.annotation.Coat.Config"
 )
@@ -54,6 +53,12 @@ public class CoatProcessor extends AbstractProcessor {
   //////////////////////////////////////////////////////////////////////////////
   //
   // Methods
+
+  @Override
+  public SourceVersion getSupportedSourceVersion() {
+    return SourceVersion.latest();
+  }
+
 
   @Override
   public boolean process(final Set<? extends TypeElement> annotations,
