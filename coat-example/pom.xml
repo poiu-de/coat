@@ -21,15 +21,6 @@
   </licenses>
 
   <dependencies>
-    <!-- This dependency is the Coat annotation processor itself. We only need it at compile time.
-         Therefore it uses scope “provided” -->
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>coat-processor</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
     <!-- This dependency is necessary to include Coat runtime artifacts. It is necessary at runtime. -->
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -52,11 +43,16 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
 
-          <annotationProcessors>
-            <!-- The annotation processor needs to be explicitly declared in
-                 Java versions from 21 onwards -->
-            <annotationProcessor>de.poiu.coat.processor.CoatProcessor</annotationProcessor>
-          </annotationProcessors>
+          <annotationProcessorPaths>
+            <!-- This dependency is the Coat annotation processor itself.
+                 The annotation processor needs to be explicitly declared in
+                 Java versions from 22 onwards -->
+            <path>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>coat-processor</artifactId>
+              <version>${project.version}</version>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
     </plugins>

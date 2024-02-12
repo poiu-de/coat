@@ -29,7 +29,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>coat-runtime</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
     </dependency>
 
     <!-- for @Nullable annotations, etc. Do we want to keep this? -->
@@ -107,6 +106,16 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessors>
+            <annotationProcessor>org.immutables.processor.ProxyProcessor</annotationProcessor>
+          </annotationProcessors>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>

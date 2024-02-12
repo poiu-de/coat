@@ -38,7 +38,7 @@ import javax.tools.Diagnostic.Kind;
   "de.poiu.coat.annotation.Coat.Config"
 )
 public class CoatProcessor extends AbstractProcessor {
-  
+
 
   //////////////////////////////////////////////////////////////////////////////
   //
