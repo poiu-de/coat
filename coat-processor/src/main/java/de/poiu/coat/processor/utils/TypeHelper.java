@@ -19,6 +19,7 @@ import de.poiu.coat.annotation.Coat;
 import de.poiu.coat.processor.CoatProcessorException;
 import de.poiu.coat.processor.specs.EnclosedType;
 import java.lang.reflect.Array;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -66,6 +67,8 @@ public class TypeHelper {
   public final TypeMirror coatConfigType;
   public final TypeMirror coatParamType;
   public final TypeMirror coatEmbeddedType;
+
+  public final EnumSet<TypeKind> supportedTypes= EnumSet.of(BOOLEAN, INT, LONG, DOUBLE);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -291,5 +294,15 @@ public class TypeHelper {
     }
 
     return optionalPrimitiveType;
+  }
+
+
+  /**
+   * Returns whether the given type is a primitive type and is one of the supported primitives.
+   * @param type
+   * @return
+   */
+  public boolean isSupportedPrimitive(final TypeMirror type) {
+    return this.supportedTypes.contains(type.getKind());
   }
 }

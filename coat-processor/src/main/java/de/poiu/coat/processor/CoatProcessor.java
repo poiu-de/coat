@@ -96,6 +96,8 @@ public class CoatProcessor extends AbstractProcessor {
     // Check all the assertions here
     this.assertions.assertIsInterface(coatClassSpec.annotatedType());
     this.assertions.assertReturnType(coatClassSpec.accessors());
+    this.assertions.assertOnlySupportedPrimitives(coatClassSpec.accessors());
+    this.assertions.assertNoPrimitiveArrays(coatClassSpec.accessors());
     this.assertions.assertNoParameters(coatClassSpec.accessors());
     this.assertions.assertUniqueKeys(coatClassSpec.accessors());
     this.assertions.assertUniqueMethodNames(coatClassSpec.accessors());

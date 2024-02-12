@@ -19,6 +19,7 @@ import de.poiu.coat.annotation.Coat;
 import de.poiu.coat.processor.specs.AccessorSpec;
 import de.poiu.coat.processor.specs.EmbeddedTypeSpec;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,9 +28,15 @@ import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 
 import static javax.lang.model.element.ElementKind.INTERFACE;
+import static javax.lang.model.type.TypeKind.BOOLEAN;
+import static javax.lang.model.type.TypeKind.DOUBLE;
+import static javax.lang.model.type.TypeKind.INT;
+import static javax.lang.model.type.TypeKind.LONG;
 import static javax.lang.model.type.TypeKind.VOID;
 
 
@@ -255,6 +262,36 @@ public class Assertions {
   }
 
 
+  /**
+   * Assert that no primitive types are used for arrays.
+   *
+   * @param accessors the accessors to check
+   */
+  public void assertNoPrimitiveArrays(final List<AccessorSpec> accessors) {
+    accessors.stream()
+      .filter(this::hasPrimitiveArray)
+      .forEachOrdered(accessorSpec ->
+        pEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+          "Arrays of primitives are not supported. Use Lists instead.",
+          accessorSpec.accessor()));
+  }
+
+
+  /**
+   * Assert that only supported primitive types are used.
+   *
+   * @param accessors the accessors to check
+   */
+  public void assertOnlySupportedPrimitives(final List<AccessorSpec> accessors) {
+    accessors.stream()
+      .filter(this::isUnsupportedPrimitive)
+      .forEachOrdered(accessorSpec ->
+        pEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+          "Only the primitive types boolean, int, long and double are supported. Please use one of those or the corresponding object types.",
+          accessorSpec.accessor()));
+  }
+
+
   //////////////////////////////////////////////////////////////////////////////////////////////////
   //
   // Internal helper methods
@@ -298,5 +335,29 @@ public class Assertions {
     }
 
     return true;
+  }
+
+
+  private boolean hasPrimitiveArray(final AccessorSpec accessorSpec) {
+    if (accessorSpec.collectionType().isEmpty()) {
+      return false;
+    }
+
+    final TypeMirror collectionType= accessorSpec.collectionType().get();
+    final boolean    isArray       = this.pEnv.getTypeUtils().isAssignable(collectionType, this.typeHelper.arrayTypeElement);
+    final boolean    isPrimitive   = accessorSpec.type().getKind().isPrimitive();
+
+    return isArray && isPrimitive;
+  }
+
+
+  private boolean isUnsupportedPrimitive(final AccessorSpec accessorSpec) {
+    final TypeKind returnTypeKind= accessorSpec.type().getKind();
+    if (!returnTypeKind.isPrimitive()) {
+      return false;
+    }
+
+
+    return !this.typeHelper.supportedTypes.contains(returnTypeKind);
   }
 }

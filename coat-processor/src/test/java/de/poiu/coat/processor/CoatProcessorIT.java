@@ -275,6 +275,76 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test the failure of the processing of a Coat config interface that has accessors with primitive arrays.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {
+    "boolean",
+    "byte",
+    "short",
+    "int",
+    "long",
+    "float",
+    "double",
+    "char",
+  })
+ public void testNoPrimitiveArrays(final String primitiveType) throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation=
+        javac()
+          .withProcessors(new CoatProcessor())
+          .compile(JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  public " + primitiveType + "[] primitiveArray();" +
+            "\n" + "}" +
+            ""));
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("Arrays of primitives are not supported. Use Lists instead.");
+  }
+
+
+  /**
+   * Test the failure of the processing of a Coat config interface with unsupported primitives..
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {
+    "byte",
+    "short",
+    "float",
+    "char",
+  })
+ public void testUnsupportedPrimites(final String primitiveType) throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation=
+        javac()
+          .withProcessors(new CoatProcessor())
+          .compile(JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  public " + primitiveType + " primitiveType();" +
+            "\n" + "}" +
+            ""));
+
+    CompilationSubject.assertThat(compilation).hadErrorContaining("Only the primitive types boolean, int, long and double are supported. Please use one of those or the corresponding object types.");
+  }
+
+
+  /**
    * Test the implementation of an existing mandatory string.
    *
    * @throws Exception
