@@ -41,7 +41,7 @@ public class TypeNameVisitor extends SimpleTypeVisitor9<String, Void> {
       case DOUBLE:
         return "double";
       default:
-        throw new RuntimeException("Unsupported primitive type: "+t);
+        return t.getClass().getSimpleName();
     }
   }
 }
