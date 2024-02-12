@@ -110,6 +110,8 @@ Since version 0.0.4 Coat supports Arrays and collections as return values of acc
 - java.util.List
 - java.util.Set
 
+Arrays are only supported for object types, not primitive types. Be aware that Arrays are by nature mutable. For that reason Lists should be preferred instead.
+
 By default the values of collection types are expected to be separated by whitespace. Whitespace _inside a single_ value can be used by prefixing each such whitespace character with a backslash. For example the value `one\ two three` would then be split into a collection with the two values `one two` and `three`.
 
 Additionally, since version 0.1.0 a [CommaSeparatedListParser](https://javadoc.io/doc/de.poiu.coat/coat-runtime/latest/de/poiu/coat/convert/CommaSeparatedListParser.html) is provided for splitting around commas (ignoring any whitespace around the commas). If will not be used by default and must be explicitly declared like a custom ListParser.
