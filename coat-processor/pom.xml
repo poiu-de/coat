@@ -122,10 +122,8 @@
         <configuration>
           <show>public</show>
           <sourceFileIncludes>
-            <include>de/poiu/coat/annotation/Coat.java</include>
             <include>de/poiu/coat/processor/CoatProcessor.java</include>
             <include>de/poiu/coat/processor/CoatProcessorException.java</include>
-            <include>de/poiu/coat/processor/casing/CasingStrategy.java</include>
           </sourceFileIncludes>
         </configuration>
       </plugin>
