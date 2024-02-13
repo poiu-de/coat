@@ -27,7 +27,7 @@ interface, but with the leading underscore removed. Therefore for the interface
 
 `@Coat.Config` [(Javadoc)](https://javadoc.io/doc/de.poiu.coat/coat-processor/latest/de/poiu/coat/annotation/Coat.Config.html) supports the following attributes:
 
-#### className
+#### *className*
 The `className` can be specified to generate a class with a different name than
 when applying the above mentioned naming rules. When `className` is specified
 it will be used as the generated class name. It will still be generated in the
@@ -40,7 +40,7 @@ public interface AppConfig {
 }
 ```
 
-#### casing
+#### *casing*
 
 By default (if not explicitly specified by [@Coat.Param#key]({{< ref "#coat-param-key" >}})) Coat expects the key in the config file exactly as the accessor methods name (respecting upper/lower case). To allow for different formats of keys without having to explicitly declare each key, Coat provides a `CasingStrategy`.
 
