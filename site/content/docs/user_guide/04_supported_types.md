@@ -132,3 +132,29 @@ Coat allows for different formats than the default whitespace separated values b
 Each generated config class provides a static method `registerListParser()` to register a custom parser for such values. Additionally such a ListParser can be declared on the [@Coat.Config]({{< ref "/docs/user_guide/01_annotations#coat-config-listparser" >}}) annotation as well as on the [@Coat.Param]({{< ref "/docs/user_guide/01_annotations#coat-param-listparser" >}}) annotation.
 
 A custom ListParser must implement the `de.poiu.coat.convert.ListParser` interface.
+
+## Optional values
+
+Config entries that are optional must be encapsulated in `java.util.Optional` or the more specialized variants `OptionalInt`, `OptionalLong` or `OptionalDouble` need to be used. All other config values are considered mandatory. Missing mandatory values will throw an exception at runtime.
+
+[Embedded types]({{< ref "/docs/user_guide/01_annotations#coatembedded" >}}) may be optional, too. They are considered present if at least one config entry with the corresponding key and separator was found. In that case all mandatory values of the embedded config must be present.
+
+Optional collections are not supported out of the box. The generation will succeed, but no converter will be found at runtime. Most of the time an optional collection does not make much sense and an empty collection should be returned in case no value is specified. Optional collections may be supported by providing a [custom converter]({{< ref "#registering-custom-types" >}}) for that specific collection, for example:
+
+```java
+public class IntListConverter implements Converter<List<Integer>> {
+  private final IntegerConverter ic= new IntegerConverter();
+
+  @Override
+  public List<Integer> convert(final String stringValue) throws TypeConversionException {
+    final String[] splitString= stringValue.split("\\s+");
+    final List<Integer> result= new ArrayList(splitString.length);
+    for (final String s : splitString) {
+      result.add(ic.convert(s));
+    }
+
+    return result;
+  }
+}
+```
+
