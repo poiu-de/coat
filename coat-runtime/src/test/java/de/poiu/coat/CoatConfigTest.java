@@ -185,6 +185,7 @@ public class CoatConfigTest {
         .key("key2")
         .type("int")
         .value("dummy")
+        .errorMsg("Error converting value to int")
         .build()
     );
   }

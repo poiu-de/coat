@@ -200,6 +200,7 @@ public abstract class CoatConfig {
             .key(param.key())
             .type(param.type().getName())
             .value(stringValue)
+            .errorMsg(ex.getMessage())
             .build()
         );
       }
@@ -566,7 +567,7 @@ public abstract class CoatConfig {
     }
 
     if (converter == null) {
-      throw new TypeConversionException("No converter registered for type '" + configParam.type() + "'.");
+      throw new TypeConversionException("No converter registered for type '" + configParam.type().getTypeName() + "'.");
     }
 
     return (T) converter.convert(stringValue);

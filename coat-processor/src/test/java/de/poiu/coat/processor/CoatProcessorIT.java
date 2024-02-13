@@ -1975,6 +1975,7 @@ public class CoatProcessorIT {
         .key("embedded.embeddedParam")
         .type("int")
         .value("invalid value")
+        .errorMsg("Error converting value to int")
         .build());
     }
   }
@@ -3131,7 +3132,7 @@ public class CoatProcessorIT {
       instance.getClass().getMethod("bigInt").invoke(instance))
       .cause()
       .hasRootCauseInstanceOf(TypeConversionException.class)
-      .hasRootCauseMessage("No converter registered for type 'class java.math.BigInteger'.")
+      .hasRootCauseMessage("No converter registered for type 'java.math.BigInteger'.")
       ;
   }
 

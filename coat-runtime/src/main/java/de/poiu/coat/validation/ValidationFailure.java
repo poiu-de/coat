@@ -52,6 +52,8 @@ public abstract class ValidationFailure {
   public abstract Optional<String> type();
   /** Returns the failed value. */
   public abstract Optional<String> value();
+  /** Returns a descriptive error message */
+  public abstract Optional<String> errorMsg();
 
 
   /**
@@ -68,10 +70,16 @@ public abstract class ValidationFailure {
    * Returns a formatted string representation of this ValidationFailure.
    */
   public String formattedMessage() {
-    return this.failureType().formatString
+    final String formattedMessage= this.failureType().formatString
       .replace("${key}",   this.key())
       .replace("${value}", this.value().orElse("???"))
       .replace("${type}",  this.type().orElse("???"))
       ;
+
+    if (this.errorMsg().isEmpty() || this.errorMsg().get().isBlank()) {
+      return formattedMessage;
+    } else {
+      return formattedMessage + ": " + this.errorMsg().get();
+    }
   }
 }
