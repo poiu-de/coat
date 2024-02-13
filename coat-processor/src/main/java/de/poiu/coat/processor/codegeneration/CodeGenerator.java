@@ -39,6 +39,7 @@ import de.poiu.coat.processor.utils.TypeHelper;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.System.Logger;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -185,6 +186,7 @@ public class CodeGenerator {
 
     this.addGeneratedAnnotation(typeSpecBuilder);
 
+    this.addPrivateStaticFinalLogger(typeSpecBuilder, fqClassName);
     this.addStaticFactoryMethods(typeSpecBuilder, fqClassName);
     this.addAccessorMethods(typeSpecBuilder, classSpec, fqEnumName);
     this.addEmbeddedAccessorMethods(typeSpecBuilder, classSpec, fqEnumName);
@@ -304,6 +306,16 @@ public class CodeGenerator {
     final CoatBuilderGenerator builderGenerator= CoatBuilderGenerator.forType(classSpec, fqClassName, this.pEnv);
     typeSpecBuilder.addMethod(builderGenerator.generateBuilderMethod());
     typeSpecBuilder.addType(builderGenerator.generateBuilderClass());
+  }
+
+
+  private void addPrivateStaticFinalLogger(final TypeSpec.Builder typeSpecBuilder, final ClassName fqClassName) {
+    typeSpecBuilder.addField(
+      FieldSpec.builder(Logger.class, "LOGGER")
+        .addModifiers(PRIVATE, STATIC, FINAL)
+        .initializer("System.getLogger($L.class.getName())", fqClassName)
+        .build());
+
   }
 
 

@@ -27,11 +27,13 @@ import de.poiu.coat.processor.specs.ClassSpec;
 import de.poiu.coat.processor.utils.SpecHelper;
 import java.io.File;
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import javax.annotation.processing.ProcessingEnvironment;
 
+import static java.lang.System.Logger.Level.INFO;
 import static java.util.stream.Collectors.joining;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
@@ -217,6 +219,7 @@ public class CoatBuilderGenerator {
       .beginControlFlow("for (final String envVar : envVars.keySet())")
         .beginControlFlow("for (final String configKey : configKeys)")
           .beginControlFlow("if (envVar.toUpperCase().equals($T.c14n(configKey)))", KeyC14n.class)
+            .addStatement("LOGGER.log($T.INFO, \"Using environment variable {0} as config key {1}\", new Object[]{envVar, configKey})", Logger.Level.class)
             .addStatement("this.props.put(configKey, envVars.get(envVar))")
           .endControlFlow()
         .endControlFlow()
