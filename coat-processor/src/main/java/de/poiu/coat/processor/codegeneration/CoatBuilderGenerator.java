@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Properties;
 import javax.annotation.processing.ProcessingEnvironment;
 
-import static java.lang.System.Logger.Level.INFO;
 import static java.util.stream.Collectors.joining;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;

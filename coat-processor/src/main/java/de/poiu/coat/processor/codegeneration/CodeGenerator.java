@@ -49,9 +49,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
@@ -62,7 +62,6 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 
-import static de.poiu.coat.processor.utils.ElementHelper.Defaults.IGNORE_DEFAULT;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static javax.lang.model.element.Modifier.FINAL;
@@ -636,6 +635,7 @@ public class CodeGenerator {
    *
    * @return The {@code @Generated} annotation for the target source version or {@code null} if it could not be identified
    */
+  @Nullable
   private Class<?> identifyGeneratedAnnotation() {
     try {
       final SourceVersion sourceVersion= this.pEnv.getSourceVersion();
@@ -653,12 +653,12 @@ public class CodeGenerator {
    * <p>
    * For example the following types will result in the following Strings:
    * <table>
-   * <tr><td>int</td>                    <td>⇒</td> <td>int</td></tr>
-   * <tr><td>OptinalInt</td>             <td>⇒</td> <td>int</td></tr>
-   * <tr><td>String</td>                 <td>⇒</td> <td>String</td></tr>
-   * <tr><td>Charset</td>                <td>⇒</td> <td>Charset</td></tr>
-   * <tr><td>Optinal&lt;Charset&gt;</td> <td>⇒</td> <td>Charset</td></tr>
-   * <tr><td>Path[]</td>                 <td>⇒</td> <td>Path</td></tr>
+   * <tr><td>int</td>                     <td>⇒</td> <td>int</td></tr>
+   * <tr><td>OptionalInt</td>             <td>⇒</td> <td>int</td></tr>
+   * <tr><td>String</td>                  <td>⇒</td> <td>String</td></tr>
+   * <tr><td>Charset</td>                 <td>⇒</td> <td>Charset</td></tr>
+   * <tr><td>Optional&lt;Charset&gt;</td> <td>⇒</td> <td>Charset</td></tr>
+   * <tr><td>Path[]</td>                  <td>⇒</td> <td>Path</td></tr>
    * </table>
    *
    * @param accessorSpec

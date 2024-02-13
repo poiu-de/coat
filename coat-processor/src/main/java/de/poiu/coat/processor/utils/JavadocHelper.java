@@ -16,6 +16,7 @@
 package de.poiu.coat.processor.utils;
 
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 
 import static java.util.function.Predicate.not;
 
@@ -110,11 +111,14 @@ public class JavadocHelper {
   /**
    * Return a String of the given Javadoc String where all lines with Javadoc block tags
    * (lines starting with an @ character) are removed.
+   * <p>
+   * This method does not return null, but an empty String instead. Even if the given javadoc String
+   * is null (which is permitted).
    *
    * @param javadoc
    * @return
    */
-  public static String stripBlockTagsFromJavadoc(final String javadoc) {
+  public static String stripBlockTagsFromJavadoc(final @Nullable String javadoc) {
     if (javadoc == null) {
       return "";
     }

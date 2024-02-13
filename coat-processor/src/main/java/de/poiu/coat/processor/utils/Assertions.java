@@ -19,7 +19,6 @@ import de.poiu.coat.annotation.Coat;
 import de.poiu.coat.processor.specs.AccessorSpec;
 import de.poiu.coat.processor.specs.EmbeddedTypeSpec;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,10 +32,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 
 import static javax.lang.model.element.ElementKind.INTERFACE;
-import static javax.lang.model.type.TypeKind.BOOLEAN;
-import static javax.lang.model.type.TypeKind.DOUBLE;
-import static javax.lang.model.type.TypeKind.INT;
-import static javax.lang.model.type.TypeKind.LONG;
 import static javax.lang.model.type.TypeKind.VOID;
 
 
@@ -61,9 +56,9 @@ public class Assertions {
   // Constructors
 
   public Assertions(final ProcessingEnvironment pEnv) {
-    this.pEnv = pEnv;
+    this.pEnv         = pEnv;
     this.elementHelper= new ElementHelper(pEnv);
-    this.typeHelper= new TypeHelper(pEnv);
+    this.typeHelper   = new TypeHelper(pEnv);
   }
 
 

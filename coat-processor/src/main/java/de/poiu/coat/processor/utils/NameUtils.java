@@ -15,12 +15,8 @@
  */
 package de.poiu.coat.processor.utils;
 
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.TypeName;
 import de.poiu.coat.annotation.Coat;
-import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
 
 
 /**
