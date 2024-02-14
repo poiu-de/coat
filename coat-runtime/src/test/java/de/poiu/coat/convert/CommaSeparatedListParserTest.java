@@ -72,22 +72,34 @@ public class CommaSeparatedListParserTest {
 
 
   /**
-   *  Test that backslashed in Strings are NOT ignored
+   *  Test that backslashes in Strings are ignored unless escaped by another backslash.
    */
   @Test
   public void testConvert_BackslashesInStrings() throws Exception {
-    assertThat(p.convert("o\\n\\e")).isEqualTo(new String[]{"o\\n\\e"});
-    assertThat(p.convert("o\\\\n\\\\e")).isEqualTo(new String[]{"o\\\\n\\\\e"});
+    assertThat(p.convert("o\\n\\e")).isEqualTo(new String[]{"one"});
+    assertThat(p.convert("o\\\\n\\\\e")).isEqualTo(new String[]{"o\\n\\e"});
     assertThat(p.convert("one\\")).isEqualTo(new String[]{"one\\"});
   }
 
 
   /**
-   *  Test that backslashed escaped whitespace is just being ignored on finding delimiters.
+   *  Test that backslash escaped whitespace is just being ignored on finding delimiters.
    */
   @Test
   public void testConvert_BackslashEscapedWhitespace() throws Exception {
-    assertThat(p.convert("one\\ ,two")).isEqualTo(new String[]{"one\\ ", "two"});
-    assertThat(p.convert("one\\   ,  two")).isEqualTo(new String[]{"one\\ ", "two"});
+    assertThat(p.convert("one\\ ,two")).isEqualTo(new String[]{"one", "two"});
+    assertThat(p.convert("one\\   ,  two")).isEqualTo(new String[]{"one", "two"});
+  }
+
+
+  /**
+   *  Test that backslashes escape backslashes.
+   */
+  @Test
+  public void testConvert_BackslashEscapesBackslash() throws Exception {
+    assertThat(p.convert("one, two")).isEqualTo(new String[]{"one", "two"});
+    assertThat(p.convert("one\\, two")).isEqualTo(new String[]{"one, two"});
+    assertThat(p.convert("one\\\\, two")).isEqualTo(new String[]{"one\\", "two"});
+    assertThat(p.convert("one\\\\\\, two")).isEqualTo(new String[]{"one\\, two"});
   }
 }

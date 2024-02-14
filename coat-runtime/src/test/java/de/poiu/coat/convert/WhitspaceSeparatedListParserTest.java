@@ -39,7 +39,7 @@ public class WhitspaceSeparatedListParserTest {
 
 
   /**
-   *  Test that blank or emty strings as well as null always return an empty array.
+   *  Test that blank or empty strings as well as null always return an empty array.
    */
   @Test
   public void testConvert_emptyAndNull() throws Exception {

@@ -15,7 +15,8 @@
  */
 package de.poiu.coat.convert;
 
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -23,6 +24,7 @@ import java.util.regex.Pattern;
  * delimiters.
  * <p>
  * For supporting commas <i>inside</i> config values they need to be preceded by a backslash.
+ * To enter a literal backslash, escape it as well. All other backslashes are silently dropped.
  * <p>
  * For example the value
  *   <code>Ceasar\, Iulius Gaius &lt;emperor@rome.it&gt;, Asterix &lt;asterix@gallia.fr&gt;</code>
@@ -31,11 +33,7 @@ import java.util.regex.Pattern;
  */
 public class CommaSeparatedListParser implements ListParser {
 
-  private static Pattern PATTERN_DELIMITER= Pattern.compile(""
-    + "(?<!\\\\)"    // not preceded by a backslash
-    + "\\s*,\\s*"    // comma, optionally surrounded by arbitrary whitespace
-    , Pattern.UNICODE_CHARACTER_CLASS);
-
+  private final char separatorChar= ',';
 
   @Override
   public String[] convert(final String s) throws TypeConversionException {
@@ -43,12 +41,50 @@ public class CommaSeparatedListParser implements ListParser {
       return new String[]{};
     }
 
-    final String[] result = s.trim().split(PATTERN_DELIMITER.pattern());
-    // remove all backslashes before commas
-    for (int i= 0; i < result.length; i++) {
-      result[i]= result[i].replace("\\,", ",");
+    final List<String> result= new ArrayList<>();
+
+    final StringBuilder sbCurrentString= new StringBuilder();
+
+    for (int i=0; i < s.length(); i++) {
+      final char c= s.charAt(i);
+      if (c == '\\') {
+        if (i < s.length()-1) {
+          final char nextChar= s.charAt(i+1);
+          if (nextChar == this.separatorChar || nextChar == '\\') {
+            // it the next char is whitespace or another backslash it is escaped and part of the string
+            sbCurrentString.append(nextChar);
+            i++;
+          } else {
+            // otherwise the backslash is ignored
+            sbCurrentString.append(nextChar);
+            i++;
+          }
+        } else {
+          // if the backslash was the last character, it is part of the string
+          sbCurrentString.append(c);
+        }
+      } else if (c == this.separatorChar) {
+        // non-escaped whitespace is a word delimiter
+        // but consecutive whitespace is ignored
+        if (sbCurrentString.length() ==0) {
+          continue;
+        } else {
+          result.add(sbCurrentString.toString());
+          sbCurrentString.delete(0, sbCurrentString.length());
+        }
+      } else {
+        // normal chars are just part of the string
+        sbCurrentString.append(c);
+      }
     }
 
-    return result;
+    if (sbCurrentString.length() > 0) {
+      result.add(sbCurrentString.toString());
+    }
+
+    return result
+      .stream()
+      .map(String::trim)
+      .toArray(String[]::new);
   }
 }
