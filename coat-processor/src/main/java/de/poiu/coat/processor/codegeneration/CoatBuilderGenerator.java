@@ -105,7 +105,7 @@ public class CoatBuilderGenerator {
         + "Create a builder for {@link $T} instances.\n"
         + "<p>\n"
         + "Call the <code>add</code> and/or <code>addEnvVars</code> methods for specifying the config\n"
-        + "sources (and the order in which they are applied), then call {@link #build()} to create the\n"
+        + "sources (and the order in which they are applied), then call {@link Builder#build()} to create the\n"
         + "$T\n"
         + "\n"
         + "@return an new $T builder", coatConfigClassName, coatConfigClassName, coatConfigClassName)
@@ -126,7 +126,7 @@ public class CoatBuilderGenerator {
         + "Builder class for creating new {@link $T} instances.\n"
         + "<p>\n"
         + "Call the <code>add</code> and/or <code>addEnvVars</code> methods for specifying the config\n"
-        + "sources (and the order in which they are applied), then call {@link #build()} to create the\n"
+        + "sources (and the order in which they are applied), then call {@link Builder#build()} to create the\n"
         + "$T", coatConfigClassName, coatConfigClassName)
       .addField(this.generateFieldProps())
       .addMethod(this.generateMethodAddMap())
