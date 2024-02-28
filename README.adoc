@@ -12,7 +12,7 @@ Marco Herrn <marco@mherrn.de>
 :log4j2-jul-bridge: https://logging.apache.org/log4j/2.x/log4j-jul/index.html
 :slf4j-jul-bridge: https://www.slf4j.org/legacy.html#jul-to-slf4j
 :source-highlighter: prettify
-:coat-version: 0.1.0
+:coat-version: 1.0.0
 
 [.float-group]
 --
