@@ -33,7 +33,7 @@ import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator
 public class ExampleApp {
 
   public static void main(String[] args) throws IOException {
-    // Read the propertied file
+    // Read the properties file
     final Properties props= new Properties();
     props.load(ExampleApp.class.getResourceAsStream("/app.properties"));
 
@@ -56,7 +56,7 @@ public class ExampleApp {
       System.exit(1);
     }
 
-    // Use Bean Validaction to assert that all values adhere to their restrictions
+    // Use Bean Validation to assert that all values adhere to their restrictions
     final Validator validator = Validation.byDefaultProvider()
       .configure()
       .messageInterpolator(new ParameterMessageInterpolator())
