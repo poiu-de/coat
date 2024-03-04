@@ -292,7 +292,7 @@ public abstract class CoatConfig {
   protected <T> T[] getArray(final ConfigParam configParam) throws UncheckedTypeConversionException {
     final String stringValue= this.getString(configParam);
     try {
-        final ListParser listParser = this.getListParser(configParam);
+      final ListParser listParser = this.getListParser(configParam);
       final String[] stringValues = listParser.convert(stringValue);
       return getArray(configParam, stringValues);
     } catch (TypeConversionException ex) {
