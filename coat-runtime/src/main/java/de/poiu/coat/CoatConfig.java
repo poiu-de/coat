@@ -67,6 +67,7 @@ import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
 import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
@@ -83,6 +84,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public abstract class CoatConfig {
 
   private static System.Logger LOGGER= System.getLogger(CoatConfig.class.getName());
+
+  private static final Pattern PATTERN_UNDERSCORES_IN_HEX   = Pattern.compile("(?<=[a-f])_+(?=[a-f])");
+  private static final Pattern PATTERN_UNDERSCORES_IN_NUMBER= Pattern.compile("(?<=\\d)_+(?=\\d)");
 
   private static final Map<Class<?>, Converter<?>> converters= new ConcurrentHashMap<>();
 
@@ -909,9 +913,9 @@ public abstract class CoatConfig {
 
   private String removeOptionalUnderscores(final String number) {
     if (number.startsWith("0x")) {
-      return number.replaceAll("(?<=[a-f])_+(?=[a-f])", "");
+      return PATTERN_UNDERSCORES_IN_HEX.matcher(number).replaceAll("");
     } else {
-      return number.replaceAll("(?<=\\d)_+(?=\\d)", "");
+      return PATTERN_UNDERSCORES_IN_NUMBER.matcher(number).replaceAll("");
     }
   }
 }
