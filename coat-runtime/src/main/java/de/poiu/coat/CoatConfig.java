@@ -926,4 +926,42 @@ public abstract class CoatConfig {
       return PATTERN_UNDERSCORES_IN_NUMBER.matcher(number).replaceAll("");
     }
   }
+
+
+  /**
+   * Remove optional underscores in the middle of the number. The behaviour is the same as
+   * the Java parser applies. All underscores in the string are removed, but no underscore is allowed
+   * before the first and the last digit.
+   *
+   * This variant is a bit faster than {@link #removeOptionalUnderscores(java.lang.String)} since
+   * it avoids the usage of regular expressions. It is more than twice as fast.
+   *
+   * @param number
+   * @return
+   */
+  private static CharSequence removeOptionalUnderscores_Fast(final String number) {
+    final StringBuilder sb= new StringBuilder();
+
+    final boolean isHex= number.startsWith("0x");
+    char lastChar= '\0';
+    for (int i= 0; i < number.length(); i++) {
+      final char c= number.charAt(i);
+      if (c == '_' && i < number.length()-1) {
+        if (Character.isDigit(lastChar)) {
+          continue;
+        }
+        if (isHex &&
+            (lastChar == 'a' || lastChar == 'A' || lastChar == 'b' || lastChar == 'B'
+          || lastChar == 'c' || lastChar == 'C' || lastChar == 'd' || lastChar == 'D'
+          || lastChar == 'e' || lastChar == 'E' || lastChar == 'f' || lastChar == 'F')) {
+          continue;
+        }
+      }
+
+      sb.append(c);
+      lastChar= c;
+    }
+
+    return sb;
+  }
 }
