@@ -165,7 +165,7 @@ public class SpecHandler {
 
     final EnclosedType fullEmbeddedType           = this.typeHelper.toEnclosedType(accessor.getReturnType());
     final TypeElement  fullEmbeddedTypeElement    = (TypeElement) this.typeUtils.asElement(fullEmbeddedType.type());
-    final ClassSpec    embeddedClassSpec          = GENERATED_CLASS_SPECS.getOrDefault(fullEmbeddedTypeElement.getQualifiedName(), this.unsupported(fullEmbeddedTypeElement));
+    final ClassSpec    embeddedClassSpec          = this.classSpecFrom(fullEmbeddedTypeElement);
     final String       key                        = this.specHelper.getOrInferKey(accessor);
     final String       keySeparator               = this.elementHelper.getAnnotationValueAsString("keySeparator", coatEmbeddedAnnotation, LOAD_DEFAULT);
     final boolean      mandatory                  = !this.typeHelper.isOptional(accessor.getReturnType());
