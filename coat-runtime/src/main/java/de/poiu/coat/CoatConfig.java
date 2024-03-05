@@ -85,7 +85,7 @@ public abstract class CoatConfig {
 
   private static System.Logger LOGGER= System.getLogger(CoatConfig.class.getName());
 
-  private static final Pattern PATTERN_UNDERSCORES_IN_HEX   = Pattern.compile("(?<=[a-f])_+(?=[a-f])");
+  private static final Pattern PATTERN_UNDERSCORES_IN_HEX   = Pattern.compile("(?<=[a-fA-F\\d])_+(?=[a-fA-F\\d])");
   private static final Pattern PATTERN_UNDERSCORES_IN_NUMBER= Pattern.compile("(?<=\\d)_+(?=\\d)");
 
   private static final Map<Class<?>, Converter<?>> converters= new ConcurrentHashMap<>();
@@ -911,6 +911,14 @@ public abstract class CoatConfig {
   }
 
 
+  /**
+   * Remove optional underscores in the middle of the number. The behaviour is the same as
+   * the Java parser applies. All underscores in the string are removed, but no underscore is allowed
+   * before the first and the last digit.
+   *
+   * @param number
+   * @return
+   */
   private String removeOptionalUnderscores(final String number) {
     if (number.startsWith("0x")) {
       return PATTERN_UNDERSCORES_IN_HEX.matcher(number).replaceAll("");

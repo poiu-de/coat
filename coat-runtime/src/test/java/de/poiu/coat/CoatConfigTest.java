@@ -257,7 +257,7 @@ public class CoatConfigTest {
 
     final CoatConfig c= new ConfigImpl(
       Map.of("dec", "1_2___34",
-             "hex", "0xf_f",
+             "hex", "0xfa_f1_1e",
              "oct", "0_644",
              "bin", "0b0101_0101")
       ,
@@ -271,7 +271,7 @@ public class CoatConfigTest {
     // - test and verification
 
     assertThat(c.getInt(dec)).isEqualTo(1_2___34);
-    assertThat(c.getInt(hex)).isEqualTo(0xf_f);
+    assertThat(c.getInt(hex)).isEqualTo(0xfa_f1_1e);
     assertThat(c.getInt(oct)).isEqualTo(0_644);
     assertThat(c.getInt(bin)).isEqualTo(0b0101_0101);
   }
@@ -319,7 +319,7 @@ public class CoatConfigTest {
 
     final CoatConfig c= new ConfigImpl(
       Map.of("dec", "1_2___34",
-             "hex", "0xf_f",
+             "hex", "0xfa_f1_1e",
              "oct", "0_644",
              "bin", "0b0101_0101")
       ,
@@ -333,7 +333,7 @@ public class CoatConfigTest {
     // - test and verification
 
     assertThat(c.getLong(dec)).isEqualTo(1_2___34);
-    assertThat(c.getLong(hex)).isEqualTo(0xf_f);
+    assertThat(c.getLong(hex)).isEqualTo(0xfa_f1_1e);
     assertThat(c.getLong(oct)).isEqualTo(0_644);
     assertThat(c.getLong(bin)).isEqualTo(0b0101_0101);
   }
@@ -405,7 +405,7 @@ public class CoatConfigTest {
 
     final CoatConfig c= new ConfigImpl(
       Map.of("dec", "1_2__34",
-             "hex", "0xf__fp0",
+             "hex", "0xfa_f1__1ep0",
              "dot", "1_234.5_6__7___8"
              )
       ,
@@ -418,7 +418,7 @@ public class CoatConfigTest {
     // - test and verification
 
     assertThat(c.getDouble(dec)).isEqualTo(1_2__34d);
-    assertThat(c.getDouble(hex)).isEqualTo(0xf_fp0d);
+    assertThat(c.getDouble(hex)).isEqualTo(0xfa_f1__1ep0);
     assertThat(c.getDouble(dot)).isEqualTo(1_234.5_6__7___8d);
   }
 
