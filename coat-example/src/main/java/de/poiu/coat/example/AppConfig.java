@@ -34,21 +34,21 @@ public interface AppConfig {
 
   /** A shorthand name for this application. */
   @Coat.Param(key = "application_name")                             // Rather than “name“ this property will be specified as “application_name” in the config file
-  public String getName();                                          // The application_name is mandatory
+  public String               getName();                            // The application_name is mandatory
 
   /** A short description of the purpose of this application. */
-  public Optional<String> getDescription();                         // The description is optional
+  public Optional<String>     getDescription();                     // The description is optional
 
   /** The interfaces to listen on for incoming connections. */
   @Coat.Param(defaultValue = "0.0.0.0")                             // If the listen_address is not given, default to 0.0.0.0
-  public InetAddress getListenAddress();
+  public InetAddress          getListenAddress();
 
   /** The port to listen on for incoming connections. */
   @Coat.Param(defaultValue = "8080")                                // The default port is 8080
   @Min(1024) @Max(49151)                                            // Use Bean Validation annotations to restrict the range of allowed ports
-  public int getListenPort();
+  public int                  getListenPort();
 
   /** The configuration for the MQTT connection */
   @Coat.Embedded                                                    // Embed another config object
-  public MqttConfig mqtt();
+  public MqttConfig           mqtt();
 }
