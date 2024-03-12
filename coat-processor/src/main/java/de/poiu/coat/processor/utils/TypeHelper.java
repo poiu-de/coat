@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public class TypeHelper {
   public final TypeMirror coatParamType;
   public final TypeMirror coatEmbeddedType;
 
-  public final EnumSet<TypeKind> supportedTypes= EnumSet.of(BOOLEAN, INT, LONG, DOUBLE);
+  public final EnumSet<TypeKind> supportedPrimitiveTypes= EnumSet.of(BOOLEAN, INT, LONG, DOUBLE);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -123,7 +123,7 @@ public class TypeHelper {
   /**
    * Checks whether the given type is one of the supported optional primitive types.
    *
-   * @param optionalPrimitiveType
+   * @param type
    * @return
    */
   public boolean isOptionalPrimitive(final @Nullable TypeMirror type) {
@@ -140,7 +140,7 @@ public class TypeHelper {
   /**
    * Checks whether the given type is one of the supported primitive types.
    *
-   * @param optionalPrimitiveType
+   * @param type
    * @return
    */
   public boolean isPrimitive(final @Nullable TypeMirror type) {
@@ -303,6 +303,6 @@ public class TypeHelper {
    * @return
    */
   public boolean isSupportedPrimitive(final TypeMirror type) {
-    return this.supportedTypes.contains(type.getKind());
+    return this.supportedPrimitiveTypes.contains(type.getKind());
   }
 }

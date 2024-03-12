@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2023 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package de.poiu.coat.processor;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.CompilationSubject;
 import com.google.testing.compile.JavaFileObjects;
-import de.poiu.coat.CoatConfig;
-import de.poiu.coat.convert.TypeConversionException;
 import de.poiu.coat.validation.ConfigValidationException;
 import de.poiu.coat.validation.ImmutableValidationFailure;
 import de.poiu.coat.validation.ValidationFailure;
@@ -54,9 +52,11 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.assertj.core.api.InstanceOfAssertFactories.collection;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
 
 public class CoatProcessorIT {
@@ -111,10 +111,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "mandatoryString",
@@ -123,7 +123,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "mandatoryString", "some value",
       "optionalInt", "25"
       // no charsetWithDefault specified → fallback to default
@@ -132,13 +132,11 @@ public class CoatProcessorIT {
     this.assertResult(instance, "mandatoryString", "some value");
     this.assertResult(instance, "optionalInt", OptionalInt.of(25));
     this.assertResult(instance, "charsetWithDefault", UTF_8);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
-   * A full test of a simple Coat config object.
+   * A full test of a Coat config object with all supported basic types.
    *
    * @throws Exception
    */
@@ -216,10 +214,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "mandatoryInt",
@@ -240,7 +238,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "mandatoryInt",     "0x7fffffff",
       "optionalInt",      "12",
       "mandatoryLong",    "0x7fffffffffffffff",
@@ -269,8 +267,6 @@ public class CoatProcessorIT {
     this.assertResult(instance, "mandatoryString",  "mandatory");
     this.assertResult(instance, "optionalString",   Optional.of("optional"));
     this.assertResult(instance, "defaultString",    "default");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -312,7 +308,7 @@ public class CoatProcessorIT {
 
 
   /**
-   * Test the failure of the processing of a Coat config interface with unsupported primitives..
+   * Test the failure of the processing of a Coat config interface with unsupported primitives.
    */
   @ParameterizedTest
   @ValueSource(strings = {
@@ -346,8 +342,6 @@ public class CoatProcessorIT {
 
   /**
    * Test the implementation of an existing mandatory string.
-   *
-   * @throws Exception
    */
   @Test
   public void testMandatoryString() throws Exception {
@@ -377,30 +371,26 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "mandatoryString");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "mandatoryString", "some value",
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "mandatoryString", "some value");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
    * Test the implementation of a missing mandatory string.
-   *
-   * @throws Exception
    */
   @Test
   public void testMandatoryStringMissing() throws Exception {
@@ -430,34 +420,32 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "mandatoryString");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
-      // the mandatoryString is missing
-      "irrelevant key", "irrelevant value"
-    ));
+    final InvocationTargetException itex = catchThrowableOfType(() ->
+      this.createInstance(generatedBuilderClass, mapOf(
+        // the mandatoryString is missing
+        "irrelevant key", "irrelevant value"
+      )), InvocationTargetException.class);
 
-    this.assertResult(instance, "mandatoryString", null);
-
-    this.assertValidationErrors(instance,
-                                ImmutableValidationFailure.builder()
-                                  .failureType(MISSING_MANDATORY_VALUE)
-                                  .key("mandatoryString")
-                                  .build());
+    assertValidationErrors(itex,
+     ImmutableValidationFailure.builder()
+       .failureType(MISSING_MANDATORY_VALUE)
+       .key("mandatoryString")
+       .build()
+    );
   }
 
 
   /**
    * Test the implementation of an existing optional int.
-   *
-   * @throws Exception
    */
   @Test
   public void testOptionalInt() throws Exception {
@@ -488,30 +476,26 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "optionalInt");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "optionalInt", "15",
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "optionalInt", OptionalInt.of(15));
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
    * Test the implementation of a missing optional int.
-   *
-   * @throws Exception
    */
   @Test
   public void testOptionalIntMissing() throws Exception {
@@ -542,30 +526,26 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "optionalInt");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // the optionalInt is missing
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "optionalInt", OptionalInt.empty());
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
    * Test the implementation of an existing optional Charset.
-   *
-   * @throws Exception
    */
   @Test
   public void testOptionalCharset() throws Exception {
@@ -597,30 +577,26 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "optionalCharset");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "optionalCharset", "UTF-8",
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "optionalCharset", Optional.of(UTF_8));
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
    * Test the implementation of a specified charset with default value.
-   *
-   * @throws Exception
    */
   @Test
   public void testDefaultCharset() throws Exception {
@@ -651,30 +627,26 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "charsetWithDefault");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "charsetWithDefault", "ISO-8859-1",
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "charsetWithDefault", ISO_8859_1);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
    * Test the implementation of a missing charset with default value.
-   *
-   * @throws Exception
    */
   @Test
   public void testDefaultCharsetMissing() throws Exception {
@@ -705,30 +677,26 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "charsetWithDefault");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no charsetWithDefault is set
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "charsetWithDefault", UTF_8);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
    * Test the implementation of an optional value with default value.
-   *
-   * @throws Exception
    */
   @Test
   public void testWarningOnOptionalWithDefault() throws Exception {
@@ -760,30 +728,26 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "optionalWithDefault");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no optionalWithDefault given
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "optionalWithDefault", Optional.of("Hurz!"));
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
    * Test the implementation of an existing optional float.
-   *
-   * @throws Exception
    */
   @Test
   public void testOptionalFloat() throws Exception {
@@ -813,23 +777,21 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "optionalFloat");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "optionalFloat", "1.5",
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "optionalFloat", Optional.of(Float.valueOf(1.5f)));
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -871,7 +833,7 @@ public class CoatProcessorIT {
 
 
   /**
-   * Test that the key can be omitted now (in which case it will be assumed to be the same as the
+   * Test that the key can be omitted (in which case it will be assumed to be the same as the
    * accessor name.
    */
   @Test
@@ -909,10 +871,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "omittedKey",
@@ -921,7 +883,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "omittedKey", "some value",
       "specifiedKey", "25"
       // no omittedKeyButDefaultValue specified → fallback to default
@@ -930,8 +892,6 @@ public class CoatProcessorIT {
     this.assertResult(instance, "omittedKey", "some value");
     this.assertResult(instance, "optionalInt", OptionalInt.of(25));
     this.assertResult(instance, "omittedKeyButDefaultValue", UTF_8);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -981,21 +941,21 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                "com.example.MainConfigParam",
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedEmbeddedClass, "embeddedParam");
     this.assertMethods(generatedConfigClass, "someParam", "embedded");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no values are explicitly set
       "someParam",              "some value",
       "embedded.embeddedParam", "embedded value",
@@ -1003,15 +963,13 @@ public class CoatProcessorIT {
     ));
 
     this.assertResult(instance, "someParam", "some value");
-    final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "embedded value"));
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of("embeddedParam", "embedded value"));
     this.assertResult(instance, "embedded", expectedEmbedded);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
-   * Test that the @Param annotation can be omitted now.
+   * Test that the @Param annotation can be omitted.
    */
   @Test
   public void testOmittedOptionalParamAnnotation() throws Exception {
@@ -1047,10 +1005,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "omittedKey",
@@ -1059,7 +1017,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "omittedKey", "some value",
       "omittedAnnotation", "25",
       "specified_key", "UTF-8"
@@ -1068,13 +1026,11 @@ public class CoatProcessorIT {
     this.assertResult(instance, "omittedKey", "some value");
     this.assertResult(instance, "omittedAnnotation", OptionalInt.of(25));
     this.assertResult(instance, "specifiedKey", UTF_8);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
-   * Test that the same key for multiple accessors fails.
+   * Test that accessors without return types fail.
    */
   @Test
   public void testAccessorWithoutReturnType() throws Exception {
@@ -1108,7 +1064,7 @@ public class CoatProcessorIT {
 
 
   /**
-   * Test that the same key for multiple accessors fails.
+   * Test that accessors with parameters fail.
    */
   @Test
   public void testAccessorWithParameter() throws Exception {
@@ -1185,32 +1141,29 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.BaseConfig",
-                                "com.example.BaseConfigParam",
-                                "com.example.ImmutableBaseConfig",
+                                "com.example.BaseConfigBuilder",
                                 "com.example.SubConfig",
-                                "com.example.SubConfigParam",
-                                "com.example.ImmutableSubConfig");
+                                "com.example.SubConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableSubConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.SubConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.SubConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "inheritedParam", "additionalParam");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no values are explicitly set
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "inheritedParam", "inherited default");
     this.assertResult(instance, "additionalParam", "additional default");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
-   * Test the implementation of a Coat config interface that inherits from another Coat config interface.
+   * Test that inherited accessors are correctly validated.
    */
   @Test
   public void testInheritedConfig_ValidationFailures() throws Exception {
@@ -1253,43 +1206,38 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.BaseConfig",
-                                "com.example.BaseConfigParam",
-                                "com.example.ImmutableBaseConfig",
+                                "com.example.BaseConfigBuilder",
                                 "com.example.SubConfig",
-                                "com.example.SubConfigParam",
-                                "com.example.ImmutableSubConfig");
+                                "com.example.SubConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableSubConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.SubConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.SubConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "inheritedParam", "additionalParam");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
-      // no values are explicitly set
-      "irrelevant key", "irrelevant value"
-    ));
+    final InvocationTargetException itex = catchThrowableOfType(() ->
+      this.createInstance(generatedBuilderClass, mapOf(
+        // no values are explicitly set
+        "irrelevant key", "irrelevant value"
+    )), InvocationTargetException.class);
 
-    this.assertResult(instance, "inheritedParam", null);
-    this.assertResult(instance, "additionalParam", null);
-
-    this.assertValidationErrors(instance,
-                                ImmutableValidationFailure.builder()
-                                  .failureType(MISSING_MANDATORY_VALUE)
-                                  .key("inheritedParam")
-                                  .build(),
-                                ImmutableValidationFailure.builder()
-                                  .failureType(MISSING_MANDATORY_VALUE)
-                                  .key("additionalParam")
-                                  .build()
+    assertValidationErrors(itex,
+                           ImmutableValidationFailure.builder()
+                             .failureType(MISSING_MANDATORY_VALUE)
+                             .key("inheritedParam")
+                             .build(),
+                           ImmutableValidationFailure.builder()
+                             .failureType(MISSING_MANDATORY_VALUE)
+                             .key("additionalParam")
+                             .build()
     );
   }
 
 
-
-
   /**
-   * Test that the same key for multiple accessors fails.
+   * Test that the same key for multiple accessors (by inheritance) fails.
    */
   @Test
   public void testInheritedConfig_DuplicateKey() throws Exception {
@@ -1384,7 +1332,7 @@ public class CoatProcessorIT {
             "\n" + "@Coat.Config" +
             "\n" + "public interface BaseConfig2 {" +
             "\n" + "" +
-            "\n" + "  @Coat.Param(key = \"otherParam\", defaultValue = \"other default\")" +
+            "\n" + "  @Coat.Param(key = \"otherParam\", defaultValue = \"25\")" +
             "\n" + "  public int otherParam();" +
             "\n" + "" +
             "\n" + "  @Coat.Param(key = \"sharedAccessor\", defaultValue = \"shared accessor\")" +
@@ -1412,21 +1360,19 @@ public class CoatProcessorIT {
     this.assertGeneratedClasses(compilation,
                                 "com.example.BaseConfig1",
                                 "com.example.BaseConfig2",
-                                "com.example.BaseConfig1Param",
-                                "com.example.BaseConfig2Param",
-                                "com.example.ImmutableBaseConfig1",
-                                "com.example.ImmutableBaseConfig2",
+                                "com.example.BaseConfig1Builder",
+                                "com.example.BaseConfig2Builder",
                                 "com.example.SubConfig",
-                                "com.example.SubConfigParam",
-                                "com.example.ImmutableSubConfig");
+                                "com.example.SubConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableSubConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.SubConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.SubConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "inheritedParam", "additionalParam", "sharedAccessor", "otherParam");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no values are explicitly set
       "irrelevant key", "irrelevant value"
     ));
@@ -1434,8 +1380,7 @@ public class CoatProcessorIT {
     this.assertResult(instance, "inheritedParam", "inherited default");
     this.assertResult(instance, "additionalParam", "additional default");
     this.assertResult(instance, "sharedAccessor", "shared accessor");
-
-    this.assertNoValidationErrors(instance);
+    this.assertResult(instance, "otherParam", 25);
   }
 
 
@@ -1475,7 +1420,7 @@ public class CoatProcessorIT {
             "\n" + "@Coat.Config" +
             "\n" + "public interface BaseConfig2 extends BaseConfig1 {" +
             "\n" + "" +
-            "\n" + "  @Coat.Param(key = \"otherParam\", defaultValue = \"other default\")" +
+            "\n" + "  @Coat.Param(key = \"otherParam\", defaultValue = \"25\")" +
             "\n" + "  public int otherParam();" +
             "\n" + "}" +
             ""),
@@ -1500,21 +1445,19 @@ public class CoatProcessorIT {
     this.assertGeneratedClasses(compilation,
                                 "com.example.BaseConfig1",
                                 "com.example.BaseConfig2",
-                                "com.example.BaseConfig1Param",
-                                "com.example.BaseConfig2Param",
-                                "com.example.ImmutableBaseConfig1",
-                                "com.example.ImmutableBaseConfig2",
+                                "com.example.BaseConfig1Builder",
+                                "com.example.BaseConfig2Builder",
                                 "com.example.SubConfig",
-                                "com.example.SubConfigParam",
-                                "com.example.ImmutableSubConfig");
+                                "com.example.SubConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableSubConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.SubConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.SubConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "inheritedParam", "additionalParam", "sharedAccessor", "otherParam");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no values are explicitly set
       "irrelevant key", "irrelevant value"
     ));
@@ -1522,8 +1465,7 @@ public class CoatProcessorIT {
     this.assertResult(instance, "inheritedParam", "inherited default");
     this.assertResult(instance, "additionalParam", "additional default");
     this.assertResult(instance, "sharedAccessor", "shared accessor");
-
-    this.assertNoValidationErrors(instance);
+    this.assertResult(instance, "otherParam", 25);
   }
 
 
@@ -1606,7 +1548,7 @@ public class CoatProcessorIT {
 
 
   /**
-   * Test the generation of a config with a custom name
+   * Test the generation of a config builder with a custom name
    */
   @Test
   public void testCustomGeneratedClassName() throws Exception {
@@ -1636,23 +1578,21 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.BlaBlaParam",
                                 "com.example.BlaBla");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.BlaBla", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.BlaBla", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.BlaBla$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "mandatoryString");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "mandatoryString", "some value",
       "irrelevant key", "irrelevant value"
     ));
 
     this.assertResult(instance, "mandatoryString", "some value");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -1703,21 +1643,25 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                "com.example.MainConfigParam",
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
+                                "com.example.MainConfigBuilder$ParamImpl",
+                                "com.example.MainConfigBuilder$ConfigImpl",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder",
+                                "com.example.EmbeddedConfigBuilder$ParamImpl",
+                                "com.example.EmbeddedConfigBuilder$ConfigImpl");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedEmbeddedClass, "embeddedParam");
     this.assertMethods(generatedConfigClass, "someParam", "embedded");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no values are explicitly set
       "someParam",              "some value",
       "embedded.embeddedParam", "embedded value",
@@ -1725,10 +1669,8 @@ public class CoatProcessorIT {
     ));
 
     this.assertResult(instance, "someParam", "some value");
-    final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "embedded value"));
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of("embeddedParam", "embedded value"));
     this.assertResult(instance, "embedded", expectedEmbedded);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -1796,17 +1738,17 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                "com.example.MainConfigParam",
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
                                 "com.example.DeeplyEmbeddedConfig",
-                                "com.example.DeeplyEmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
-    final Class<?> generatedDeeplyEmbeddedClass= this.loadClass("com.example.ImmutableDeeplyEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedDeeplyEmbeddedBuilderClass= this.loadClass("com.example.DeeplyEmbeddedConfigBuilder", compilation);
+    final Class<?> generatedDeeplyEmbeddedClass= this.loadClass("com.example.DeeplyEmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "someParam", "embedded");
     this.assertMethods(generatedEmbeddedClass, "embeddedParam", "deeplyEmbedded");
@@ -1817,7 +1759,7 @@ public class CoatProcessorIT {
 
     // test good path
     {
-      final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      final Object instance = this.createInstance(generatedBuilderClass, mapOf(
         // no values are explicitly set
         "someParam",                                   "some value",
         "embedded.embeddedParam",                      "embedded value",
@@ -1826,45 +1768,41 @@ public class CoatProcessorIT {
       ));
 
       this.assertResult(instance, "someParam", "some value");
-      final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of(
+      final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of(
         "embeddedParam", "embedded value",
         "deeplyEmbedded.deeplyEmbeddedParam", "deeply embedded value"
       ));
 
       this.assertResult(instance, "embedded", expectedEmbedded);
-
-      this.assertNoValidationErrors(instance);
     }
 
     // test missing embedded values
     {
-      final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      final InvocationTargetException itex = catchThrowableOfType(() ->
+        this.createInstance(generatedBuilderClass, mapOf(
         // no values are explicitly set
         "someParam",              "some value",
         // the embedded value is missing
         "irrelevant key",         "irrelevant value"
-      ));
+        )), InvocationTargetException.class);
 
-      this.assertResult(instance, "someParam", "some value");
-      final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of());
-      this.assertResult(instance, "embedded", expectedEmbedded);
-
-      this.assertValidationErrors(instance,
-                                  ImmutableValidationFailure.builder()
-                                    .failureType(MISSING_MANDATORY_VALUE)
-                                    .key("embedded.embeddedParam")
-                                    .build(),
-                                  ImmutableValidationFailure.builder()
-                                    .failureType(MISSING_MANDATORY_VALUE)
-                                    .key("embedded.deeplyEmbedded.deeplyEmbeddedParam")
-                                    .build()
+      assertValidationErrors(itex,
+                             ImmutableValidationFailure.builder()
+                               .failureType(MISSING_MANDATORY_VALUE)
+                               .key("embedded.embeddedParam")
+                               .build(),
+                             ImmutableValidationFailure.builder()
+                               .failureType(MISSING_MANDATORY_VALUE)
+                               .key("embedded.deeplyEmbedded.deeplyEmbeddedParam")
+                               .build()
       );
     }
   }
 
 
   /**
-   * Test the implementation of a Coat config interface that embeds another Coat config interface.
+   * Test the implementation of a Coat config interface that embeds another Coat config interface
+   * as an optional value.
    */
   @Test
   public void testOptionalEmbeddedConfig() throws Exception {
@@ -1911,14 +1849,14 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                "com.example.MainConfigParam",
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedEmbeddedClass, "embeddedParam");
     this.assertMethods(generatedConfigClass, "someParam", "embedded");
@@ -1927,7 +1865,7 @@ public class CoatProcessorIT {
 
     // test existing optional
     {
-      final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      final Object instance = this.createInstance(generatedBuilderClass, mapOf(
         // no values are explicitly set
         "someParam",              "some value",
         "embedded.embeddedParam", "1",
@@ -1935,15 +1873,13 @@ public class CoatProcessorIT {
       ));
 
       this.assertResult(instance, "someParam", "some value");
-      final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "1"));
+      final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of("embeddedParam", "1"));
       this.assertResult(instance, "embedded", Optional.of(expectedEmbedded));
-
-      this.assertNoValidationErrors(instance);
     }
 
     // test missing optional
     {
-      final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      final Object instance = this.createInstance(generatedBuilderClass, mapOf(
         // no values are explicitly set
         "someParam",              "some value",
         "irrelevant key",         "irrelevant value"
@@ -1951,26 +1887,20 @@ public class CoatProcessorIT {
 
       this.assertResult(instance, "someParam", "some value");
       this.assertResult(instance, "embedded", Optional.empty());
-
-      this.assertNoValidationErrors(instance);
     }
 
 
     // test invalid optional
     {
-      final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      final InvocationTargetException itex = catchThrowableOfType(() ->
+        this.createInstance(generatedBuilderClass, mapOf(
         // no values are explicitly set
         "someParam",              "some value",
         "embedded.embeddedParam", "invalid value",
         "irrelevant key",         "irrelevant value"
-      ));
+      )), InvocationTargetException.class);
 
-      this.assertResult(instance, "someParam", "some value");
-      // the following is not testable as it would call the converter which would then fail
-      //final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "invalid value"));
-      //this.assertResult(builderInstance, "embedded", Optional.of(expectedEmbedded));
-
-      this.assertValidationErrors(instance, ImmutableValidationFailure.builder()
+      assertValidationErrors(itex, ImmutableValidationFailure.builder()
         .failureType(UNPARSABLE_VALUE)
         .key("embedded.embeddedParam")
         .type("int")
@@ -1983,7 +1913,7 @@ public class CoatProcessorIT {
 
 
   /**
-   * Test that a missing optional embedded config is considered missing even if it contains default values
+   * Test that a missing optional embedded config is considered missing even if it contains default values.
    */
   @Test
   public void testMissingOptionalEmbeddedConfigWithDefaultValues() throws Exception {
@@ -2030,14 +1960,14 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                "com.example.MainConfigParam",
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedEmbeddedClass, "embeddedParam");
     this.assertMethods(generatedConfigClass, "someParam", "embedded");
@@ -2046,7 +1976,7 @@ public class CoatProcessorIT {
 
     // test missing optional
     {
-      final Object instance = this.createInstance(generatedConfigClass, mapOf(
+      final Object instance = this.createInstance(generatedBuilderClass, mapOf(
         // no values are explicitly set
         "someParam",              "some value",
         "irrelevant key",         "irrelevant value"
@@ -2054,8 +1984,6 @@ public class CoatProcessorIT {
 
       this.assertResult(instance, "someParam", "some value");
       this.assertResult(instance, "embedded", Optional.empty());
-
-      this.assertNoValidationErrors(instance);
     }
   }
 
@@ -2178,28 +2106,26 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                // "com.example.MainConfigParam",  // This one is not getting generated
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedEmbeddedClass, "embeddedParam");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "embedded.embeddedParam", "embedded value",
       "irrelevant key",         "irrelevant value"
     ));
 
-    final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "embedded value"));
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of("embeddedParam", "embedded value"));
     this.assertResult(instance, "embedded", expectedEmbedded);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -2361,17 +2287,17 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                "com.example.MainConfigParam",
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
                                 "com.example.DeeplyEmbeddedConfig",
-                                "com.example.DeeplyEmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
-    final Class<?> generatedDeeplyEmbeddedClass= this.loadClass("com.example.ImmutableDeeplyEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedDeeplyEmbeddedBuilderClass= this.loadClass("com.example.DeeplyEmbeddedConfigBuilder", compilation);
+    final Class<?> generatedDeeplyEmbeddedClass= this.loadClass("com.example.DeeplyEmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass, "someParam", "embedded");
     this.assertMethods(generatedEmbeddedClass, "embeddedParam", "deeplyEmbedded");
@@ -2381,7 +2307,7 @@ public class CoatProcessorIT {
 
 
     // test equal objects
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no values are explicitly set
       "someParam",                                   "some value",
       "embedded.embeddedParam",                      "embedded value",
@@ -2391,7 +2317,7 @@ public class CoatProcessorIT {
 
     this.assertResult(instance, "someParam", "some value");
 
-    final Object equalObject = this.createInstance(generatedConfigClass, mapOf(
+    final Object equalObject = this.createInstance(generatedBuilderClass, mapOf(
       // no values are explicitly set
       "someParam",                                   "some value",
       "embedded.embeddedParam",                      "embedded value",
@@ -2402,7 +2328,7 @@ public class CoatProcessorIT {
     assertThat(instance).isEqualTo(equalObject);
     assertThat(instance.hashCode()).isEqualTo(equalObject.hashCode());
 
-    final Object unequalObject = this.createInstance(generatedConfigClass, mapOf(
+    final Object unequalObject = this.createInstance(generatedBuilderClass, mapOf(
       // no values are explicitly set
       "someParam",                                   "some value",
       "embedded.embeddedParam",                      "embedded value",
@@ -2452,10 +2378,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "omittedKey",
@@ -2464,7 +2390,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "omittedKey", "some value",
       "omittedAnnotation", "25",
       "Specified_KEY", "UTF-8"
@@ -2473,8 +2399,6 @@ public class CoatProcessorIT {
     this.assertResult(instance, "omittedKey", "some value");
     this.assertResult(instance, "omittedAnnotation", OptionalInt.of(25));
     this.assertResult(instance, "specifiedKey", UTF_8);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -2517,10 +2441,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "omittedKey",
@@ -2529,7 +2453,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "omittedKey", "some value",
       "omittedAnnotation", "25",
       "Specified_KEY", "UTF-8"
@@ -2538,8 +2462,6 @@ public class CoatProcessorIT {
     this.assertResult(instance, "omittedKey", "some value");
     this.assertResult(instance, "omittedAnnotation", OptionalInt.of(25));
     this.assertResult(instance, "specifiedKey", UTF_8);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -2582,10 +2504,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "omittedKey",
@@ -2594,7 +2516,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "omitted_key", "some value",
       "omitted_annotation", "25",
       "Specified_KEY", "UTF-8"
@@ -2603,8 +2525,6 @@ public class CoatProcessorIT {
     this.assertResult(instance, "omittedKey", "some value");
     this.assertResult(instance, "omittedAnnotation", OptionalInt.of(25));
     this.assertResult(instance, "specifiedKey", UTF_8);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -2656,21 +2576,21 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                "com.example.MainConfigParam",
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedEmbeddedClass, "embeddedParam");
     this.assertMethods(generatedConfigClass, "someParam", "embeddedConfig");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no values are explicitly set
       "some_param",                     "some value",
       "embedded_config.embeddedParam", "embedded value",
@@ -2678,10 +2598,8 @@ public class CoatProcessorIT {
     ));
 
     this.assertResult(instance, "someParam", "some value");
-    final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "embedded value"));
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of("embeddedParam", "embedded value"));
     this.assertResult(instance, "embeddedConfig", expectedEmbedded);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -2718,10 +2636,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "normalKey",
@@ -2730,7 +2648,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "normalKey", "normal value",
       "someString", "the prefix is stripped here",
       "getSomeString", "this should not exist",
@@ -2741,8 +2659,6 @@ public class CoatProcessorIT {
     this.assertResult(instance, "normalKey", "normal value");
     this.assertResult(instance, "getSomeString", "the prefix is stripped here");
     this.assertResult(instance, "getnobean", "the prefix is NOT stripped here");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -2779,10 +2695,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "normalKey",
@@ -2791,7 +2707,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "normalKey", "normal value",
       "someString", "this should not exist",
       "getSomeString", "the prefix is NOT stripped here",
@@ -2802,13 +2718,11 @@ public class CoatProcessorIT {
     this.assertResult(instance, "normalKey", "normal value");
     this.assertResult(instance, "getSomeString", "the prefix is NOT stripped here");
     this.assertResult(instance, "getnobean", "the prefix is NOT stripped here");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
-   * Test that the java bean get prefix is ignored even when using a differt casing strategy than AS_IS.
+   * Test that the java bean get prefix is ignored even when using a different casing strategy than AS_IS.
    */
   @Test
   public void testStripGetPrefixDifferentCasingStrategy() throws Exception {
@@ -2842,10 +2756,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "normalKey",
@@ -2854,7 +2768,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "normal_key", "normal value",
       "some_string", "the prefix is stripped here",
       "get_some_string", "this should not exist",
@@ -2865,8 +2779,6 @@ public class CoatProcessorIT {
     this.assertResult(instance, "normalKey", "normal value");
     this.assertResult(instance, "getSomeString", "the prefix is stripped here");
     this.assertResult(instance, "getnobean", "the prefix is NOT stripped here");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -2902,10 +2814,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "getSomeString",
@@ -2913,7 +2825,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "someString", "the prefix is stripped here",
       "getSomeOtherString", "the prefix is NOT stripped here",
       "someOtherString", "this should not exist"
@@ -2921,8 +2833,6 @@ public class CoatProcessorIT {
 
     this.assertResult(instance, "getSomeString", "the prefix is stripped here");
     this.assertResult(instance, "getSomeOtherString", "the prefix is NOT stripped here");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -2991,10 +2901,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "arrayOfStrings",
@@ -3003,7 +2913,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "arrayOfStrings", "val1 val2",
       "listOfCharsets", "UTF-8 US-ASCII",
       "setOfPaths", "/tmp /usr/share/doc /home/poiu"
@@ -3012,9 +2922,7 @@ public class CoatProcessorIT {
     this.assertResult(instance, "arrayOfStrings", new String[]{"val1", "val2"});
     this.assertResult(instance, "listOfCharsets", List.of(UTF_8, US_ASCII));
     this.assertResult(instance, "setOfPaths", Set.of(Paths.get("/tmp"), Paths.get("/usr/share/doc"), Paths.get("/home/poiu")));
-
-    this.assertNoValidationErrors(instance);
-  }
+ }
 
 
   /**
@@ -3058,10 +2966,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "arrayOfStrings",
@@ -3070,16 +2978,14 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       // no values are set, therefore the defaults shoutld apply
     ));
 
     this.assertResult(instance, "arrayOfStrings", new String[]{"one", "two"});
     this.assertResult(instance, "listOfCharsets", List.of(UTF_8, US_ASCII));
     this.assertResult(instance, "setOfPaths", Set.of(Paths.get("/tmp"), Paths.get("/usr/share/doc"), Paths.get("/home/poiu")));
-
-    this.assertNoValidationErrors(instance);
-  }
+ }
 
 
   /**
@@ -3114,26 +3020,29 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "bigInt");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
-      "bigInt", "200"
-    ));
 
-    assertThatThrownBy(() ->
-      instance.getClass().getMethod("bigInt").invoke(instance))
-      .cause()
-      .hasRootCauseInstanceOf(TypeConversionException.class)
-      .hasRootCauseMessage("No converter registered for type 'java.math.BigInteger'.")
-      ;
+    final InvocationTargetException itex = catchThrowableOfType(() ->
+      this.createInstance(generatedBuilderClass, mapOf(
+        "bigInt", "200"
+    )), InvocationTargetException.class);
+
+    assertValidationErrors(itex, ImmutableValidationFailure.builder()
+      .failureType(UNPARSABLE_VALUE)
+      .key("bigInt")
+      .type("java.math.BigInteger")
+      .value("200")
+      .errorMsg("No converter registered for type 'java.math.BigInteger'.")
+      .build());
   }
 
 
@@ -3180,6 +3089,23 @@ public class CoatProcessorIT {
             "\n" + "  }" +
             "\n" + "}" +
             ""),
+                 JavaFileObjects.forSourceString("com.example.LowercaseConverter",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.StringConverter;" +
+            "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
+            "\n" + "" +
+            "\n" + "public class LowercaseConverter implements Converter<String> {" +
+            "\n" + "" +
+            "\n" + "  @Override" +
+            "\n" + "  public String convert(final String s) throws TypeConversionException {" +
+            "\n" + "    if (s == null) { return \"\"; };" +
+            "\n" + "    return s.toLowerCase();" +
+            "\n" + "  }" +
+            "\n" + "}" +
+            ""),
                  JavaFileObjects.forSourceString("com.example.TestConfig",
             "" +
             "\n" + "package com.example;" +
@@ -3195,6 +3121,9 @@ public class CoatProcessorIT {
             "\n" + "  @Coat.Param(converter=HurzConverter.class)" +
             "\n" + "  public String alwaysHurz();" +
             "\n" + "" +
+            "\n" + "  @Coat.Param(converter=LowercaseConverter.class)" +
+            "\n" + "  public String alwaysLower();" +
+            "\n" + "" +
             "\n" + "  public Charset unaffectedCharset();" +
             "\n" + "}" +
             ""));
@@ -3207,30 +3136,32 @@ public class CoatProcessorIT {
     this.assertGeneratedClasses(compilation,
                                 "com.example.HurzConverter",
                                 "com.example.UppercaseConverter",
+                                "com.example.LowercaseConverter",
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "normalString",
                        "alwaysHurz",
+                       "alwaysLower",
                        "unaffectedCharset");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "normalString", "some value",
       "alwaysHurz", "25",
+      "alwaysLower", "mIxEd CaSe",
       "unaffectedCharset", "UTF-8"
     ));
 
     this.assertResult(instance, "normalString", "SOME VALUE");
     this.assertResult(instance, "alwaysHurz", "Hurz!");
+    this.assertResult(instance, "alwaysLower", "mixed case");
     this.assertResult(instance, "unaffectedCharset", UTF_8);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -3303,10 +3234,10 @@ public class CoatProcessorIT {
                                 "com.example.HurzConverter",
                                 "com.example.UppercaseConverter",
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "normalStrings",
@@ -3314,15 +3245,13 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "normalStrings", "some value",
       "alwaysHurz", "one two 3"
     ));
 
     this.assertResult(instance, "normalStrings", new String[]{"SOME", "VALUE"});
     this.assertResult(instance, "alwaysHurz", List.of("Hurz!", "Hurz!", "Hurz!"));
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -3374,28 +3303,26 @@ public class CoatProcessorIT {
     this.assertGeneratedClasses(compilation,
                                 "com.example.UppercaseConverter",
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "normalString");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "normalString", "some value"
     ));
 
     this.assertResult(instance, "normalString", "SOME VALUE");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
   /**
-   * Test that custom converters are that are specified in the @Coat.Config annotation are valid for that
+   * Test that custom converters that are specified in the @Coat.Config annotation are valid for that
    * Config and not others.
    */
   @Test
@@ -3482,44 +3409,42 @@ public class CoatProcessorIT {
                                 "com.example.HurzConverter",
                                 "com.example.UppercaseConverter",
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig",
+                                "com.example.TestConfigBuilder",
                                 "com.example.TestConfigHurz",
-                                "com.example.TestConfigHurzParam",
-                                "com.example.ImmutableTestConfigHurz",
+                                "com.example.TestConfigHurzBuilder",
                                 "com.example.TestConfigUppercase",
-                                "com.example.TestConfigUppercaseParam",
-                                "com.example.ImmutableTestConfigUppercase");
+                                "com.example.TestConfigUppercaseBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
     this.assertMethods(generatedConfigClass,
                        "alwaysAsIs");
 
-    final Class<?> generatedConfigClassHurz= this.loadClass("com.example.ImmutableTestConfigHurz", compilation);
+    final Class<?> generatedBuilderClassHurz= this.loadClass("com.example.TestConfigHurzBuilder", compilation);
+    final Class<?> generatedConfigClassHurz= this.loadClass("com.example.TestConfigHurzBuilder$ConfigImpl", compilation);
     this.assertMethods(generatedConfigClassHurz,
                        "alwaysHurz");
 
-    final Class<?> generatedConfigClassUppercase= this.loadClass("com.example.ImmutableTestConfigUppercase", compilation);
+    final Class<?> generatedBuilderClassUppercase= this.loadClass("com.example.TestConfigUppercaseBuilder", compilation);
+    final Class<?> generatedConfigClassUppercase= this.loadClass("com.example.TestConfigUppercaseBuilder$ConfigImpl", compilation);
     this.assertMethods(generatedConfigClassUppercase,
                        "alwaysUppercase");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "alwaysAsIs", "one"
     ));
-    final Object instanceHurz = this.createInstance(generatedConfigClassHurz, mapOf(
+    final Object instanceHurz = this.createInstance(generatedBuilderClassHurz, mapOf(
       "alwaysHurz", "one"
     ));
-    final Object instanceUppercase = this.createInstance(generatedConfigClassUppercase, mapOf(
+    final Object instanceUppercase = this.createInstance(generatedBuilderClassUppercase, mapOf(
       "alwaysUppercase", "one"
     ));
 
     this.assertResult(instance, "alwaysAsIs", "one");
     this.assertResult(instanceHurz, "alwaysHurz", "Hurz!");
     this.assertResult(instanceUppercase, "alwaysUppercase", "ONE");
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -3607,14 +3532,14 @@ public class CoatProcessorIT {
                                 "com.example.CommaListParser",
                                 "com.example.PipeListParser",
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
                                 "com.example.OtherConfig",
-                                "com.example.OtherConfigParam",
-                                "com.example.ImmutableTestConfig",
-                                "com.example.ImmutableOtherConfig");
+                                "com.example.TestConfigBuilder",
+                                "com.example.OtherConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
-    final Class<?> generatedOtherClass= this.loadClass("com.example.ImmutableOtherConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedOtherBuilderClass= this.loadClass("com.example.OtherConfigBuilder", compilation);
+    final Class<?> generatedOtherClass= this.loadClass("com.example.OtherConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "normalString",
@@ -3625,12 +3550,12 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "normalString", "some | value",
       "commaSeparated", "first string, second string",
       "pipeSeparated", "first, string | second, string"
     ));
-    final Object otherInstance = this.createInstance(generatedOtherClass, mapOf(
+    final Object otherInstance = this.createInstance(generatedOtherBuilderClass, mapOf(
       "whitespaceSeparated", "first, string | second, string"
     ));
 
@@ -3638,9 +3563,6 @@ public class CoatProcessorIT {
     this.assertResult(instance, "commaSeparated", List.of("first string", "second string"));
     this.assertResult(instance, "pipeSeparated", List.of("first, string", "second, string"));
     this.assertResult(otherInstance, "whitespaceSeparated", List.of("first,", "string", "|", "second,", "string"));
-
-    this.assertNoValidationErrors(instance);
-    this.assertNoValidationErrors(otherInstance);
   }
 
 
@@ -3708,10 +3630,10 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.TestConfig",
-                                "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.TestConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "mandatoryString",
@@ -3723,7 +3645,7 @@ public class CoatProcessorIT {
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance = this.createInstance(generatedConfigClass, mapOf(
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
       "mandatoryString", "this is my string",
       "primitiveInt", "1",
       "optionalInt", "3",
@@ -3738,8 +3660,6 @@ public class CoatProcessorIT {
     this.assertResult(instance, "array", new String[]{"one", "two", "three"});
     this.assertResult(instance, "bool", Boolean.TRUE);
     this.assertResult(instance, "listOfInts", List.of(1, 2, 3));
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -3793,27 +3713,25 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                "com.example.MainConfigParam",
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedEmbeddedClass, "embeddedParam");
     this.assertMethods(generatedConfigClass, "someParam", "embedded");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object instance= generatedConfigClass.getDeclaredMethod("fromEnvVars").invoke(null);
+    final Object instance= generatedBuilderClass.getDeclaredMethod("fromEnvVars").invoke(null);
 
     this.assertResult(instance, "someParam", "some env var in lowercase");
-    final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "embedded env var in uppercase"));
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of("embeddedParam", "embedded env var in uppercase"));
     this.assertResult(instance, "embedded", expectedEmbedded);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -3866,21 +3784,21 @@ public class CoatProcessorIT {
 
     this.assertGeneratedClasses(compilation,
                                 "com.example.MainConfig",
-                                "com.example.MainConfigParam",
-                                "com.example.ImmutableMainConfig",
+                                "com.example.MainConfigBuilder",
                                 "com.example.EmbeddedConfig",
-                                "com.example.EmbeddedConfigParam",
-                                "com.example.ImmutableEmbeddedConfig");
+                                "com.example.EmbeddedConfigBuilder");
 
-    final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableMainConfig", compilation);
-    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.ImmutableEmbeddedConfig", compilation);
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
 
     this.assertMethods(generatedEmbeddedClass, "embeddedParam");
     this.assertMethods(generatedConfigClass, "someParam", "embedded");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
-    final Object builderInstance= generatedConfigClass.getDeclaredMethod("builder").invoke(null);
+    final Object builderInstance= generatedBuilderClass.getDeclaredMethod("create").invoke(null);
     builderInstance.getClass().getDeclaredMethod("add", Map.class).invoke(builderInstance, mapOf(
       "someParam",              "some param set via map",
       "embedded.embeddedParam", "embedded param set via map"
@@ -3889,10 +3807,8 @@ public class CoatProcessorIT {
     final Object instance= builderInstance.getClass().getDeclaredMethod("build").invoke(builderInstance);
 
     this.assertResult(instance, "someParam", "some param set via env var");
-    final Object expectedEmbedded= this.createInstance(generatedEmbeddedClass, Map.of("embeddedParam", "embedded param set via map"));
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of("embeddedParam", "embedded param set via map"));
     this.assertResult(instance, "embedded", expectedEmbedded);
-
-    this.assertNoValidationErrors(instance);
   }
 
 
@@ -3942,8 +3858,6 @@ public class CoatProcessorIT {
    * @throws IOException if reading the class failed
    */
   private Class<?> loadClass(final String fqClassName, final Compilation compilation) throws ClassNotFoundException, IOException {
-
-
     for (final JavaFileObject jfo : compilation.generatedFiles()) {
       try (final InputStream stream= jfo.openInputStream();) {
         final byte[] bytes= IOUtils.toByteArray(stream);
@@ -3956,21 +3870,19 @@ public class CoatProcessorIT {
 
 
   /**
-   * Create an builderInstance of the given <code>clazz</code> with the given <code>props</code> as parameter
+   * Create an builder instance of the given <code>clazz</code> with the given <code>props</code> as parameter
    * to the constructor.
-   * <p>
-   * Used for creating the generated concrete implementation of a Coat config object.
    *
    * @param clazz the class to load
    * @param props the properties to fill the (Coat config) object
-   * @return the newly created builderInstance
+   * @return the newly created builder instance
    * @throws NoSuchMethodException
    * @throws InstantiationException
    * @throws IllegalAccessException
    * @throws IllegalArgumentException
    * @throws InvocationTargetException
    */
-  private Object createInstance(final Class<?> clazz, final Map<String, String> props) throws NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+  private Object createInstance(final Class<?> clazz, final Map<String, String> props) throws NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ConfigValidationException {
     return clazz.getDeclaredMethod("from", Map.class).invoke(null, props);
   }
 
@@ -3996,11 +3908,11 @@ public class CoatProcessorIT {
 
   /**
    * Assert that calling the method with the given <code>methodName</code> on the given
-   * <code>builderInstance</code> object returns the expected <code>result</code>.
+   * <code>instance</code> object returns the expected <code>result</code>.
    * <p>
    * Used for verifying the correct result on calling the generated methods on the Coat config object.
    *
-   * @param instance the builderInstance to call the method on
+   * @param instance the instance to call the method on
    * @param methodName the method to call
    * @param expectedResult the expected result
    * @throws NoSuchMethodException
@@ -4009,7 +3921,8 @@ public class CoatProcessorIT {
    * @throws InvocationTargetException
    */
   private void assertResult(final Object instance, final String methodName, final Object expectedResult) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    final Object actualResult = instance.getClass().getMethod(methodName).invoke(instance);
+    // There should be only 1 interface via which we can access the accessor method
+    final Object actualResult = instance.getClass().getInterfaces()[0].getMethod(methodName).invoke(instance);
     if (expectedResult != null) {
       assertThat(actualResult).isEqualTo(expectedResult);
     } else {
@@ -4019,11 +3932,11 @@ public class CoatProcessorIT {
 
 
   /**
-   * Assert that the <code>generatedConfigClass</code> contains all methods of the given
-   * <code>methodNames</code> plus the always generated methods and delegate methods
+   * Assert that the <code>clazz</code> contains all methods of the given
+   * <code>expectedMethods</code> plus the always generated methods and delegate methods
    * (e.g. "equals()", "hashCode(), "toString()", "validate()", etc.).
    *
-   * @param generatedConfigClass the class to check
+   * @param clazz the class to check
    * @param expectedMethods the methods to assert
    */
   private void assertMethods(final Class<?> clazz, final MethodAndParams... expectedMethods) {
@@ -4031,6 +3944,7 @@ public class CoatProcessorIT {
       .map(MethodAndParams::from)
       .filter(m -> !m.equals(MethodAndParams.from("equals", Object.class)))
       .filter(m -> !m.equals(MethodAndParams.from("hashCode")))
+      .filter(m -> !m.equals(MethodAndParams.from("toString")))
       .filter(m -> !m.equals(MethodAndParams.from("writeExampleConfig", java.io.Writer.class)))
       .filter(m -> !m.equals(MethodAndParams.from("from", java.util.Map.class)))
       .filter(m -> !m.equals(MethodAndParams.from("from", java.io.File.class)))
@@ -4041,8 +3955,8 @@ public class CoatProcessorIT {
       .filter(m -> !m.equals(MethodAndParams.from("fromEnvVars")))
       .filter(m -> !m.equals(MethodAndParams.from("addEnvVars")))
       .filter(m -> !m.equals(MethodAndParams.from("builder")))
-      .filter(m -> !m.equals(MethodAndParams.from("access$000", java.io.File.class))) // FIXME: This is actually CoatConfig#toMap(File) Generate it?
-      .filter(m -> !m.equals(MethodAndParams.from("access$100", java.util.Properties.class))) // FIXME: This is actually CoatConfig#toMap(Properties) Generate it?
+      .filter(m -> !m.equals(MethodAndParams.from("access$000", java.io.File.class))) // FIXME: This is actually CoatConfigBuilder#toMap(File) Generate it?
+      .filter(m -> !m.equals(MethodAndParams.from("access$100", java.util.Properties.class))) // FIXME: This is actually CoatConfigBuilder#toMap(Properties) Generate it?
       .collect(toList());
 
     assertThat(
@@ -4074,36 +3988,19 @@ public class CoatProcessorIT {
 
 
   /**
-   * Assert that calling the {@link CoatConfig#validate()} methods returns the given <code>validationFailureMessages</code>.
-   * @param instance the builderInstance to call <code>validate()</code> on
+   * Assert that calling the given exception <code>itex</code> that is thrown on building a Coat Config
+   * object from a generated builder contains the given <code>validationFailureMessages</code>.
+   * @param itex the exception that was thrown on building the config object
    * @param validationFailureMessages the expected validation failure messages
    */
-  private void assertValidationErrors(final Object instance, final ValidationFailure... validationFailureMessages) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException {
-    final Throwable thrown = catchThrowable(() ->
-      instance.getClass().getMethod("validate").invoke(instance)
-    );
-
-    assertThat(thrown)
-      .as("assert ValidationErrors")
-      .isInstanceOf(InvocationTargetException.class)
-      .hasCauseExactlyInstanceOf(ConfigValidationException.class)
-      ;
-
-    final ConfigValidationException validationException= (ConfigValidationException) thrown.getCause();
-    final ValidationResult result= validationException.getValidationResult();
-
-    assertThat(result.hasFailures()).isTrue();
-    assertThat(result.validationFailures())
+  private void assertValidationErrors(final InvocationTargetException itex, final ValidationFailure... validationFailureMessages) {
+    assertThat(itex)
+      .hasRootCauseInstanceOf(ConfigValidationException.class)
+      .rootCause()
+      .extracting("validationResult", as(type(ValidationResult.class)))
+      .matches(ValidationResult::hasFailures)
+      .extracting("validationFailures", as(collection(ValidationFailure.class)))
       .containsExactlyInAnyOrder(validationFailureMessages);
-  }
-
-
-  /**
-   * Assert that calling the {@link CoatConfig#validate()} succeeds without failure.
-   * @param instance the builderInstance to call <code>validate()</code> on
-   */
-  private void assertNoValidationErrors(final Object instance) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    instance.getClass().getMethod("validate").invoke(instance);
   }
 
 

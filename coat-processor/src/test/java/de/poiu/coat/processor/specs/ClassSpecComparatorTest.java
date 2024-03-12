@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,6 +71,7 @@ public class ClassSpecComparatorTest {
         .key("foo")
         .keySeparator(".")
         .mandatory(true)
+        .methodName("bar")
         .type(type)
         .build();
     }
@@ -84,8 +85,7 @@ public class ClassSpecComparatorTest {
       .annotatedType(typeElm)
       .addEmbeddedTypes(asEmbeddedClassSpecs(embedded))
       .targetPackage("foo")
-      .enumName("bar")
-      .className("baz")
+      .builderName("bar")
       .build();
   }
 

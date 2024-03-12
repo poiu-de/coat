@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package de.poiu.coat.processor;
 
-import de.poiu.coat.processor.codegeneration.CodeGenerator;
+import de.poiu.coat.processor.codegeneration.CoatBuilderGenerator;
 import de.poiu.coat.processor.examplecontent.ExampleContentHelper;
 import de.poiu.coat.processor.specs.ClassSpec;
 import de.poiu.coat.processor.specs.SpecHandler;
@@ -46,7 +46,6 @@ public class CoatProcessor extends AbstractProcessor {
 
   private SpecHandler          specHandler          = null;
   private Assertions           assertions           = null;
-  private CodeGenerator        codeGenerator        = null;
   private ExampleContentHelper exampleContentHelper = null;
 
 
@@ -66,7 +65,6 @@ public class CoatProcessor extends AbstractProcessor {
 
     this.specHandler          = new SpecHandler(processingEnv);
     this.assertions           = new Assertions(processingEnv);
-    this.codeGenerator        = new CodeGenerator(processingEnv);
     this.exampleContentHelper = new ExampleContentHelper(processingEnv);
 
     // for each Coat.Config annotation
@@ -91,7 +89,7 @@ public class CoatProcessor extends AbstractProcessor {
 
   private void generateCode(final ClassSpec coatClassSpec) {
     processingEnv.getMessager().printMessage(Kind.NOTE,
-                                             String.format("Generating code for %s.", coatClassSpec.annotatedType()));
+                                             String.format("Generating Coat config builder for %s.", coatClassSpec.annotatedType()));
 
     // Check all the assertions here
     this.assertions.assertIsInterface(coatClassSpec.annotatedType());
@@ -109,8 +107,9 @@ public class CoatProcessor extends AbstractProcessor {
 
     // Now start the code generation
     try {
-      this.codeGenerator.generateEnumCode(coatClassSpec);
-      this.codeGenerator.generateClassCode(coatClassSpec);
+      CoatBuilderGenerator.forType(coatClassSpec, processingEnv)
+        .generateAndWriteToFile();
+
       this.exampleContentHelper.generateExampleFile(coatClassSpec, processingEnv.getFiler());
     } catch (CoatProcessorException ex) {
       processingEnv.getMessager().printMessage(Kind.ERROR,
@@ -118,7 +117,7 @@ public class CoatProcessor extends AbstractProcessor {
                                                ex.getElement() != null ? ex.getElement() : annotatedInterface);
     } catch (Exception ex) {
       processingEnv.getMessager().printMessage(Kind.ERROR,
-                                               String.format("Error generating code for %s: %s", annotatedInterface, ex.getMessage()),
+                                               String.format("Error generating Coat config builder for %s: %s", annotatedInterface, ex.getMessage()),
                                                annotatedInterface);
       ex.printStackTrace();
     }

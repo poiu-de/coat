@@ -28,21 +28,24 @@ public class JavadocHelper {
     + "\n"
     + "@param file the config file to read\n"
     + "@return the $T created with the entries from the given file\n"
-    + "@throws IOException if reading the given file failed";
+    + "@throws IOException if reading the given file failed\n"
+    + "@throws ConfigValidationException";
 
 
   public static final String JAVADOC_ON_FROM_MAP= ""
     + "Create a new $T from the given config entries.\n"
     + "\n"
     + "@param props the config entries\n"
-    + "@return the $T created with the given entries";
+    + "@return the $T created with the given entries\n"
+    + "@throws ConfigValidationException";
 
 
   public static final String JAVADOC_ON_FROM_PROPERTIES= ""
     + "Create a new $T from the given config entries.\n"
     + "\n"
     + "@param jup the config entries\n"
-    + "@return the $T created with the given entries";
+    + "@return the $T created with the given entries\n"
+    + "@throws ConfigValidationException";
 
 
   public static final String JAVADOC_ON_FROM_ENV_VARS= ""
@@ -58,7 +61,8 @@ public class JavadocHelper {
     + "For example the environment variable\n"
     + "<code>SERVER_MQTT_HOST</code> will match the config key <code>server.mqttHost</code>.\n"
     + "\n"
-    + "@return the $T created with the entries in the current environment variables";
+    + "@return the $T created with the entries in the current environment variables\n"
+    + "@throws ConfigValidationException";
 
 
   public static final String JAVADOC_ON_ADD_FILE= ""

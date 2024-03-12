@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,12 +34,8 @@ public abstract class ClassSpec {
   public abstract List<EmbeddedTypeSpec> embeddedTypes();
 
   public abstract String                 targetPackage();
-  public abstract String                 enumName();
-  public abstract String                 className();
+  public abstract String                 builderName();
 
   public abstract List<TypeMirror>       converters();
   public abstract Optional<TypeMirror>   listParser();
-
-  public          String                 fqEnumName()  { return targetPackage() + "." + enumName(); }
-  public          String                 fqClassName() { return targetPackage() + "." + className(); }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,17 +65,16 @@ public class NameUtils {
 
 
   /**
-   * Return a class name for the given type element to be used for the generated config class.
+   * Return a class name for the given type element to be used for the generated builder class.
    * <p>
-   * The name will be taken from the “className” property of the @Coat.Config annotation if the type,
-   * if given. Otherwise the class name will be derived from the given type. In that case, if the
-   * type name starts with an underscore, the underscore will just be removed. Otherwise the type name
-   * will be prepended by “Immutable”.
+   * The name will be taken from the “className” property of the @Coat.Config annotation of the type,
+   * if given. Otherwise the class name will be derived from the given type. In that case the type
+   * name will be appended with “Builder”.
    *
-   * @param annotatedInterface the type for which to generate the config class name
-   * @return the derived config class name
+   * @param annotatedInterface the type for which to generate the builder class name
+   * @return the derived builder class name
    */
-  public static String deriveGeneratedClassName(final TypeElement annotatedInterface) {
+  public static String deriveGeneratedBuilderName(final TypeElement annotatedInterface) {
     final String interfaceName= annotatedInterface.getSimpleName().toString();
     final Coat.Config typeAnnotation= annotatedInterface.getAnnotation(Coat.Config.class);
 
@@ -83,44 +82,9 @@ public class NameUtils {
     if (typeAnnotation != null && !typeAnnotation.className().trim().isEmpty()) {
       className= typeAnnotation.className();
     } else {
-      if (interfaceName.startsWith("_")) {
-        className= interfaceName.substring(1);
-      } else {
-        className= "Immutable" + interfaceName;
-      }
+      className= interfaceName + "Builder";
     }
 
     return className;
-  }
-
-
-  /**
-   * Return an enum name for the given type element to be used for the generated config class.
-   * <p>
-   * This is done by appending “Param” to the base name of the enums name.
-   * The base name will be taken from the “className” property of the @Coat.Config annotation if the type,
-   * if given. Otherwise the class name will be derived from the given type. In that case, if the
-   * type name starts with an underscore, the underscore will just be removed. Otherwise the base name
-   * is the same as the type name.
-   *
-   * @param annotatedInterface the type for which to generate the enum name
-   * @return the derived enum name
-   */
-  public static String deriveGeneratedEnumName(final TypeElement annotatedInterface) {
-    final String interfaceName= annotatedInterface.getSimpleName().toString();
-    final Coat.Config typeAnnotation= annotatedInterface.getAnnotation(Coat.Config.class);
-
-    final String enumName;
-    if (typeAnnotation != null && typeAnnotation.className() != null && !typeAnnotation.className().trim().isEmpty()) {
-      enumName= typeAnnotation.className() + "Param";
-    } else {
-      if (interfaceName.startsWith("_")) {
-        enumName= interfaceName.substring(1) + "Param";
-      } else {
-        enumName= interfaceName + "Param";
-      }
-    }
-
-    return enumName;
   }
 }

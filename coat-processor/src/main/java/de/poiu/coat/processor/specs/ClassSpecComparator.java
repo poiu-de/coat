@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class ClassSpecComparator implements Comparator<ClassSpec> {
     if (embDepth1 != embDepth2) {
       return embDepth1 - embDepth2;
     } else {
-      return o1.className().compareTo(o2.className());
+      return o1.builderName().compareTo(o2.builderName());
     }
   }
 

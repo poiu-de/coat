@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,24 +37,25 @@ public class ExampleApp {
     final Properties props= new Properties();
     props.load(ExampleApp.class.getResourceAsStream("/app.properties"));
 
-    // The “ImmutableAppConfig” is the generated config class.
-    // We construct it and hand it the properties from the properties file.
-    final ImmutableAppConfig appConfig= ImmutableAppConfig.from(props);
+    // The “AppConfigBullder” is the generated builder class.
+    // We use it to construct an AppConfig implementation and hand it the properties from the properties file.
+
+    final AppConfig appConfig;
+    try {
+      appConfig= AppConfigBuilder.from(props);
+    } catch (ConfigValidationException ex) {
+      // In case not all mandatory fields are filled or not all values can be
+      // converted to their real types a “ConfigValidationException” is thrown.
+      //
+      // In that case print the problematic keys and their assigned values and stop here.
+      System.err.println("Error in config:\n" + ex.getValidationResult().toString());
+      System.exit(1);
+      return;
+    }
 
     // The generated config contains a “toString()” method that prints the whole config
     // with all actually assigned values.
     System.out.println("Configuration:\n" + appConfig.toString());
-
-    // Use Coat Validation to assert that all mandatory fields are filled and all values can be
-    // converted to their real types.
-    // To access the “validate()” method we need to call it on the concrete generated class.
-    try {
-      appConfig.validate();
-    } catch (ConfigValidationException ex) {
-      // In case the validation fails, print the problematic keys and their assigned values.
-      System.err.println("Error in config:\n" + ex.getValidationResult().toString());
-      System.exit(1);
-    }
 
     // Use Bean Validation to assert that all values adhere to their restrictions
     final Validator validator = Validation.byDefaultProvider()
@@ -76,8 +77,6 @@ public class ExampleApp {
   }
 
 
-  // To access the config values we do not need the concrete generated class and can just use
-  // the hand written interface.
   private static void startApplication(final AppConfig appConfig) {
     // Use the embedded MqttConfig to connect to the MQTT broker.
     startMqttClient(appConfig.mqtt());

@@ -35,7 +35,7 @@ public class TypeNameVisitor extends SimpleTypeVisitor9<String, Void> {
       case BOOLEAN:
         return "boolean";
       case INT:
-      return "int";
+        return "int";
       case LONG:
         return "long";
       case DOUBLE:

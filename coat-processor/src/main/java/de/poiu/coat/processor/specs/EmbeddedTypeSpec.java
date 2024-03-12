@@ -35,6 +35,8 @@ public abstract class EmbeddedTypeSpec {
   public abstract String               keySeparator();
   public abstract boolean              mandatory();
 
+  public abstract String               methodName();
+
   public abstract TypeMirror           type();
 
 

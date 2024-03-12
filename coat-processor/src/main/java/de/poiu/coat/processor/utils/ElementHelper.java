@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,6 +206,10 @@ public class ElementHelper {
    */
   @Nullable
   public AnnotationValue getDefaultValue(final String key, final @Nullable AnnotationMirror annotation) {
+    if (annotation == null) {
+      return null;
+    }
+
     final var annotationParams = annotation.getElementValues();
     for (final Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationParams.entrySet()) {
       final ExecutableElement k = entry.getKey();

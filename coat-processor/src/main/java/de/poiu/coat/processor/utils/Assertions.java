@@ -353,6 +353,6 @@ public class Assertions {
     }
 
 
-    return !this.typeHelper.supportedTypes.contains(returnTypeKind);
+    return !this.typeHelper.supportedPrimitiveTypes.contains(returnTypeKind);
   }
 }

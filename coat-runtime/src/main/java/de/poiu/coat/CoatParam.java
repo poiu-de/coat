@@ -22,7 +22,7 @@ import de.poiu.coat.convert.ListParser;
 /**
  * Specification of a single accessor of a config class.
  */
-public interface ConfigParam {
+public interface CoatParam {
 
   /** The key to expect in the config file. */
   public String  key();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,11 +94,14 @@ public class SpecHandler {
     if (!GENERATED_CLASS_SPECS.containsKey(annotatedType.getQualifiedName())) {
       final AnnotationMirror coatConfigAnnotation = this.elementHelper.getAnnotation(this.typeHelper.coatConfigType, annotatedType);
 
+      if (coatConfigAnnotation == null) {
+        return unsupported(annotatedType);
+      }
+
       final List<AccessorSpec>        accessorSpecs = this.createAccessorSpecsRecursively(annotatedType);
       final List<EmbeddedTypeSpec>    embeddedSpecs = this.createEmbeddedTypeSpecs(annotatedType);
       final String                    targetPackage = this.pEnv.getElementUtils().getPackageOf(annotatedType).getQualifiedName().toString();
-      final String                    enumName      = NameUtils.deriveGeneratedEnumName(annotatedType);
-      final String                    className     = NameUtils.deriveGeneratedClassName(annotatedType);
+      final String                    builderName   = NameUtils.deriveGeneratedBuilderName(annotatedType);
       final List<TypeMirror>          converter     = this.elementHelper.getAnnotationValueAsTypeMirrorList("converters", coatConfigAnnotation, IGNORE_DEFAULT);
       final Optional<TypeMirror>      listParser    = Optional.ofNullable(this.elementHelper.getAnnotationValueAsTypeMirror("listParser", coatConfigAnnotation, IGNORE_DEFAULT));
 
@@ -107,8 +110,7 @@ public class SpecHandler {
         .accessors(accessorSpecs)
         .embeddedTypes(embeddedSpecs)
         .targetPackage(targetPackage)
-        .enumName(enumName)
-        .className(className)
+        .builderName(builderName)
         .converters(converter)
         .listParser(listParser)
         .build();
@@ -180,6 +182,7 @@ public class SpecHandler {
       .key(key)
       .keySeparator(keySeparator)
       .mandatory(mandatory)
+      .methodName(methodName)
       .type(type)
       .build();
   }
@@ -295,8 +298,7 @@ public class SpecHandler {
       .accessors(EMPTY_LIST)
       .embeddedTypes(EMPTY_LIST)
       .targetPackage("unsupportedpackage")
-      .enumName("UnsupportedEnum"+typeElement.getSimpleName().toString())
-      .className("UnsupportedClass"+typeElement.getSimpleName().toString())
+      .builderName("UnsupportedBuilder"+typeElement.getSimpleName().toString())
       .build();
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2024 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ package de.poiu.coat.annotation;
  * All concrete annotations are inner classes of this one.
  *
  */
+import de.poiu.coat.convert.util.CoatConversionUtils;
 import de.poiu.coat.convert.Converter;
 import de.poiu.coat.convert.ListParser;
 import de.poiu.coat.casing.CasingStrategy;
@@ -34,7 +35,25 @@ import static de.poiu.coat.casing.CasingStrategy.AS_IS;
  * Container annotation for different concrete annotations supported by Coat.
  *
  */
-public @interface Coat {
+public abstract class Coat {
+
+
+  /**
+   * Register a custom converter globally for all config classes.
+   * @param converter The converter to register
+   */
+  public static void registerGlobalConverter(final Converter<?> converter) {
+    CoatConversionUtils.registerGlobalConverter(converter);
+  }
+
+
+  /**
+   * Register a custom list parser globally for all config classes.
+   * @param listParser The list parser to register
+   */
+  public static void registerGlobalListParser(final ListParser listParser) {
+    CoatConversionUtils.registerGlobalListParser(listParser);
+  }
 
   /**
    * All config interfaces that should be processed by Coat <i>must</i> be annotated with <code>@Coat.Config</code>.
