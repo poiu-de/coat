@@ -19,6 +19,7 @@ import de.poiu.coat.annotation.Coat;
 import de.poiu.coat.casing.CasingStrategy;
 import jakarta.validation.constraints.Size;
 import java.net.InetAddress;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -33,7 +34,7 @@ public interface MqttConfig {
 
   /** The address(es) of the MQTT broker. */
   @Size(min=1 )                                                     // Use Bean Validation to specify that at least one broker address must be given
-  public InetAddress[]      getBrokerAddresses();                   // Multiple addresses can be specified (1 primary, n fallback addresses)
+  public List<InetAddress>  getBrokerAddresses();                   // Multiple addresses can be specified (1 primary, n fallback addresses)
 
   /** The port to communicate with the MQTT broker. */
   @Coat.Param(defaultValue = "1883")                                // The default port is 1883

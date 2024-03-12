@@ -16,6 +16,7 @@
 package de.poiu.coat.example.mqtt;
 
 import java.net.InetAddress;
+import java.util.List;
 
 
 /**
@@ -29,7 +30,7 @@ public class DummyMqttClient {
    * The given addresses must include at least one address, but can have several fallback addresses.
    * They will be tried sequentially.
    */
-  public DummyMqttClient(final InetAddress[] brokerAddresses, final int port) {
+  public DummyMqttClient(final List<InetAddress> brokerAddresses, final int port) {
     // no real functionality
   }
 
