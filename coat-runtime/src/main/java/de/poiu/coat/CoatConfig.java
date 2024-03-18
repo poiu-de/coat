@@ -67,6 +67,7 @@ import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
@@ -122,6 +123,8 @@ public abstract class CoatConfig {
   private final List<EmbeddedConfig>        embeddedConfigs=  new ArrayList<>();
 
   private final Map<Class<?>, Converter<?>> customConverters= new ConcurrentHashMap<>();
+
+  private final AtomicReference<ListParser> customListParser= new AtomicReference<>(listParser); // by default equal to the global ListParser
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -613,6 +616,13 @@ public abstract class CoatConfig {
         throw new TypeConversionException("Error instantiating “" + paramListParserClass.getCanonicalName() + "”.", ex);
       }
     }
+
+    // Then try the converter registered for this CoatConfig
+    final ListParser customListParser = this.customListParser.get();
+    if (customListParser != null) {
+      return customListParser;
+    }
+
     // Then try the ListParser registered for this CoatConfig (or the default one)
     return this.listParser;
   }
@@ -739,6 +749,15 @@ public abstract class CoatConfig {
     } catch (TypeConversionException ex) {
       throw new UncheckedTypeConversionException("Error trying to find base class of converter “" + converter.getClass().getCanonicalName() + "”", ex);
     }
+  }
+
+
+  /**
+   * Register a custom converter for this config class.
+   * @param converter The converter to register
+   */
+  protected void registerCustomListParser(final ListParser listParser) {
+    this.customListParser.set(listParser);
   }
 
 

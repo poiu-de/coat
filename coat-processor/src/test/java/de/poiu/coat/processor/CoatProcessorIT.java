@@ -3570,16 +3570,31 @@ public class CoatProcessorIT {
             "\n" + "" +
             "\n" + "import de.poiu.coat.annotation.Coat;" +
             "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.List;" +
             "\n" + "" +
             "\n" + "@Coat.Config(listParser=CommaListParser.class)" +
             "\n" + "public interface TestConfig {" +
             "\n" + "" +
             "\n" + "  public String normalString();" +
             "\n" + "" +
-            "\n" + "  public String[] commaSeparated();" +
+            "\n" + "  public List<String> commaSeparated();" +
             "\n" + "" +
             "\n" + "  @Coat.Param(listParser=PipeListParser.class)" +
-            "\n" + "  public String[] pipeSeparated();" +
+            "\n" + "  public List<String> pipeSeparated();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.OtherConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import java.nio.charset.Charset;" +
+            "\n" + "import java.util.List;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface OtherConfig {" +
+            "\n" + "" +
+            "\n" + "  public List<String> whitespaceSeparated();" +
             "\n" + "}" +
             ""));
 
@@ -3593,14 +3608,20 @@ public class CoatProcessorIT {
                                 "com.example.PipeListParser",
                                 "com.example.TestConfig",
                                 "com.example.TestConfigParam",
-                                "com.example.ImmutableTestConfig");
+                                "com.example.OtherConfig",
+                                "com.example.OtherConfigParam",
+                                "com.example.ImmutableTestConfig",
+                                "com.example.ImmutableOtherConfig");
 
     final Class<?> generatedConfigClass= this.loadClass("com.example.ImmutableTestConfig", compilation);
+    final Class<?> generatedOtherClass= this.loadClass("com.example.ImmutableOtherConfig", compilation);
 
     this.assertMethods(generatedConfigClass,
                        "normalString",
                        "commaSeparated",
                        "pipeSeparated");
+    this.assertMethods(generatedOtherClass,
+                       "whitespaceSeparated");
     // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
     //        In fact we would not even need this assertion above, as we are callign each of these methods.
 
@@ -3609,12 +3630,17 @@ public class CoatProcessorIT {
       "commaSeparated", "first string, second string",
       "pipeSeparated", "first, string | second, string"
     ));
+    final Object otherInstance = this.createInstance(generatedOtherClass, mapOf(
+      "whitespaceSeparated", "first, string | second, string"
+    ));
 
     this.assertResult(instance, "normalString", "some | value");
-    this.assertResult(instance, "commaSeparated", new String[]{"first string", "second string"});
-    this.assertResult(instance, "pipeSeparated", new String[]{"first, string", "second, string"});
+    this.assertResult(instance, "commaSeparated", List.of("first string", "second string"));
+    this.assertResult(instance, "pipeSeparated", List.of("first, string", "second, string"));
+    this.assertResult(otherInstance, "whitespaceSeparated", List.of("first,", "string", "|", "second,", "string"));
 
     this.assertNoValidationErrors(instance);
+    this.assertNoValidationErrors(otherInstance);
   }
 
 

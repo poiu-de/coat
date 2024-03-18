@@ -603,7 +603,7 @@ public class CodeGenerator {
     final CodeBlock.Builder codeBlockBuilder = CodeBlock.builder();
     codeBlockBuilder.add("\n");
     codeBlockBuilder.addStatement(
-          "super.registerListParser(new $T())",
+          "super.registerCustomListParser(new $T())",
           annotatedInterface.listParser().get()
         );
 
