@@ -20,7 +20,7 @@ import org.immutables.value.Value;
 
 
 /**
- * The result of calling {@link de.poiu.coat.CoatConfig#validate()} in case validation fails.
+ * The result of calling {@link de.poiu.coat.CoatConfigBuilder#validate()} in case validation fails.
  * <p>
  * The thrown exception will always contain an instance of this class.
  * <p>

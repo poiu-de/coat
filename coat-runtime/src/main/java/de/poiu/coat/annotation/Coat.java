@@ -15,13 +15,6 @@
  */
 package de.poiu.coat.annotation;
 
-
-/**
- * Base annotation for all Coat annotations.
- *
- * All concrete annotations are inner classes of this one.
- *
- */
 import de.poiu.coat.convert.util.CoatConversionUtils;
 import de.poiu.coat.convert.Converter;
 import de.poiu.coat.convert.ListParser;
@@ -32,10 +25,12 @@ import java.lang.annotation.Target;
 import static de.poiu.coat.casing.CasingStrategy.AS_IS;
 
 /**
- * Container annotation for different concrete annotations supported by Coat.
- *
- */
-public abstract class Coat {
+ * Container for Coat annotations.
+ * <p>
+ * All concrete annotations are inner classes of this one.
+ * <p>
+ * Also this class provides static methods for configuration at runtime.
+ */public abstract class Coat {
 
 
   /**
@@ -58,22 +53,13 @@ public abstract class Coat {
   /**
    * All config interfaces that should be processed by Coat <i>must</i> be annotated with <code>@Coat.Config</code>.
    * <p>
-   * For each interface that is annotated with <code>@Coat.Config</code> two classes are generated.
-   * <ul>
-   *   <li>An enum that contains one constant for each accessor method annotated with {@link Param}
-   *       named <code><i>&lt;ConfigClass&gt;</i>Param</code>, where <i>&lt;ConfigClass&gt;</i> is the name
-   *       of the annotated interface.</li>
-   *   <li>A concrete class implementing the annoated interface that derives from {@link de.poiu.coat.CoatConfig}
-   *       and provides the main way to get the actual config values. By default it is named
-   *       <code>Immutable<i>&lt;ConfigClass&gt;</i></code>. To let the generator generate a different name,
-   *       specify that name with the option {@link #className()}.
-   * </ul>
-   *
+   * For each interface that is annotated with <code>@Coat.Config</code> a builder class will be
+   * generated that allows constructing an implementation of that config interface.
    */
   @Target(ElementType.TYPE)
   public @interface Config {
     /**
-     * The class name to use for the generated class.
+     * The class name to use for the generated builder class.
      * It will be generated in the same package as the annotated interface.
      * Therefore it must be a simple class name and not a fully qualified class name.
      */
@@ -98,12 +84,14 @@ public abstract class Coat {
 
 
   /**
-   * Each accessor method in a <code>@Coat.Config</code> annotated interface <i>must</i> be annotated with <code>@Coat.Param</code>.
+   * Each accessor method in a <code>@Coat.Config</code> annotated interface <i>may</i> be annotated
+   * with <code>@Coat.Param</code>.
    * <p>
    * The option {@link #key()} specifies the config key as it is used in the config file.
+   * If it is misseng the key will be inferred from the acessors name.
    * <p>
-   * The option {@link #defaultValue()} may be specified to provide a default value in case no value is assigned to this parameter in the config file.
-   *
+   * The option {@link #defaultValue()} may be specified to provide a default value in case no value
+   * is assigned to this parameter in the config file.
    */
   @Target(ElementType.METHOD)
   public @interface Param {
@@ -127,15 +115,16 @@ public abstract class Coat {
 
 
   /**
-   * An accessor method in a <code>@Coat.Config</code> annotated interface may be annotated with <code>@Coat.Embedded</code>
-   * instead of <code>@Coat.Param</code> to include an instance of another <code>@Coat.Config</code> annotated interface.
+   * Config interfaces annotated with <code>@Coat.Config</code> can be embedded in other
+   * <code>@Coat.Config</code> interfaces. In that case the corresponding accessor <i>must</i> be
+   * added.
+   * <p>
    * This allows encapsulation and better reuse of config values than simple interface inheritance.
    * <p>
    * The option {@link #key()} specifies the config key as it is used in the config file.
    * <p>
-   * The option {@link #keySeparator()} specifies the separator between the key of this embedded config and the actual keys
-   * inside the embedded config. It defaults to a single dot.
-   * <p>
+   * The option {@link #keySeparator()} specifies the separator between the key of this embedded
+   * config and the actual keys inside the embedded config. It defaults to a single dot.
    */
   @Target(ElementType.METHOD)
   public @interface Embedded {
