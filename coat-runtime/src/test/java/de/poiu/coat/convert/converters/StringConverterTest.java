@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
 
-import de.poiu.coat.convert.converters.FileConverter;
-import java.io.File;
+import de.poiu.coat.convert.converters.StringConverter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,16 +24,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  *
  */
-public class FileConverterTest {
+public class StringConverterTest {
 
-  private final FileConverter c= new FileConverter();
+  private final StringConverter c= new StringConverter();
+
+  @Test
+  public void testConvertSimpleString() throws Exception {
+    assertThat(c.convert("some string")).isEqualTo("some string");
+    assertThat(c.convert("some other string")).isEqualTo("some other string");
+  }
 
 
   @Test
-  public void testConvert() throws Exception {
-    assertThat(c.convert("someFile.txt")).isEqualTo(new File("someFile.txt"));
-    assertThat(c.convert("./someFile.txt")).isEqualTo(new File("./someFile.txt"));
-    assertThat(c.convert("/path/to/someFile.txt")).isEqualTo(new File("/path/to/someFile.txt"));
+  public void testConvertNullOrBlank() throws Exception {
+    assertThat(c.convert(null)).isEqualTo(null);
+    assertThat(c.convert("")).isEqualTo(null);
+    assertThat(c.convert("   ")).isEqualTo(null);
+    assertThat(c.convert("  \t\n\r ")).isEqualTo(null);
   }
 
 }
