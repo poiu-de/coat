@@ -48,25 +48,25 @@ public class DurationConverter implements Converter<Duration> {
 
     try {
       if (s.endsWith("ns")) {
-        final long amount= Long.valueOf(s.substring(0, s.length() - "ns".length()));
+        final long amount= Long.parseLong(s.substring(0, s.length() - "ns".length()));
         return Duration.of(amount, ChronoUnit.NANOS);
       } else if (s.endsWith("ms")) {
-        final long amount= Long.valueOf(s.substring(0, s.length() - "ms".length()));
+        final long amount= Long.parseLong(s.substring(0, s.length() - "ms".length()));
         return Duration.of(amount, ChronoUnit.MILLIS);
       } else if (s.endsWith("s")) {
-        final long amount= Long.valueOf(s.substring(0, s.length() - "s".length()));
+        final long amount= Long.parseLong(s.substring(0, s.length() - "s".length()));
         return Duration.of(amount, ChronoUnit.SECONDS);
       } else if (s.endsWith("m")) {
-        final long amount= Long.valueOf(s.substring(0, s.length() - "m".length()));
+        final long amount= Long.parseLong(s.substring(0, s.length() - "m".length()));
         return Duration.of(amount, ChronoUnit.MINUTES);
       } else if (s.endsWith("h")) {
-        final long amount= Long.valueOf(s.substring(0, s.length() - "h".length()));
+        final long amount= Long.parseLong(s.substring(0, s.length() - "h".length()));
         return Duration.of(amount, ChronoUnit.HOURS);
       } else if (s.endsWith("d")) {
-        final long amount= Long.valueOf(s.substring(0, s.length() - "d".length()));
+        final long amount= Long.parseLong(s.substring(0, s.length() - "d".length()));
         return Duration.of(amount, ChronoUnit.DAYS);
       } else {
-        final long amount= Long.valueOf(s);
+        final long amount= Long.parseLong(s);
         return Duration.of(amount, ChronoUnit.MILLIS);
       }
     } catch (final ArithmeticException | DateTimeException ex) {
