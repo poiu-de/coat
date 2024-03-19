@@ -3061,7 +3061,7 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.converters.Converter;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class HurzConverter implements Converter<String> {" +
@@ -3076,8 +3076,8 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.Converter;" +
-            "\n" + "import de.poiu.coat.convert.StringConverter;" +
+            "\n" + "import de.poiu.coat.convert.converters.Converter;" +
+            "\n" + "import de.poiu.coat.convert.converters.StringConverter;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class UppercaseConverter implements Converter<String> {" +
@@ -3093,8 +3093,8 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.Converter;" +
-            "\n" + "import de.poiu.coat.convert.StringConverter;" +
+            "\n" + "import de.poiu.coat.convert.converters.Converter;" +
+            "\n" + "import de.poiu.coat.convert.converters.StringConverter;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class LowercaseConverter implements Converter<String> {" +
@@ -3179,7 +3179,7 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.converters.Converter;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class HurzConverter implements Converter<String> {" +
@@ -3194,8 +3194,8 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.Converter;" +
-            "\n" + "import de.poiu.coat.convert.StringConverter;" +
+            "\n" + "import de.poiu.coat.convert.converters.Converter;" +
+            "\n" + "import de.poiu.coat.convert.converters.StringConverter;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class UppercaseConverter implements Converter<String> {" +
@@ -3269,8 +3269,8 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.Converter;" +
-            "\n" + "import de.poiu.coat.convert.StringConverter;" +
+            "\n" + "import de.poiu.coat.convert.converters.Converter;" +
+            "\n" + "import de.poiu.coat.convert.converters.StringConverter;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class UppercaseConverter extends StringConverter {" +
@@ -3336,7 +3336,7 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.converters.Converter;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class HurzConverter implements Converter<String> {" +
@@ -3351,7 +3351,7 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.Converter;" +
+            "\n" + "import de.poiu.coat.convert.converters.Converter;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class UppercaseConverter implements Converter<String> {" +
@@ -3463,7 +3463,7 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.ListParser;" +
+            "\n" + "import de.poiu.coat.convert.listparsers.ListParser;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class CommaListParser implements ListParser {" +
@@ -3478,7 +3478,7 @@ public class CoatProcessorIT {
             "" +
             "\n" + "package com.example;" +
             "\n" + "" +
-            "\n" + "import de.poiu.coat.convert.ListParser;" +
+            "\n" + "import de.poiu.coat.convert.listparsers.ListParser;" +
             "\n" + "import de.poiu.coat.convert.TypeConversionException;" +
             "\n" + "" +
             "\n" + "public class PipeListParser implements ListParser {" +
