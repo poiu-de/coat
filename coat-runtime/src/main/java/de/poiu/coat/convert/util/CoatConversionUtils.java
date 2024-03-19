@@ -15,6 +15,7 @@
  */
 package de.poiu.coat.convert.util;
 
+import de.poiu.coat.CoatConfigBuilder;
 import de.poiu.coat.convert.BooleanConverter;
 import de.poiu.coat.convert.CharsetConverter;
 import de.poiu.coat.convert.Converter;
@@ -24,12 +25,11 @@ import de.poiu.coat.convert.FileConverter;
 import de.poiu.coat.convert.FloatConverter;
 import de.poiu.coat.convert.InetAddressConverter;
 import de.poiu.coat.convert.IntegerConverter;
-import de.poiu.coat.convert.ListParser;
+import de.poiu.coat.listparse.ListParser;
 import de.poiu.coat.convert.LocalDateConverter;
 import de.poiu.coat.convert.LocalDateTimeConverter;
 import de.poiu.coat.convert.LocalTimeConverter;
 import de.poiu.coat.convert.LongConverter;
-import de.poiu.coat.convert.MessageDigestConverter;
 import de.poiu.coat.convert.PathConverter;
 import de.poiu.coat.convert.StringConverter;
 import de.poiu.coat.convert.TypeConversionException;
@@ -41,7 +41,6 @@ import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -73,7 +72,6 @@ public class CoatConversionUtils {
     globalConverters.put(Path.class,          new PathConverter());
     globalConverters.put(Charset.class,       new CharsetConverter());
     globalConverters.put(InetAddress.class,   new InetAddressConverter());
-    globalConverters.put(MessageDigest.class, new MessageDigestConverter());
     globalConverters.put(Integer.class,       new IntegerConverter());
     globalConverters.put(Long.class,          new LongConverter());
     globalConverters.put(Float.class,         new FloatConverter());
