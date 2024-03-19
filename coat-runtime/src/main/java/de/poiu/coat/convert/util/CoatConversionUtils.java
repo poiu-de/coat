@@ -34,11 +34,13 @@ import de.poiu.coat.convert.converters.LocalTimeConverter;
 import de.poiu.coat.convert.converters.LongConverter;
 import de.poiu.coat.convert.converters.PathConverter;
 import de.poiu.coat.convert.converters.StringConverter;
+import de.poiu.coat.convert.converters.URIConverter;
 import de.poiu.coat.convert.listparsers.WhitespaceSeparatedListParser;
 import java.io.File;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -76,6 +78,7 @@ public class CoatConversionUtils {
     globalConverters.put(Long.class,          new LongConverter());
     globalConverters.put(Float.class,         new FloatConverter());
     globalConverters.put(Double.class,        new DoubleConverter());
+    globalConverters.put(URI.class,           new URIConverter());
   }
 
   private static final AtomicReference<ListParser> globalListParser= new AtomicReference<>(new WhitespaceSeparatedListParser());
