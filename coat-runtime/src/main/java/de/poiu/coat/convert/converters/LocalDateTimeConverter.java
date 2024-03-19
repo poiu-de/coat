@@ -13,30 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
 
-import java.time.LocalDate;
+import de.poiu.coat.convert.TypeConversionException;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 
 
 /**
- * Converts an input String to to a {@link LocalDate}.
+ * Converts an input String to to a {@link LocalDateTime}.
  * <p>
- * The same rules for the input string apply as for {@link LocalDate#parse(java.lang.CharSequence)}.
- * Therefore it must be given in ISO format such as 2020-12-31.
+ * The same rules for the input string apply as for {@link LocalDateTime#parse(java.lang.CharSequence)}.
+ * Therefore it must be given in ISO-8601 format such as 2020-12-31T18:00:30.
  *
  */
-public class LocalDateConverter implements Converter<LocalDate> {
+public class LocalDateTimeConverter implements Converter<LocalDateTime> {
 
-  public LocalDate convert(final String s) throws TypeConversionException {
+  public LocalDateTime convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
     }
 
     try {
-      return LocalDate.parse(s);
+      return LocalDateTime.parse(s);
     } catch (final DateTimeParseException ex) {
-      throw new TypeConversionException(s, LocalDate.class, ex);
+      throw new TypeConversionException(s, LocalDateTime.class, ex);
     }
   }
 }

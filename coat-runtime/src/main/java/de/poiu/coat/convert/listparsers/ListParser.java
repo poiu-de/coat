@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2023 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.listparsers;
+
+import de.poiu.coat.convert.TypeConversionException;
 
 
 /**
- * Base class for converters that convert Strings to concrete types.
+ * Base class for parsers that convert Strings to Arrays of Strings.
  *
  */
-public interface Converter<T> {
+public interface ListParser {
 
   /**
-   * Convert the given String <code>s</code> into type <code>T</code>.
+   * Convert the given String <code>s</code> into an array of Strings.
    *
-   * If <code>s</code> is <code>null</code> or an empty String, this method should usually return <code>null</code>.
+   * If <code>s</code> is <code>null</code> or an empty String, this method should usually return an empty array.
    * <p>
    * If the input cannot be converted, a <code>TypeConversionException</code> must be thrown.
    *
@@ -33,5 +35,5 @@ public interface Converter<T> {
    * @return the result of the conversion
    * @throws TypeConversionException if conversion failed for some reason
    */
-  public T convert(final String s) throws TypeConversionException;
+  public String[] convert(final String s) throws TypeConversionException;
 }

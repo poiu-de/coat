@@ -15,6 +15,8 @@
  */
 package de.poiu.coat.convert;
 
+import de.poiu.coat.convert.converters.Converter;
+
 
 /**
  * An exception thrown by a {@link Converter} if the given input String cannot be converted

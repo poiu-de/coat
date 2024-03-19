@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2023 The Coat Authors
+ * Copyright (C) 2020 - 2021 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
+
+import de.poiu.coat.convert.TypeConversionException;
+import java.nio.charset.Charset;
 
 
 /**
- * Converts an input String to to a {@link java.lang.Long}.
+ * Converts an input String to a {@link Charset}.
  * <p>
- * The same rules for the input string apply as for {@link java.lang.Long#valueOf(java.lang.String)}.
+ * The same rules for the input string apply as for {@link Charset#forName(java.lang.String)}.
  *
  */
-public class LongConverter implements Converter<Long> {
+public class CharsetConverter implements Converter<Charset> {
 
-  public Long convert(final String s) throws TypeConversionException {
+  public Charset convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
     }
 
-    return Long.valueOf(s);
+    try {
+      return Charset.forName(s);
+    } catch (final IllegalArgumentException ex) {
+      throw new TypeConversionException(s, Charset.class, ex);
+    }
   }
 }

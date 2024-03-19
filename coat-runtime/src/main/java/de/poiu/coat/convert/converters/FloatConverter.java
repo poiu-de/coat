@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2021 The Coat Authors
+ * Copyright (C) 2020 - 2023 The Coat Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
 
-import java.io.File;
+import de.poiu.coat.convert.TypeConversionException;
 
 
 /**
- * Converts an input String into a {@link File}.
+ * Converts an input String to to a {@link java.lang.Float}.
  * <p>
- * No checks will be done on the existance, readability, etc. of the file.
+ * The same rules for the input string apply as for {@link java.lang.Float#valueOf(java.lang.String)}.
  *
  */
-public class FileConverter implements Converter<File> {
-  public File convert(final String s) throws TypeConversionException {
+public class FloatConverter implements Converter<Float> {
+
+  public Float convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
     }
 
-    return new File(s);
+    return Float.valueOf(s);
   }
 }

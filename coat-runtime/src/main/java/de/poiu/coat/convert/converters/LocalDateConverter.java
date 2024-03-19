@@ -13,24 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
+
+import de.poiu.coat.convert.TypeConversionException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 
 /**
- * Converts an input String into a String.
+ * Converts an input String to to a {@link LocalDate}.
  * <p>
- * The only actual conversion is returning <code>null</code> for a non-null, but blank String.
- * <p>
- * This converter will never throw a {@code TypeConversionException} as converting a String into a
- * String will always succeed.
+ * The same rules for the input string apply as for {@link LocalDate#parse(java.lang.CharSequence)}.
+ * Therefore it must be given in ISO format such as 2020-12-31.
  *
  */
-public class StringConverter implements Converter<String> {
-  public String convert(final String s) throws TypeConversionException {
+public class LocalDateConverter implements Converter<LocalDate> {
+
+  public LocalDate convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
     }
 
-    return s;
+    try {
+      return LocalDate.parse(s);
+    } catch (final DateTimeParseException ex) {
+      throw new TypeConversionException(s, LocalDate.class, ex);
+    }
   }
 }

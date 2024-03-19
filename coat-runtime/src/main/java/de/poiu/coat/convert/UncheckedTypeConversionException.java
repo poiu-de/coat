@@ -15,6 +15,7 @@
  */
 package de.poiu.coat.convert;
 
+import de.poiu.coat.convert.converters.Converter;
 import java.util.Objects;
 
 

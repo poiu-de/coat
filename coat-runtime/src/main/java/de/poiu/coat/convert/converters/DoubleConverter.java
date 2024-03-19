@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
+
+import de.poiu.coat.convert.TypeConversionException;
 
 
 /**
- * Converts an input String to to a {@link java.lang.Float}.
+ * Converts an input String to to a {@link java.lang.Double}.
  * <p>
- * The same rules for the input string apply as for {@link java.lang.Float#valueOf(java.lang.String)}.
+ * The same rules for the input string apply as for {@link java.lang.Double#valueOf(java.lang.String)}.
  *
  */
-public class FloatConverter implements Converter<Float> {
+public class DoubleConverter implements Converter<Double> {
 
-  public Float convert(final String s) throws TypeConversionException {
+  public Double convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
     }
 
-    return Float.valueOf(s);
+    return Double.valueOf(s);
   }
 }

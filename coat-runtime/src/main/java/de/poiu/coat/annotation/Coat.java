@@ -16,8 +16,8 @@
 package de.poiu.coat.annotation;
 
 import de.poiu.coat.convert.util.CoatConversionUtils;
-import de.poiu.coat.convert.Converter;
-import de.poiu.coat.convert.ListParser;
+import de.poiu.coat.convert.converters.Converter;
+import de.poiu.coat.convert.listparsers.ListParser;
 import de.poiu.coat.casing.CasingStrategy;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;

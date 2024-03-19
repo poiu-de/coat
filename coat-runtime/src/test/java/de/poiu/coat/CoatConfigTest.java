@@ -15,8 +15,8 @@
  */
 package de.poiu.coat;
 
-import de.poiu.coat.convert.Converter;
-import de.poiu.coat.convert.ListParser;
+import de.poiu.coat.convert.converters.Converter;
+import de.poiu.coat.convert.listparsers.ListParser;
 import de.poiu.coat.validation.ConfigValidationException;
 import de.poiu.coat.validation.ImmutableValidationFailure;
 import de.poiu.coat.validation.ValidationResult;

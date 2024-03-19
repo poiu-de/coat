@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.listparsers;
 
+import de.poiu.coat.convert.TypeConversionException;
 import java.util.ArrayList;
 import java.util.List;
 

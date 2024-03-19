@@ -15,6 +15,7 @@
  */
 package de.poiu.coat.convert;
 
+import de.poiu.coat.convert.listparsers.WhitespaceSeparatedListParser;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 

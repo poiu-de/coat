@@ -15,7 +15,7 @@
  */
 package de.poiu.coat.annotation;
 
-import de.poiu.coat.convert.ListParser;
+import de.poiu.coat.convert.listparsers.ListParser;
 
 
 abstract class VoidListParser implements ListParser {

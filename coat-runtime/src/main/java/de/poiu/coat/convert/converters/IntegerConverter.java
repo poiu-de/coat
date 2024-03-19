@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
+
+import de.poiu.coat.convert.TypeConversionException;
 
 
 /**
- * Converts an input String to to a {@link java.lang.Double}.
+ * Converts an input String to to an {@link java.lang.Integer}.
  * <p>
- * The same rules for the input string apply as for {@link java.lang.Double#valueOf(java.lang.String)}.
+ * The same rules for the input string apply as for {@link java.lang.Integer#valueOf(java.lang.String)}.
  *
  */
-public class DoubleConverter implements Converter<Double> {
+public class IntegerConverter implements Converter<Integer> {
 
-  public Double convert(final String s) throws TypeConversionException {
+  public Integer convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
     }
 
-    return Double.valueOf(s);
+    return Integer.valueOf(s);
   }
 }

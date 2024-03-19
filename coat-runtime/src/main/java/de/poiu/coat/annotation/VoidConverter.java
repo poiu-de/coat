@@ -15,7 +15,7 @@
  */
 package de.poiu.coat.annotation;
 
-import de.poiu.coat.convert.Converter;
+import de.poiu.coat.convert.converters.Converter;
 
 
 abstract class VoidConverter implements Converter<Void> {

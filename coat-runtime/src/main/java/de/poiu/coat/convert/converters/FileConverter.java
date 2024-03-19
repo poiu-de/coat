@@ -13,30 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
 
-import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
+import de.poiu.coat.convert.TypeConversionException;
+import java.io.File;
 
 
 /**
- * Converts an input String to to a {@link LocalTime}.
+ * Converts an input String into a {@link File}.
  * <p>
- * The same rules for the input string apply as for {@link LocalTime#parse(java.lang.CharSequence)}.
- * Therefore it must be given in ISO-8601 format such as 18:00:30.
+ * No checks will be done on the existance, readability, etc. of the file.
  *
  */
-public class LocalTimeConverter implements Converter<LocalTime> {
-
-  public LocalTime convert(final String s) throws TypeConversionException {
+public class FileConverter implements Converter<File> {
+  public File convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
     }
 
-    try {
-      return LocalTime.parse(s);
-    } catch (final DateTimeParseException ex) {
-      throw new TypeConversionException(s, LocalTime.class, ex);
-    }
+    return new File(s);
   }
 }

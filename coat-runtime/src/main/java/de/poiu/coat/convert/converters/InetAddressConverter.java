@@ -13,24 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
+
+import de.poiu.coat.convert.TypeConversionException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 
 /**
- * Converts an input String to to a {@link java.lang.Boolean}.
+ * Converts an input String into a {@link InetAddress}.
  * <p>
- * The same rules for the input string apply as for {@link java.lang.Boolean#valueOf(java.lang.String)}.
- * Therefore a value of "true" (ignoring case) will result in Boolean.TRUE, all other values in
- * Boolean.FALSE.
- *
+ * The same rules for the input string apply as for {@link InetAddress#getByName(java.lang.String)}.
  */
-public class BooleanConverter implements Converter<Boolean> {
+public class InetAddressConverter implements Converter<InetAddress> {
 
-  public Boolean convert(final String s) throws TypeConversionException {
+  public InetAddress convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
     }
 
-    return Boolean.valueOf(s);
+    try {
+      return InetAddress.getByName(s);
+    } catch (final UnknownHostException ex) {
+      throw new TypeConversionException(s, InetAddress.class, ex);
+    }
   }
 }

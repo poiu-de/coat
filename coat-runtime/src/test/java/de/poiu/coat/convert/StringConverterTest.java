@@ -15,6 +15,7 @@
  */
 package de.poiu.coat.convert;
 
+import de.poiu.coat.convert.converters.StringConverter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -15,6 +15,7 @@
  */
 package de.poiu.coat.convert;
 
+import de.poiu.coat.convert.converters.FileConverter;
 import java.io.File;
 import org.junit.jupiter.api.Test;
 

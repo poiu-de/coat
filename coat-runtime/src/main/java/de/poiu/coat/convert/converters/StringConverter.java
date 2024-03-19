@@ -13,28 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.poiu.coat.convert;
+package de.poiu.coat.convert.converters;
 
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Path;
+import de.poiu.coat.convert.TypeConversionException;
 
 
 /**
- * Converts an input String into a {@link Path}.
+ * Converts an input String into a String.
  * <p>
- * No checks will be done on the existance, readability, etc. of the file.
+ * The only actual conversion is returning <code>null</code> for a non-null, but blank String.
+ * <p>
+ * This converter will never throw a {@code TypeConversionException} as converting a String into a
+ * String will always succeed.
  *
  */
-public class PathConverter implements Converter<Path> {
-  public Path convert(final String s) throws TypeConversionException {
+public class StringConverter implements Converter<String> {
+  public String convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
     }
 
-    try {
-      return Path.of(s);
-    } catch (final FileSystemNotFoundException | SecurityException | IllegalArgumentException ex) {
-      throw new TypeConversionException(s, Path.class, ex);
-    }
+    return s;
   }
 }
