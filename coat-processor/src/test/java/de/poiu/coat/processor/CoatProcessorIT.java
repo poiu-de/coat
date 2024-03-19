@@ -271,6 +271,43 @@ public class CoatProcessorIT {
 
 
   /**
+   * Test that the generation for a totally empty config interface is possible.
+   */
+  @Test
+  public void testEmptyConfig() throws Exception {
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "}" +
+            ""));
+
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigBuilder");
+
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
+
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf());
+  }
+
+
+  /**
    * Test the failure of the processing of a Coat config interface that has accessors with primitive arrays.
    */
   @ParameterizedTest
@@ -1026,6 +1063,63 @@ public class CoatProcessorIT {
     this.assertResult(instance, "omittedKey", "some value");
     this.assertResult(instance, "omittedAnnotation", OptionalInt.of(25));
     this.assertResult(instance, "specifiedKey", UTF_8);
+  }
+
+
+  /**
+   * Test that conversion failures result in a helpful validation failure.
+   */
+  @Test
+  public void testConversionError() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.TestConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface TestConfig {" +
+            "\n" + "" +
+            "\n" + "  public int mandatoryInt();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.TestConfig",
+                                "com.example.TestConfigBuilder");
+
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.TestConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.TestConfigBuilder$ConfigImpl", compilation);
+
+    this.assertMethods(generatedConfigClass, "mandatoryInt");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final InvocationTargetException itex = catchThrowableOfType(() ->
+      this.createInstance(generatedBuilderClass, mapOf(
+        "mandatoryInt", "some value",
+        "irrelevant key", "irrelevant value"
+      )), InvocationTargetException.class);
+
+    assertValidationErrors(itex,
+     ImmutableValidationFailure.builder()
+       .failureType(UNPARSABLE_VALUE)
+       .key("mandatoryInt")
+       .type("int")
+       .value("some value")
+       .errorMsg("Error converting value to int")
+       .build()
+    );
   }
 
 
