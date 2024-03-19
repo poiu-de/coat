@@ -17,7 +17,7 @@ jobs:
         java: [11, 17, 21, 22, 23-ea]
     name: Build and Verify with JDK ${{ matrix.java }}
     steps:
-      - uses: ts-graphviz/setup-graphviz@v1
+      - uses: ts-graphviz/setup-graphviz@v2
       - uses: actions/checkout@v4
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v4
