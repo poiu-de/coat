@@ -1005,6 +1005,80 @@ public class CoatProcessorIT {
   }
 
 
+
+  /**
+   * Test that a dot can be used inside a key (even though it is a separator for embedded configs).
+   */
+  @Test
+  public void testKeyWithDot() throws Exception {
+    // - preparation && execution && verification
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("com.example.EmbeddedConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key=\"embedded.param\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key=\"some.param\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded" +
+            "\n" + "  public EmbeddedConfig embedded();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.MainConfig",
+                                "com.example.MainConfigBuilder",
+                                "com.example.EmbeddedConfig",
+                                "com.example.EmbeddedConfigBuilder");
+
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("com.example.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("com.example.EmbeddedConfigBuilder$ConfigImpl", compilation);
+
+    this.assertMethods(generatedEmbeddedClass, "embeddedParam");
+    this.assertMethods(generatedConfigClass, "someParam", "embedded");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
+      // no values are explicitly set
+      "some.param",              "some value",
+      "embedded.embedded.param", "embedded value",
+      "irrelevant key",          "irrelevant value"
+    ));
+
+    this.assertResult(instance, "someParam", "some value");
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of("embedded.param", "embedded value"));
+    this.assertResult(instance, "embedded", expectedEmbedded);
+  }
+
+
   /**
    * Test that the @Param annotation can be omitted.
    */

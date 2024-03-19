@@ -42,6 +42,8 @@ public class NameUtils {
    * <p>
    * This will uppercase all characters and insert underscores before every character that already
    * was uppercased. Therefore the given method name should adhere to the common java naming conventions.
+   * <p>
+   * Also dots will be replaced by underscores.
    *
    * @param methodName the name of the method for which to return the const name
    * @return the const name for the given method name
@@ -52,7 +54,9 @@ public class NameUtils {
     for (int i=0; i < methodName.length(); i++) {
       final char c= methodName.charAt(i);
 
-      if (Character.isUpperCase(c)) {
+      if (c == '.') {
+        sb.append('_');
+      } else if (Character.isUpperCase(c)) {
         sb.append('_');
         sb.append(c);
       } else {
