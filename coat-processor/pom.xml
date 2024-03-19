@@ -139,6 +139,15 @@
             --add-opens java.base/java.lang=ALL-UNNAMED
           </argLine>
         </configuration>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>
