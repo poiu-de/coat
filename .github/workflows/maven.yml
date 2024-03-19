@@ -25,4 +25,4 @@ jobs:
           distribution: 'zulu'
           java-version: ${{ matrix.java }}
       - name: Verify with Maven
-        run: mvn -DperformRelease=true --batch-mode --no-transfer-progress clean verify failsafe:integration-test
+        run: mvn -DperformRelease=true --batch-mode --no-transfer-progress clean verify
