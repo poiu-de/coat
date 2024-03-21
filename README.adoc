@@ -136,35 +136,6 @@ For a more thorough description of the possibilities of Coat read the
 {docs_site}[full documentation].
 
 
-Logging
--------
-
-There are a few cases this library issues some logging statements (actually
-only when reading from a `java.util.Properties` object that contains
-non-String entries, which should never be the case anyway).
-
-Coat uses the `java.lang.System.Logger` for that purpose, which is
-available since Java 9.
-
-The System.Logger is supported in log4j2 since version 2.13.2. To use it
-include the `log4j-jpl` jar.
-
-The System.Logger is https://jira.qos.ch/browse/SLF4J-442[not yet
-supported] in slf4j/logback. For writing an adapter the
-https://github.com/qos-ch/slf4j/pull/232[PR of Nicolai Parlog] can be
-used as reference. Also a (rudimentary) example of writing such an adapter
-is described on
-https://www.logicbig.com/tutorials/core-java-tutorial/java-9-changes/platform-logging.html[LogicBig].
-
-If no adapter is found at runtime the System.Logger defaults to using
-java.util.logging.
-
-// There are no known bugs at the moment
-//Known Bugs and Deficiencies
-//---------------------------
-
-
-
 License
 -------
 
