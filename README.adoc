@@ -9,15 +9,17 @@ Marco Herrn <marco@mherrn.de>
 :javadoc-url: https://javadoc.io/doc/de.poiu.coat/coat/
 :license-link: https://github.com/poiu-de/coat/blob/master/LICENSE.txt
 :user_guide: https://poiu-de.github.io/coat/docs/user_guide/
+:docs_site: https://poiu-de.github.io/coat/
 :log4j2-jul-bridge: https://logging.apache.org/log4j/2.x/log4j-jul/index.html
 :slf4j-jul-bridge: https://www.slf4j.org/legacy.html#jul-to-slf4j
 :source-highlighter: prettify
-:coat-version: 1.0.0
+:coat-version: 2.0.0
 
 [.float-group]
 --
-image:coat-icon.svg[Coat,role="right", width="75"]
-Coat - Config of Annotated Types
+image:coat-wide.svg[Coat,role="right", width="75"]
+
+Coat - **C**onfig **o**f **A**nnotated **T**ypes
 
 Easy and typesafe config objects.
 --
@@ -28,6 +30,13 @@ What is Coat
 
 Coat is an annotation processor to generate classes for reading
 configuration values into typesafe objects.
+
+The generated config implementation is
+
+  - easy to use
+  - type-safe
+  - very fast
+  - thread-safe
 
 Short Usage
 -----------
@@ -53,20 +62,19 @@ public interface MyConfig {
 +
 [source,java]
 ----
-final MyConfig config= new ImmutableMyConfig(new File("/path/to/config.properties"));
-
 try {
-  config.validate();
+  final MyConfig config= MyConfigBuilder.from(new File("/path/to/config.properties"));
+
+  final String appName= config.appName();
+  final int listenPort= config.listenPort();
+  config.description().ifPresent(
+    …
+  );
 } catch (final ConfigValidationException ex) {
   System.err.println("Error in config file:\n" + ex.getValidationResult().toString());
   System.exit(1);
 }
 
-final String appName= config.appName();
-final int listenPort= config.listenPort();
-config.description().ifPresent(
-  …
-);
 ----
 
 
@@ -90,20 +98,31 @@ To use Coat in a maven based project use the following maven coordinates:
 
 [source,xml,subs="verbatim,attributes"]
 ----
-    <!-- Contains the annotation processor. Not needed at runtime. -->
-    <dependency>
-      <groupId>de.poiu.coat</groupId>
-      <artifactId>coat-processor</artifactId>
-      <version>{coat-version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- Contains the converters and base classes. Needed at runtime. -->
+    <!-- Contains the annotations and converters. Needed at runtime. -->
     <dependency>
       <groupId>de.poiu.coat</groupId>
       <artifactId>coat-runtime</artifactId>
       <version>{coat-version}</version>
     </dependency>
+
+    <build>
+      <plugins>
+        <!-- The annotation processor. Not needed at runtime. -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <annotationProcessorPaths>
+              <path>
+                <groupId>de.poiu.coat</groupId>
+                <artifactId>coat-processor</artifactId>
+                <version>{coat-version}</version>
+              </path>
+            </annotationProcessorPaths>
+          </configuration>
+        </plugin>
+      </plugins>
+    </build>
 ----
 
 Otherwise download the jar-file of Coat from the {download-page}[Download
@@ -114,7 +133,7 @@ Usage
 -----
 
 For a more thorough description of the possibilities of Coat read the
-{user_guide}[User Guide].
+{docs_site}[full documentation].
 
 
 Logging
