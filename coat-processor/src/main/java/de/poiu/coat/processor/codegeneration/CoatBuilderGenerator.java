@@ -56,12 +56,15 @@ import javax.tools.Diagnostic;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
-import static javax.lang.model.element.Modifier.PUBLIC;
-import static javax.lang.model.element.Modifier.STATIC;
 
 import de.poiu.coat.CoatParam;
+import de.poiu.coat.processor.examplecontent.ExampleContentHelper;
+import java.io.Writer;
+
+import static javax.lang.model.element.Modifier.FINAL;
+import static javax.lang.model.element.Modifier.PUBLIC;
+import static javax.lang.model.element.Modifier.STATIC;
 
 
 /**
@@ -76,6 +79,7 @@ public class CoatBuilderGenerator {
 
   private final ProcessingEnvironment   pEnv;
   private final SpecHelper              specHelper;
+  private final ExampleContentHelper    exampleContentHelper;
 
   private final ConfigImplCodeGenerator configImplGenerator;
   private final ParamImplCodeGenerator  paramImplGenerator;
@@ -92,6 +96,7 @@ public class CoatBuilderGenerator {
                                final ProcessingEnvironment processingEnv) {
     this.pEnv                = processingEnv;
     this.specHelper          = new SpecHelper(pEnv);
+    this.exampleContentHelper= new ExampleContentHelper(pEnv);
     this.configImplGenerator = new ConfigImplCodeGenerator(pEnv);
     this.paramImplGenerator  = new ParamImplCodeGenerator(pEnv);
     this.annotatedInterface  = annotatedInterface;
@@ -123,6 +128,7 @@ public class CoatBuilderGenerator {
       .writeTo(this.pEnv.getFiler());
   }
 
+
   /**
    * Generates the actual builder for creating a new Coat Config object.
    * @return
@@ -149,6 +155,7 @@ public class CoatBuilderGenerator {
       .addMethod(this.generateMethodAddProperties())
       .addMethod(this.generateMethodAddEnvVars())
       .addMethod(this.generateMethodCreateToString())
+      .addMethod(this.generateWriteExampleConfigMethod())
       .addMethod(this.generateMethodBuild())
       ;
 
@@ -534,6 +541,20 @@ public class CoatBuilderGenerator {
       .addStatement("return sb.toString()");
 
     return methodBuilder.build();
+  }
+
+
+  private MethodSpec generateWriteExampleConfigMethod() {
+    final String exampleContent= this.exampleContentHelper.createExampleContent(this.annotatedInterface);
+
+    return MethodSpec.methodBuilder("writeExampleConfig")
+        .addModifiers(PUBLIC, STATIC)
+        .addParameter(TypeName.get(Writer.class), "writer", FINAL)
+        .addStatement("writer.append($S)", exampleContent)
+        .addStatement("writer.flush()")
+        .addException(IOException.class)
+        .addJavadoc(JavadocHelper.JAVADOC_ON_WRITE_EXAMPLE_CONFIG)
+        .build();
   }
 
 

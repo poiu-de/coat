@@ -22,8 +22,6 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import de.poiu.coat.AbstractImmutableCoatConfig;
-import de.poiu.coat.processor.utils.JavadocHelper;
-import de.poiu.coat.processor.examplecontent.ExampleContentHelper;
 import de.poiu.coat.processor.specs.AccessorSpec;
 import de.poiu.coat.processor.specs.ClassSpec;
 import de.poiu.coat.processor.specs.EmbeddedTypeSpec;
@@ -31,7 +29,6 @@ import de.poiu.coat.processor.utils.ElementHelper;
 import de.poiu.coat.processor.utils.SpecHelper;
 import de.poiu.coat.processor.utils.TypeHelper;
 import java.io.IOException;
-import java.io.Writer;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -63,7 +60,6 @@ class ConfigImplCodeGenerator {
   private final SpecHelper            specHelper;
   private final TypeHelper            typeHelper;
   private final ElementHelper         elementHelper;
-  private final ExampleContentHelper  exampleContentHelper;
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -75,7 +71,6 @@ class ConfigImplCodeGenerator {
     this.specHelper           = new SpecHelper(pEnv);
     this.typeHelper           = new TypeHelper(pEnv);
     this.elementHelper        = new ElementHelper(pEnv);
-    this.exampleContentHelper = new ExampleContentHelper(pEnv);
   }
 
 
@@ -106,8 +101,6 @@ class ConfigImplCodeGenerator {
     final List<ExecutableElement> allAnnotatedMethods= this.getAllAnnotatedMethodsAsElements(classSpec);
     this.addEqualsMethod(typeSpecBuilder, allAnnotatedMethods, classSpec);
     this.addHashCodeMethod(typeSpecBuilder, allAnnotatedMethods);
-
-    this.addWriteExampleConfigMethod(typeSpecBuilder, classSpec);
 
     return typeSpecBuilder.build();
   }
@@ -193,22 +186,6 @@ class ConfigImplCodeGenerator {
     }
 
     typeSpecBuilder.addMethod(methodSpecBuilder.build());
-  }
-
-
-  private void addWriteExampleConfigMethod(final TypeSpec.Builder typeSpecBuilder,
-                                           final ClassSpec        classSpec) {
-    final String exampleContent= this.exampleContentHelper.createExampleContent(classSpec);
-
-    typeSpecBuilder.addMethod(
-      MethodSpec.methodBuilder("writeExampleConfig")
-        .addModifiers(PUBLIC, STATIC)
-        .addParameter(TypeName.get(Writer.class), "writer", FINAL)
-        .addStatement("writer.append($S)", exampleContent)
-        .addStatement("writer.flush()")
-        .addException(IOException.class)
-        .addJavadoc(JavadocHelper.JAVADOC_ON_WRITE_EXAMPLE_CONFIG)
-        .build());
   }
 
 
