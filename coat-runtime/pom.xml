@@ -86,6 +86,8 @@
             <include>de/poiu/coat/validation/ValidationFailure.java</include>
             <include>de/poiu/coat/validation/ConfigValidationException.java</include>
             <include>de/poiu/coat/convert/*.java</include>
+            <include>de/poiu/coat/convert/converters/*.java</include>
+            <include>de/poiu/coat/convert/listparsers/*.java</include>
           </sourceFileIncludes>
         </configuration>
       </plugin>
