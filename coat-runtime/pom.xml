@@ -83,7 +83,6 @@
           <sourceFileIncludes>
             <include>de/poiu/coat/annotation/Coat.java</include>
             <include>de/poiu/coat/casing/CasingStrategy.java</include>
-            <include>de/poiu/coat/CoatConfig.java</include>
             <include>de/poiu/coat/validation/ValidationResult.java</include>
             <include>de/poiu/coat/validation/ValidationFailure.java</include>
             <include>de/poiu/coat/validation/ConfigValidationException.java</include>
