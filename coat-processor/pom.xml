@@ -136,6 +136,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
+          <useModulePath>false</useModulePath>
           <argLine>
             <!-- needed since java17 to be able to set environment variables,
                  see: https://junit-pioneer.org/docs/environment-variables/#warnings-for-reflective-access -->
