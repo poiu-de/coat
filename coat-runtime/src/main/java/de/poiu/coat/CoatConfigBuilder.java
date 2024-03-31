@@ -384,33 +384,13 @@ public abstract class CoatConfigBuilder {
 
   protected boolean getBoolean(final CoatParam configParam) {
     final String value= this.props.get(configParam.key());
-    if (value != null &&
-      (value.trim().equals(1)
-      || value.trim().equalsIgnoreCase("true")
-      || value.trim().equalsIgnoreCase("yes"))) {
-      return true;
-    } else {
-      // FIXME: Also define a set of valid "false" values?
-      //        like: 0, "", null, no, false
-      //        and throw ParsingException if anything other is contained
-      return false;
-    }
+    return this.parseBoolean(value);
   }
 
 
   protected boolean getBooleanOrDefault(final CoatParam configParam) {
     final String value= this.props.getOrDefault(configParam.key(), configParam.defaultValue());
-    if (value != null &&
-      (value.trim().equals(1)
-      || value.trim().equalsIgnoreCase("true")
-      || value.trim().equalsIgnoreCase("yes"))) {
-      return true;
-    } else {
-      // FIXME: Also define a set of valid "false" values?
-      //        like: 0, "", null, no, false
-      //        and throw ParsingException if anything other is contained
-      return false;
-    }
+    return this.parseBoolean(value);
   }
 
 
@@ -732,6 +712,21 @@ public abstract class CoatConfigBuilder {
     final Properties jup= new Properties();
     jup.load(new FileReader(file, UTF_8));
     return toMap(jup);
+  }
+
+
+  private boolean parseBoolean(final String stringValue) {
+    if (stringValue != null &&
+       (stringValue.trim().equals("1")
+        || stringValue.trim().equalsIgnoreCase("true")
+        || stringValue.trim().equalsIgnoreCase("yes"))) {
+      return true;
+    } else {
+      // FIXME: Also define a set of valid "false" values?
+      //        like: 0, "", null, no, false
+      //        and throw ParsingException if anything other is contained
+      return false;
+    }
   }
 
 
