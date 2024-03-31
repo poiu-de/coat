@@ -710,7 +710,9 @@ public abstract class CoatConfigBuilder {
 
   protected static Map<String, String> toMap(final File file) throws IOException {
     final Properties jup= new Properties();
-    jup.load(new FileReader(file, UTF_8));
+    try (final FileReader r= new FileReader(file, UTF_8)) {
+      jup.load(r);
+    }
     return toMap(jup);
   }
 
