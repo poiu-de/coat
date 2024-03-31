@@ -40,20 +40,14 @@ public class WhitespaceSeparatedListParser implements ListParser {
     for (int i=0; i < s.length(); i++) {
       final char c= s.charAt(i);
       if (c == '\\') {
-        if (i < s.length()-1) {
-          final char nextChar= s.charAt(i+1);
-          if (Character.isWhitespace(nextChar) || nextChar == '\\') {
-            // it the next char is whitespace or another backslash it is escaped and part of the string
-            sbCurrentString.append(nextChar);
-            i++;
-          } else {
-            // otherwise the backslash is ignored
-            sbCurrentString.append(nextChar);
-            i++;
-          }
-        } else {
+        if (i == s.length()-1) {
           // if the backslash was the last character, it is part of the string
           sbCurrentString.append(c);
+        } else {
+          // otherwise the backslash is ignored
+          final char nextChar= s.charAt(i+1);
+          sbCurrentString.append(nextChar);
+          i++;
         }
       } else if (Character.isWhitespace(c)) {
         // non-escaped whitespace is a word delimiter
