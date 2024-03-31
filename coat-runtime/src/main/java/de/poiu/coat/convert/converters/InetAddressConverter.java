@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
  */
 public class InetAddressConverter implements Converter<InetAddress> {
 
+  @Override
   public InetAddress convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

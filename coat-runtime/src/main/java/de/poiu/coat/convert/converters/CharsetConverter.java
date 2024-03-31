@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
  */
 public class CharsetConverter implements Converter<Charset> {
 
+  @Override
   public Charset convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

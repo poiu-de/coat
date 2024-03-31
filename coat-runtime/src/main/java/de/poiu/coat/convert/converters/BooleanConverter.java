@@ -28,6 +28,7 @@ import de.poiu.coat.convert.TypeConversionException;
  */
 public class BooleanConverter implements Converter<Boolean> {
 
+  @Override
   public Boolean convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

@@ -26,6 +26,7 @@ import de.poiu.coat.convert.TypeConversionException;
  */
 public class FloatConverter implements Converter<Float> {
 
+  @Override
   public Float convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

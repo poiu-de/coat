@@ -39,9 +39,11 @@ import java.time.temporal.ChronoUnit;
  * For example {@code "25m"} would return a Duration of 25 Minutes.
  *
  * If no unit of measure is specified, the returned Duration will be in Milliseconds.
- * 
+ *
  */
 public class DurationConverter implements Converter<Duration> {
+
+  @Override
   public Duration convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

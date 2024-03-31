@@ -26,6 +26,8 @@ import java.io.File;
  *
  */
 public class FileConverter implements Converter<File> {
+
+  @Override
   public File convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

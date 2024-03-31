@@ -28,6 +28,8 @@ import de.poiu.coat.convert.TypeConversionException;
  *
  */
 public class StringConverter implements Converter<String> {
+
+  @Override
   public String convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

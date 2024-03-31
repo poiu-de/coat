@@ -29,6 +29,7 @@ import java.time.format.DateTimeParseException;
  */
 public class LocalTimeConverter implements Converter<LocalTime> {
 
+  @Override
   public LocalTime convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

@@ -26,6 +26,7 @@ import de.poiu.coat.convert.TypeConversionException;
  */
 public class DoubleConverter implements Converter<Double> {
 
+  @Override
   public Double convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

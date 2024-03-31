@@ -26,6 +26,7 @@ import de.poiu.coat.convert.TypeConversionException;
  */
 public class LongConverter implements Converter<Long> {
 
+  @Override
   public Long convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;

@@ -26,6 +26,7 @@ import de.poiu.coat.convert.TypeConversionException;
  */
 public class IntegerConverter implements Converter<Integer> {
 
+  @Override
   public Integer convert(final String s) throws TypeConversionException {
     if (s == null || s.isBlank()) {
       return null;
