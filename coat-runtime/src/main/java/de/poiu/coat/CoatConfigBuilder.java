@@ -550,11 +550,10 @@ public abstract class CoatConfigBuilder {
 
       if (stringValue != null) {
         // verify correct conversion of values
-        final String valueOrDefault= stringValue != null ? stringValue : configParam.defaultValue();
         try {
-          this.tryConversion(valueOrDefault, configParam);
+          this.tryConversion(stringValue, configParam);
         } catch (TypeConversionException ex) {
-          validationFailures.add(this.createUnparsableValueFailure(configParam.key(), configParam.type(), valueOrDefault, ex.getMessage()));
+          validationFailures.add(this.createUnparsableValueFailure(configParam.key(), configParam.type(), stringValue, ex.getMessage()));
         }
       }
     }
