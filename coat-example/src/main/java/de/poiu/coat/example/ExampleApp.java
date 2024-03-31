@@ -86,8 +86,7 @@ public class ExampleApp {
     appConfig.getDescription().ifPresent(System.out::println);
 
     // Start a listening Socket for this application
-    try {
-      final ServerSocket ss= new ServerSocket(appConfig.getListenPort(), 1, appConfig.getListenAddress());
+    try (final ServerSocket ss= new ServerSocket(appConfig.getListenPort(), 1, appConfig.getListenAddress())) {
       //final Socket s= ss.accept();
       // …
     } catch (IOException ex) {
