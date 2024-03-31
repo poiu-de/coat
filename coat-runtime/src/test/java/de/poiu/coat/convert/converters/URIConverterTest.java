@@ -15,7 +15,6 @@
  */
 package de.poiu.coat.convert.converters;
 
-import de.poiu.coat.convert.converters.URIConverter;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
 

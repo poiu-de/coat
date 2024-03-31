@@ -15,7 +15,6 @@
  */
 package de.poiu.coat.casing;
 
-import de.poiu.coat.casing.SnakeCaseConverter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

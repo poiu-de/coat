@@ -15,10 +15,6 @@
  */
 package de.poiu.coat.convert.listparsers;
 
-import de.poiu.coat.convert.listparsers.CommaSeparatedListParser;
-import java.io.File;
-import java.io.FileReader;
-import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

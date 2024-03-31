@@ -17,9 +17,6 @@ package de.poiu.coat;
 
 import de.poiu.coat.convert.converters.Converter;
 import de.poiu.coat.convert.listparsers.ListParser;
-import de.poiu.coat.validation.ConfigValidationException;
-import de.poiu.coat.validation.ImmutableValidationFailure;
-import de.poiu.coat.validation.ValidationResult;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
@@ -27,10 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-import static de.poiu.coat.validation.ValidationFailure.Type.MISSING_MANDATORY_VALUE;
-import static de.poiu.coat.validation.ValidationFailure.Type.UNPARSABLE_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
 
 /**

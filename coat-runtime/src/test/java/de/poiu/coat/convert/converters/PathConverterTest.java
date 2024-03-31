@@ -15,7 +15,6 @@
  */
 package de.poiu.coat.convert.converters;
 
-import de.poiu.coat.convert.converters.PathConverter;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 

@@ -15,12 +15,9 @@
  */
 package de.poiu.coat.convert.listparsers;
 
-import de.poiu.coat.convert.listparsers.WhitespaceSeparatedListParser;
-import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 
 public class WhitspaceSeparatedListParserTest {
