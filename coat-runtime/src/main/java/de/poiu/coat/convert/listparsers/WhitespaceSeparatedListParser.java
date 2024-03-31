@@ -74,6 +74,6 @@ public class WhitespaceSeparatedListParser implements ListParser {
       result.add(sbCurrentString.toString());
     }
 
-    return result.toArray(new String[result.size()]);
+    return result.toArray(String[]::new);
   }
 }
