@@ -34,7 +34,7 @@ import java.util.List;
  */
 public class CommaSeparatedListParser implements ListParser {
 
-  private final char separatorChar= ',';
+  private static final char SEPARATOR_CHAR= ',';
 
   @Override
   public String[] convert(final String s) throws TypeConversionException {
@@ -51,7 +51,7 @@ public class CommaSeparatedListParser implements ListParser {
       if (c == '\\') {
         if (i < s.length()-1) {
           final char nextChar= s.charAt(i+1);
-          if (nextChar == this.separatorChar || nextChar == '\\') {
+          if (nextChar == SEPARATOR_CHAR || nextChar == '\\') {
             // it the next char is whitespace or another backslash it is escaped and part of the string
             sbCurrentString.append(nextChar);
             i++;
@@ -64,7 +64,7 @@ public class CommaSeparatedListParser implements ListParser {
           // if the backslash was the last character, it is part of the string
           sbCurrentString.append(c);
         }
-      } else if (c == this.separatorChar) {
+      } else if (c == SEPARATOR_CHAR) {
         // non-escaped whitespace is a word delimiter
         // but consecutive whitespace is ignored
         if (sbCurrentString.length() ==0) {
