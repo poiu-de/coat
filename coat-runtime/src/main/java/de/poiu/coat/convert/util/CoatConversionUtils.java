@@ -15,9 +15,9 @@
  */
 package de.poiu.coat.convert.util;
 
-import de.poiu.coat.convert.UncheckedTypeConversionException;
-import de.poiu.coat.convert.TypeConversionException;
 import de.poiu.coat.CoatConfigBuilder;
+import de.poiu.coat.convert.TypeConversionException;
+import de.poiu.coat.convert.UncheckedTypeConversionException;
 import de.poiu.coat.convert.converters.BooleanConverter;
 import de.poiu.coat.convert.converters.CharsetConverter;
 import de.poiu.coat.convert.converters.Converter;
@@ -27,7 +27,6 @@ import de.poiu.coat.convert.converters.FileConverter;
 import de.poiu.coat.convert.converters.FloatConverter;
 import de.poiu.coat.convert.converters.InetAddressConverter;
 import de.poiu.coat.convert.converters.IntegerConverter;
-import de.poiu.coat.convert.listparsers.ListParser;
 import de.poiu.coat.convert.converters.LocalDateConverter;
 import de.poiu.coat.convert.converters.LocalDateTimeConverter;
 import de.poiu.coat.convert.converters.LocalTimeConverter;
@@ -35,6 +34,7 @@ import de.poiu.coat.convert.converters.LongConverter;
 import de.poiu.coat.convert.converters.PathConverter;
 import de.poiu.coat.convert.converters.StringConverter;
 import de.poiu.coat.convert.converters.URIConverter;
+import de.poiu.coat.convert.listparsers.ListParser;
 import de.poiu.coat.convert.listparsers.WhitespaceSeparatedListParser;
 import java.io.File;
 import java.lang.reflect.ParameterizedType;

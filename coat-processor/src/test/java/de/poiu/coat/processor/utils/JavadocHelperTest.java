@@ -15,7 +15,6 @@
  */
 package de.poiu.coat.processor.utils;
 
-import de.poiu.coat.processor.utils.JavadocHelper;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

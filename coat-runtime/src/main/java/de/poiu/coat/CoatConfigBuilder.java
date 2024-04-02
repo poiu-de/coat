@@ -15,11 +15,11 @@
  */
 package de.poiu.coat;
 
-import de.poiu.coat.convert.util.CoatConversionUtils;
-import de.poiu.coat.convert.converters.Converter;
-import de.poiu.coat.convert.listparsers.ListParser;
 import de.poiu.coat.convert.TypeConversionException;
 import de.poiu.coat.convert.UncheckedTypeConversionException;
+import de.poiu.coat.convert.converters.Converter;
+import de.poiu.coat.convert.listparsers.ListParser;
+import de.poiu.coat.convert.util.CoatConversionUtils;
 import de.poiu.coat.validation.ImmutableValidationFailure;
 import de.poiu.coat.validation.ValidationFailure;
 import java.io.File;

@@ -267,10 +267,7 @@ public class ElementHelper {
     }
 
     final var annotationParams = annotation.getElementValues();
-    for (final Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationParams.entrySet()) {
-      final ExecutableElement k = entry.getKey();
-      final AnnotationValue v = entry.getValue();
-
+    for (final ExecutableElement k : annotationParams.keySet()) {
       if (k.getSimpleName().contentEquals(key)) {
         return k;
       }
