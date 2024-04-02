@@ -16,7 +16,7 @@ and create a pull request.
 
 ### Finding bugs
 
-Of course Coat has bugs. If you find them please file an
+Every software has bugs. If you find a bug in Coat please file an
 [Issue](https://github.com/poiu-de/coat/issues) so they can be resolved.
 
 Preparing pull requests to solve issues is also highly welcome, of course.
