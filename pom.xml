@@ -162,7 +162,7 @@
     </pluginManagement>
 
     <plugins>
-      <!-- Enforce maven 3.2.5-->
+      <!-- Enforce maven version -->
       <plugin>
         <inherited>true</inherited>
         <groupId>org.apache.maven.plugins</groupId>
@@ -185,7 +185,7 @@
         </executions>
       </plugin>
 
-      <!-- Schreibe Version ins generierte manifest -->
+      <!-- Write version into the generated manifest -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
