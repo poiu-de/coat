@@ -51,7 +51,6 @@ import javax.annotation.Nullable;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 
 import static java.util.stream.Collectors.joining;
@@ -302,9 +301,10 @@ public class CoatBuilderGenerator {
 
 
   private CodeBlock createEmbeddedTypeInitializationCode(final EmbeddedTypeSpec embeddedTypeSpec) {
-    final boolean     isOptional       = !embeddedTypeSpec.mandatory();
-    final TypeElement returnTypeElement= (TypeElement) this.pEnv.getTypeUtils().asElement(embeddedTypeSpec.type());
-    final String      generatedTypeName= NameUtils.deriveGeneratedBuilderName(returnTypeElement);
+    final boolean     isOptional  = !embeddedTypeSpec.mandatory();
+    final ClassName   builderName = ClassName.get(
+      embeddedTypeSpec.classSpec().targetPackage(),
+      embeddedTypeSpec.classSpec().builderName());
 
     // The code to initialize this field. Needs to be added to the typeSpecs constructors
     final CodeBlock.Builder initCodeBlockBuilder = CodeBlock.builder();
@@ -316,18 +316,18 @@ public class CoatBuilderGenerator {
       if (isOptional) {
         initCodeBlockBuilder.beginControlFlow("if (hasPrefix(props, $S))",
           embeddedTypeSpec.key() + embeddedTypeSpec.keySeparator())
-          .addStatement("$N= $L.from(filterByAndStripPrefix(props, $S))",
+          .addStatement("$N= $T.from(filterByAndStripPrefix(props, $S))",
                       embeddedTypeSpec.methodName(),
-                      generatedTypeName,
+                      builderName,
                       embeddedTypeSpec.key() + embeddedTypeSpec.keySeparator())
           .nextControlFlow("else")
           .addStatement("$N= null", embeddedTypeSpec.methodName())
           .endControlFlow();
       } else {
         initCodeBlockBuilder
-          .addStatement("$N= $L.from(filterByAndStripPrefix(props, $S))",
+          .addStatement("$N= $T.from(filterByAndStripPrefix(props, $S))",
                       embeddedTypeSpec.methodName(),
-                      generatedTypeName,
+                      builderName,
                       embeddedTypeSpec.key() + embeddedTypeSpec.keySeparator());
       }
     initCodeBlockBuilder.nextControlFlow("catch ($T ex)", ConfigValidationException.class);

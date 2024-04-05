@@ -1902,6 +1902,86 @@ public class CoatProcessorIT {
 
   /**
    * Test the implementation of a Coat config interface that embeds another Coat config interface
+   * that resides in a different package.
+   */
+  @Test
+  public void testEmbeddedConfigFromOtherPackage() throws Exception {
+
+    // - preparation && execution
+
+    final Compilation compilation =
+      javac()
+        .withProcessors(new CoatProcessor())
+        .compile(JavaFileObjects.forSourceString("some.other.EmbeddedConfig",
+            "" +
+            "\n" + "package some.other;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface EmbeddedConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"embeddedParam\", defaultValue = \"embedded default\")" +
+            "\n" + "  public String embeddedParam();" +
+            "\n" + "}" +
+            ""),
+                 JavaFileObjects.forSourceString("com.example.MainConfig",
+            "" +
+            "\n" + "package com.example;" +
+            "\n" + "" +
+            "\n" + "import de.poiu.coat.annotation.Coat;" +
+            "\n" + "import some.other.EmbeddedConfig;" +
+            "\n" + "" +
+            "\n" + "@Coat.Config" +
+            "\n" + "public interface MainConfig {" +
+            "\n" + "" +
+            "\n" + "  @Coat.Param(key = \"someParam\", defaultValue = \"some default\")" +
+            "\n" + "  public String someParam();" +
+            "\n" + "" +
+            "\n" + "  @Coat.Embedded(key = \"embedded\", keySeparator= \".\")" +
+            "\n" + "  public EmbeddedConfig embedded();" +
+            "\n" + "}" +
+            ""));
+
+    // - verification
+
+    CompilationSubject.assertThat(compilation).succeeded();
+
+    this.assertGeneratedClasses(compilation,
+                                "com.example.MainConfig",
+                                "com.example.MainConfigBuilder",
+                                "com.example.MainConfigBuilder$ParamImpl",
+                                "com.example.MainConfigBuilder$ConfigImpl",
+                                "some.other.EmbeddedConfig",
+                                "some.other.EmbeddedConfigBuilder",
+                                "some.other.EmbeddedConfigBuilder$ParamImpl",
+                                "some.other.EmbeddedConfigBuilder$ConfigImpl");
+
+    final Class<?> generatedBuilderClass= this.loadClass("com.example.MainConfigBuilder", compilation);
+    final Class<?> generatedConfigClass= this.loadClass("com.example.MainConfigBuilder$ConfigImpl", compilation);
+    final Class<?> generatedEmbeddedBuilderClass= this.loadClass("some.other.EmbeddedConfigBuilder", compilation);
+    final Class<?> generatedEmbeddedClass= this.loadClass("some.other.EmbeddedConfigBuilder$ConfigImpl", compilation);
+
+    this.assertMethods(generatedEmbeddedClass, "embeddedParam");
+    this.assertMethods(generatedConfigClass, "someParam", "embedded");
+    // FIXME: Should we check return types here? Shouldn't be necessary, as we call them later and check the result
+    //        In fact we would not even need this assertion above, as we are callign each of these methods.
+
+    final Object instance = this.createInstance(generatedBuilderClass, mapOf(
+      // no values are explicitly set
+      "someParam",              "some value",
+      "embedded.embeddedParam", "embedded value",
+      "irrelevant key",         "irrelevant value"
+    ));
+
+    this.assertResult(instance, "someParam", "some value");
+    final Object expectedEmbedded= this.createInstance(generatedEmbeddedBuilderClass, Map.of("embeddedParam", "embedded value"));
+    this.assertResult(instance, "embedded", expectedEmbedded);
+  }
+
+
+  /**
+   * Test the implementation of a Coat config interface that embeds another Coat config interface
    * which itself embeds yet another Coat config interface.
    */
   @Test
