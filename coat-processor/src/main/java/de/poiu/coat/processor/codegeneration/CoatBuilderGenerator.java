@@ -260,15 +260,7 @@ public class CoatBuilderGenerator {
       .addModifiers(PRIVATE);
 
     // add the final properties to the CoatConfigBuilder
-    if (this.annotatedInterface.accessors().isEmpty()) {
-      // if there are no annotated methods, no enum is being generated (due to a bug in JavaPoet)
-      // therefore we cannot refer to it and instaed use an empty CoatParam array
-      // see https://github.com/square/javapoet/issues/739
-      // and https://github.com/square/javapoet/issues/832
-      constructorBuilder.addStatement("super(new $T[]{})", CoatParam.class);
-    } else {
-      constructorBuilder.addStatement("super(ParamImpl.values())");
-    }
+    constructorBuilder.addStatement("super(ParamImpl.values())");
 
     constructorBuilder.addCode("\n// set default values\n");
     for (final AccessorSpec accessor : this.annotatedInterface.accessors()) {
