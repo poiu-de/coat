@@ -99,6 +99,13 @@
         <artifactId>hibernate-validator</artifactId>
         <version>8.0.2.Final</version>
       </dependency>
+
+      <dependency>
+        <groupId>com.palantir.javapoet</groupId>
+        <artifactId>javapoet</artifactId>
+        <version>0.7.0</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 

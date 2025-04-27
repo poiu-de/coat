@@ -15,10 +15,10 @@
  */
 package de.poiu.coat.processor.codegeneration;
 
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
-import com.squareup.javapoet.TypeSpec;
+import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.MethodSpec;
+import com.palantir.javapoet.TypeName;
+import com.palantir.javapoet.TypeSpec;
 import de.poiu.coat.CoatParam;
 import de.poiu.coat.processor.CoatProcessorException;
 import de.poiu.coat.processor.specs.AccessorSpec;
