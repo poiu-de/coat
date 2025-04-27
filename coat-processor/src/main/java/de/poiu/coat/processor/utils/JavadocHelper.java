@@ -16,7 +16,7 @@
 package de.poiu.coat.processor.utils;
 
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import static java.util.function.Predicate.not;
 

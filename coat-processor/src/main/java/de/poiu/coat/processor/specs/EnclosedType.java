@@ -16,7 +16,7 @@
 package de.poiu.coat.processor.specs;
 
 import java.util.Optional;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import javax.lang.model.type.TypeMirror;
 import org.immutables.value.Value;
 

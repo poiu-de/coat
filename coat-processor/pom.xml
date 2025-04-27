@@ -31,14 +31,6 @@
       <version>${project.version}</version>
     </dependency>
 
-    <!-- for @Nullable annotations, etc. Do we want to keep this? -->
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <version>3.0.2</version>
-      <type>jar</type>
-    </dependency>
-
     <dependency>
       <groupId>com.squareup</groupId>
       <artifactId>javapoet</artifactId>
@@ -54,8 +46,8 @@
 
     <!-- necessary to support the @Generated annotation with Java 8 -->
     <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
     </dependency>
 
     <dependency>

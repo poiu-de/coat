@@ -30,7 +30,7 @@ import de.poiu.coat.processor.utils.SpecHelper;
 import de.poiu.coat.processor.utils.TypeHelper;
 import java.io.IOException;
 import java.util.List;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ArrayType;
