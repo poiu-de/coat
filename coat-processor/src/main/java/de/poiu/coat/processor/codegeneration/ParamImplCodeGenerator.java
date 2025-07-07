@@ -116,11 +116,6 @@ class ParamImplCodeGenerator {
     this.addFieldAndAccessor(typeSpecBuilder, Class.class,      "converter");
     this.addFieldAndAccessor(typeSpecBuilder, Class.class,      "listParser");
 
-    if (classSpec.accessors().isEmpty()) {
-      // not creating an enum if there is no accessor for it
-      return null;
-    }
-
     for (final AccessorSpec accessorSpec : classSpec.accessors()) {
       this.addEnumConstant(typeSpecBuilder, accessorSpec);
     }

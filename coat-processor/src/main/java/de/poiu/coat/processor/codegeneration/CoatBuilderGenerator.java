@@ -161,10 +161,7 @@ public class CoatBuilderGenerator {
     this.generateGeneratedAnnotation()
       .ifPresent(typeSpecBuilder::addAnnotation);
 
-    if (!this.annotatedInterface.accessors().isEmpty()) {
-      // not creating an enum if there is no accessor for it
-      typeSpecBuilder.addType(this.paramImplGenerator.generateEnumCode(this.annotatedInterface));
-    }
+    typeSpecBuilder.addType(this.paramImplGenerator.generateEnumCode(this.annotatedInterface));
     typeSpecBuilder.addType(this.configImplGenerator.generateClassCode(this.annotatedInterface));
 
     return typeSpecBuilder.build();
