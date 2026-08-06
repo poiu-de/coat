@@ -409,29 +409,7 @@ public abstract class CoatConfigBuilder {
 
 
   protected <T> T convertValue(final String stringValue, final CoatParam configParam) throws TypeConversionException {
-    Converter<?> converter= null;
-    // First try the converter that was explicitly configured for this field
-    final Class<? extends Converter<?>> paramConverterClass = configParam.converter();
-    if (paramConverterClass != null) {
-      try {
-        converter = paramConverterClass.getConstructor().newInstance();
-      } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-        throw new TypeConversionException("Error converting “" + stringValue + "” for type “" + configParam.type() + "” via explicit converter “" + paramConverterClass.getCanonicalName() + "”.", ex);
-      }
-    }
-    // Then try the converter registered for this CoatConfigBuilder
-    if (converter == null) {
-      converter= this.classLocalConverters.get(configParam.type());
-    }
-    // Finally try the default converter
-    if (converter == null) {
-      converter= CoatConversionUtils.getGlobalConverter(configParam.type());
-    }
-
-    if (converter == null) {
-      throw new TypeConversionException("No converter registered for type '" + configParam.type().getTypeName() + "'.");
-    }
-
+    final Converter<?> converter= this.resolveConverter(stringValue, configParam);
     return (T) converter.convert(stringValue);
   }
 
@@ -451,7 +429,23 @@ public abstract class CoatConfigBuilder {
       return;
     }
 
+    this.convertValue(stringValue, configParam);
+  }
 
+
+  /**
+   * Resolves the {@link Converter} to use for the given {@link CoatParam}, applying the
+   * three-level fallback strategy:
+   * <ol>
+   *   <li>the converter explicitly configured on the param via {@code @Coat.Param(converter=…)}</li>
+   *   <li>a converter registered on this builder instance via {@link #registerConverter}</li>
+   *   <li>the global default converter from {@link CoatConversionUtils}</li>
+   * </ol>
+   *
+   * @throws TypeConversionException if no converter is found or the explicitly configured
+   *                                 converter cannot be instantiated
+   */
+  private Converter<?> resolveConverter(final String stringValue, final CoatParam configParam) throws TypeConversionException {
     Converter<?> converter= null;
     // First try the converter that was explicitly configured for this field
     final Class<? extends Converter<?>> paramConverterClass = configParam.converter();
@@ -466,7 +460,7 @@ public abstract class CoatConfigBuilder {
     if (converter == null) {
       converter= this.classLocalConverters.get(configParam.type());
     }
-    // Finally try the default converter
+    // Finally try the global default converter
     if (converter == null) {
       converter= CoatConversionUtils.getGlobalConverter(configParam.type());
     }
@@ -475,7 +469,7 @@ public abstract class CoatConfigBuilder {
       throw new TypeConversionException("No converter registered for type '" + configParam.type().getTypeName() + "'.");
     }
 
-    converter.convert(stringValue);
+    return converter;
   }
 
 
